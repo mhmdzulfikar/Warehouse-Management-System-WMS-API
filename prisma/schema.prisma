@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+// -------------------------------------------------
+// 1. RBAC (Keamanan & Otorisasi)
+// -------------------------------------------------
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String // "Admin", "Staff Gudang", "Purchasing", "Manager"
+  
+  users User[]
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  roleId   Int
+  username String @unique
+  email    String @unique
+
+  role     Role   @relation(fields: [roleId], references: [id])
+
+  // Relasi khusus karena 1 User bisa bikin banyak PO, dan 1 Manager bisa approve banyak PO
+  createdPos  PurchaseOrder[] @relation("PoCreator")
+  approvedPos PurchaseOrder[] @relation("PoApprover")
+  
+  transactions Transaction[]
+}
+
+// -------------------------------------------------
+// 2. Master Data
+// -------------------------------------------------
+model Supplier {
+  id           Int       @id @default(autoincrement())
+  name         String
+  contactInfo  String?
+  address      String?
+  deletedAt    DateTime? // Soft Delete
+
+  purchaseOrders PurchaseOrder[]
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  sku         String    @unique
+  name        String
+  uom         String    // pcs, kg, box
+  basePrice   Decimal   @db.Decimal(10, 2)
+  deletedAt   DateTime? // Soft Delete
+
+  inventories      Inventory[]
+  poItems          PoItem[]
+  transactionItems TransactionItem[]
+}
+
+model Warehouse {
+  id       Int    @id @default(autoincrement())
+  name     String
+  location String
+
+  inventories      Inventory[]
+  transactionItems TransactionItem[]
+}
+
+// -------------------------------------------------
+// 3. Core Inventory (Stok Saat Ini)
+// -------------------------------------------------
+model Inventory {
+  id          Int @id @default(autoincrement())
+  productId   Int
+  warehouseId Int
+  currentQty  Int @default(0) // Qty = Jumlah barang
+
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  // Memastikan tidak ada duplikat data produk yang sama di gudang yang sama
+  @@unique([productId, warehouseId]) 
+}
+
+// -------------------------------------------------
+// 4. Procurement (Pembelanjaan / Pembelian)
+// -------------------------------------------------
+model PurchaseOrder {
+  id               Int      @id @default(autoincrement())
+  supplierId       Int
+  createdByUserId  Int      // Staff Purchasing
+  approvedByUserId Int?     // Manager (Bisa null kalau belum di-approve)
+  status           String   @default("Draft") // Draft, Pending, Approved, Rejected, Completed
+  createdAt        DateTime @default(now())
+
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  createdBy  User     @relation("PoCreator", fields: [createdByUserId], references: [id])
+  approvedBy User?    @relation("PoApprover", fields: [approvedByUserId], references: [id])
+  
+  poItems    PoItem[]
+}
+
+model PoItem {
+  id            Int     @id @default(autoincrement())
+  poId          Int
+  productId     Int
+  qty           Int     // Jumlah yang dipesan
+  receivedQty   Int     @default(0) // Jumlah yang sudah datang (Partial Fulfillment)
+  expectedPrice Decimal @db.Decimal(10, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+}
+
+// -------------------------------------------------
+// 5. Audit Trail & Transaksi (The Ledger / Riwayat)
+// -------------------------------------------------
+model Transaction {
+  id              Int      @id @default(autoincrement())
+  type            String   // "IN", "OUT", "ADJUST"
+  referenceType   String?  // "PO", "Manual"
+  referenceId     Int?     // ID dari tabel PurchaseOrder (jika ada)
+  createdByUserId Int
+  timestamp       DateTime @default(now())
+
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+
+  transactionItems TransactionItem[]
+}
+
+model TransactionItem {
+  id            Int @id @default(autoincrement())
+  transactionId Int
+  productId     Int
+  warehouseId   Int
+  qtyChange     Int // Pakai plus (+) untuk IN, minus (-) untuk OUT
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  product     Product     @relation(fields: [productId], references: [id])
+  warehouse   Warehouse   @relation(fields: [warehouseId], references: [id])
+}
