@@ -7,20 +7,20 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 // ==========================================
-// SERVICE 1: MEMBUAT PURCHASE ORDER BARU
+// SERVICE 1: CREATE A NEW PURCHASE ORDER
 // ==========================================
 export const processCreatePO = async (supplierId: number, createdByUserId: number, items: any[]) => {
-    // Variabel totalAmount ini hanya untuk merangkum total harga (tidak disimpan di database)
+    // This totalAmount variable is only for summarizing the total price (not saved in the database)
     let totalAmount = 0;
     
-    // Looping 1: Menghitung estimasi total harga dari seluruh barang yang mau dibeli
+    // Loop 1: Calculate the estimated total price of all items to be purchased
     for (const item of items) {
         totalAmount += Number(item.qtyOrdered) * Number(item.unitPrice);
     }
 
-    // Memulai Transaksi Database (tx). Kalau ada 1 yang gagal, otomatis di-rollback (dibatalkan semua)
+    // Start a Database Transaction (tx). If any step fails, it will automatically rollback (cancel everything)
     const newPo = await prisma.$transaction(async (tx) => {
-        // Langkah 1: Buat 'Kertas Nota' (Header Purchase Order) dengan status masih PENDING
+        // Step 1: Create the 'Receipt Paper' (Purchase Order Header) with status still PENDING
         const po = await tx.purchaseOrder.create({
             data: {
                 supplierId: Number(supplierId),
@@ -29,58 +29,58 @@ export const processCreatePO = async (supplierId: number, createdByUserId: numbe
             },
         });
 
-        // Looping 2: Memasukkan daftar barang pesanan (items) ke dalam nota PO tadi
+        // Loop 2: Insert the list of ordered items (items) into the PO receipt we just created
         for (const item of items) {
-            // Membuat detail pesanan (poItem) dan menyambungkannya ke ID nota PO (po.id)
+            // Create order detail (poItem) and connect it to the PO receipt ID (po.id)
             await tx.poItem.create({
                 data: {
-                    poId: po.id, // Menyambungkan relasi
+                    poId: po.id, // Connecting the relationship
                     productId: Number(item.productId),
                     qty: Number(item.qtyOrdered),
-                    expectedPrice: Number(item.unitPrice), // Harga satuan yang diharapkan
+                    expectedPrice: Number(item.unitPrice), // Expected unit price
                 },
             });
         }
         
-        // Kembalikan data nota PO yang sudah berhasil dibuat
+        // Return the PO receipt data that was successfully created
         return po;
     });
 
-    // Menggabungkan (spread operator '...') data PO dengan totalAmount untuk dikirim ke layar pengguna
+    // Combine (spread operator '...') the PO data with totalAmount to be sent to the user interface
     return { ...newPo, totalAmount };
 };
 
 // ==========================================
-// SERVICE 2: MENGAMBIL SEMUA DAFTAR PO
+// SERVICE 2: FETCH ALL PO LIST
 // ==========================================
 export const fetchAllPOs = async () => {
-    // Mengambil seluruh baris data dari tabel PurchaseOrder
+    // Fetch all rows of data from the PurchaseOrder table
     return await prisma.purchaseOrder.findMany({
         include: {
-            supplier: true, // Sekalian ambil info supplier-nya
+            supplier: true, // Also fetch its supplier info
             poItems: {
-                include: { product: true }, // Sekalian ambil nama produk di dalam detail PO
+                include: { product: true }, // Also fetch the product name inside the PO details
             },
         },
     });
 };
 
 // ==========================================
-// SERVICE 3: MANAGER MENYETUJUI PO
+// SERVICE 3: MANAGER APPROVES PO
 // ==========================================
 export const processApprovePO = async (id: number, approvedByUserId: number) => {
-    // Langkah 1: Cek dulu apakah data PO-nya beneran ada di database
+    // Step 1: First check if the PO data actually exists in the database
     const existingPo = await prisma.purchaseOrder.findUnique({
         where: { id: Number(id) },
     });
 
-    // Validasi: Kalau nggak ada, langsung lemparkan error agar proses berhenti
-    if (!existingPo) throw new Error(`Purchase Order dengan ID ${id} tidak ditemukan.`);
+    // Validation: If it doesn't exist, immediately throw an error so the process stops
+    if (!existingPo) throw new Error(`Purchase Order with ID ${id} not found.`);
     
-    // Validasi: Kalau statusnya bukan PENDING, berarti nggak bisa di-approve lagi
-    if (existingPo.status !== 'PENDING') throw new Error(`PO ini tidak dapat disetujui karena statusnya sudah: ${existingPo.status}`);
+    // Validation: If the status is not PENDING, it means it cannot be approved anymore
+    if (existingPo.status !== 'PENDING') throw new Error(`This PO cannot be approved because its status is already: ${existingPo.status}`);
 
-    // Langkah 2: Update status PO menjadi APPROVED dan catat siapa manager yang menyetujui
+    // Step 2: Update PO status to APPROVED and record which manager approved it
     return await prisma.purchaseOrder.update({
         where: { id: Number(id) },
         data: {
@@ -91,44 +91,44 @@ export const processApprovePO = async (id: number, approvedByUserId: number) => 
 };
 
 // ==========================================
-// SERVICE 4: MENERIMA BARANG DARI PO
+// SERVICE 4: RECEIVE ITEMS FROM PO
 // ==========================================
 export const processReceivePO = async (id: number, warehouseId: number, receivedByUserId: number) => {
-    // Langkah 1: Cari data PO beserta daftar barang yang dipesannya (poItems)
+    // Step 1: Find the PO data along with the list of items it ordered (poItems)
     const po = await prisma.purchaseOrder.findUnique({
         where: { id: Number(id) },
         include: { poItems: true },
     });
 
-    // Validasi
-    if (!po) throw new Error(`Purchase Order dengan ID ${id} tidak ditemukan.`);
-    if (po.status !== 'APPROVED') throw new Error(`PO ini tidak dapat diterima karena statusnya masih: ${po.status}. Harus APPROVED terlebih dahulu.`);
+    // Validation
+    if (!po) throw new Error(`Purchase Order with ID ${id} not found.`);
+    if (po.status !== 'APPROVED') throw new Error(`This PO cannot be received because its status is still: ${po.status}. It must be APPROVED first.`);
 
-    // Transaksi Database dimulai: Agar masukin gudang & catat riwayat berjalan barengan
+    // Database Transaction begins: So that putting items into the warehouse & recording history run together
     return await prisma.$transaction(async (tx) => {
-        // Langkah 2: Buat bukti/riwayat transaksi bahwa ada Barang Masuk (IN)
+        // Step 2: Create a transaction proof/history that there are Incoming Items (IN)
         const transaction = await tx.transaction.create({
             data: {
                 type: 'IN',
-                referenceType: 'PO', // Referensinya adalah dokumen PO
+                referenceType: 'PO', // The reference is the PO document
                 referenceId: po.id,
                 createdByUserId: Number(receivedByUserId),
             },
         });
 
-        // Langkah 3: Perulangan (looping) untuk setiap barang yang dipesan dari PO tadi
+        // Step 3: Loop for each item ordered from the PO earlier
         for (const item of po.poItems) {
-            // A. Masukkan detail barang ini ke dalam riwayat transaksi (transactionItem)
+            // A. Insert the detail of this item into the transaction history (transactionItem)
             await tx.transactionItem.create({
                 data: {
                     transactionId: transaction.id,
                     productId: item.productId,
                     warehouseId: Number(warehouseId),
-                    qtyChange: item.qty, // Jumlah barang yang diterima (plus)
+                    qtyChange: item.qty, // Number of items received (positive)
                 },
             });
 
-            // B. Cek apakah barang ini sudah pernah ada di gudang tersebut?
+            // B. Check if this item has ever existed in that warehouse?
             const existingInventory = await tx.inventory.findUnique({
                 where: {
                     productId_warehouseId: {
@@ -138,14 +138,14 @@ export const processReceivePO = async (id: number, warehouseId: number, received
                 },
             });
 
-            // C. Jika sudah ada, tinggal tambahkan saja jumlah stoknya (Update)
+            // C. If it already exists, just add the stock quantity (Update)
             if (existingInventory) {
                 await tx.inventory.update({
                     where: { id: existingInventory.id },
                     data: { currentQty: existingInventory.currentQty + item.qty },
                 });
             } 
-            // D. Jika belum ada, buat baris stok baru di gudang itu (Create)
+            // D. If it doesn't exist yet, create a new stock row in that warehouse (Create)
             else {
                 await tx.inventory.create({
                     data: {
@@ -157,13 +157,13 @@ export const processReceivePO = async (id: number, warehouseId: number, received
             }
         }
 
-        // Langkah 4: Ganti status Nota PO dari APPROVED menjadi RECEIVED (Selesai/Diterima)
+        // Step 4: Change PO Receipt status from APPROVED to RECEIVED (Done/Received)
         const updatedPo = await tx.purchaseOrder.update({
             where: { id: po.id },
             data: { status: 'RECEIVED' },
         });
 
-        // Kembalikan dua-duanya (bukti transaksi & status PO terbaru)
+        // Return both (transaction proof & latest PO status)
         return { transaction, updatedPo };
     });
 };

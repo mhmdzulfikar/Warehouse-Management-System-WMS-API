@@ -7,16 +7,16 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 // ==========================================
-// SERVICE 1: PROSES BARANG MASUK (IN)
+// SERVICE 1: PROCESS INCOMING ITEMS (IN)
 // ==========================================
 export const processTransactionIn = async (warehouseId: number, createdByUserId: number, items: any[]) => {
-    // Memulai Transaksi Database. 
-    // Semua proses di dalam blok ini (catat riwayat & tambah stok) harus berhasil semua.
-    // Jika ada satu yang gagal (error), maka semuanya otomatis dibatalkan (rollback).
+    // Start Database Transaction. 
+    // All processes inside this block (record history & add stock) must all succeed.
+    // If one fails (error), everything is automatically canceled (rollback).
     return await prisma.$transaction(async (tx) => {
         
-        // Langkah 1: Buat Kertas Bukti Transaksi (Ledger)
-        // Ini mencatat bahwa ada aktivitas "Masuk (IN)" secara "Manual".
+        // Step 1: Create Transaction Proof Paper (Ledger)
+        // This records that there is an "Incoming (IN)" activity "Manually".
         const transaction = await tx.transaction.create({
             data: {
                 type: 'IN',
@@ -25,20 +25,20 @@ export const processTransactionIn = async (warehouseId: number, createdByUserId:
             },
         });
 
-        // Langkah 2: Perulangan (Looping) untuk memproses setiap barang satu per satu
+        // Step 2: Loop to process each item one by one
         for (const item of items) {
             
-            // A. Mencatat detail barang ke dalam kertas bukti transaksi tadi
+            // A. Record item details into the transaction proof paper
             await tx.transactionItem.create({
                 data: {
-                    transactionId: transaction.id, // Disambungkan ke ID bukti transaksi
+                    transactionId: transaction.id, // Connected to the transaction proof ID
                     productId: Number(item.productId),
                     warehouseId: Number(warehouseId),
-                    qtyChange: Number(item.qty), // Karena masuk, nilainya positif (+)
+                    qtyChange: Number(item.qty), // Because it's incoming, the value is positive (+)
                 },
             });
 
-            // B. Mengecek apakah produk ini sudah pernah disimpan di gudang tersebut sebelumnya
+            // B. Check if this product has ever been stored in that warehouse before
             const existingInventory = await tx.inventory.findUnique({
                 where: {
                     productId_warehouseId: {
@@ -48,15 +48,15 @@ export const processTransactionIn = async (warehouseId: number, createdByUserId:
                 },
             });
 
-            // C. Logika Percabangan (If-Else)
+            // C. Branching Logic (If-Else)
             if (existingInventory) {
-                // Jika barangnya SUDAH ADA di gudang, kita tinggal UPDATE (tambahkan) stok saat ini
+                // If the item ALREADY EXISTS in the warehouse, we just UPDATE (add to) current stock
                 await tx.inventory.update({
                     where: { id: existingInventory.id },
                     data: { currentQty: existingInventory.currentQty + Number(item.qty) },
                 });
             } else {
-                // Jika barangnya BELUM ADA sama sekali, kita buat baris CREATE stok baru
+                // If the item DOES NOT EXIST AT ALL, we CREATE a new stock row
                 await tx.inventory.create({
                     data: {
                         productId: Number(item.productId),
@@ -67,20 +67,20 @@ export const processTransactionIn = async (warehouseId: number, createdByUserId:
             }
         }
         
-        // Kembalikan bukti transaksi yang sudah selesai dibuat
+        // Return the transaction proof that has been created
         return transaction;
     });
 };
 
 // ==========================================
-// SERVICE 2: PROSES BARANG KELUAR (OUT)
+// SERVICE 2: PROCESS OUTGOING ITEMS (OUT)
 // ==========================================
 export const processTransactionOut = async (warehouseId: number, createdByUserId: number, items: any[]) => {
-    // Memulai Transaksi Database.
+    // Start Database Transaction.
     return await prisma.$transaction(async (tx) => {
         
-        // Langkah 1: Pengecekan Stok (Validasi)
-        // Sebelum barang dikeluarkan, kita harus cek dulu apakah stoknya cukup.
+        // Step 1: Stock Check (Validation)
+        // Before items are issued, we must check if the stock is sufficient.
         for (const item of items) {
             const inventory = await tx.inventory.findUnique({
                 where: {
@@ -91,15 +91,15 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
                 },
             });
 
-            // Jika barang tidak ada di gudang, ATAU stoknya lebih sedikit dari yang mau dikeluarkan, 
-            // maka lemparkan Error. Proses akan langsung berhenti dan batal.
+            // If the item is not in the warehouse, OR the stock is less than what is to be issued,
+            // then throw an Error. The process will immediately stop and cancel.
             if (!inventory || inventory.currentQty < Number(item.qty)) {
-                throw new Error(`Stok tidak mencukupi untuk Product ID: ${item.productId}. Stok saat ini: ${inventory ? inventory.currentQty : 0}`);
+                throw new Error(`Insufficient stock for Product ID: ${item.productId}. Current stock: ${inventory ? inventory.currentQty : 0}`);
             }
         }
 
-        // Langkah 2: Buat Kertas Bukti Transaksi (Ledger)
-        // Mencatat bahwa ada aktivitas "Keluar (OUT)" secara "Manual".
+        // Step 2: Create Transaction Proof Paper (Ledger)
+        // Record that there is an "Outgoing (OUT)" activity "Manually".
         const transaction = await tx.transaction.create({
             data: {
                 type: 'OUT',
@@ -108,22 +108,22 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
             },
         });
 
-        // Langkah 3: Perulangan (Looping) untuk mencatat pengeluaran barang & mengurangi stok
+        // Step 3: Loop to record item issuance & deduct stock
         for (const item of items) {
             
-            // A. Mencatat detail barang ke dalam kertas bukti transaksi
+            // A. Record item details into the transaction proof paper
             await tx.transactionItem.create({
                 data: {
                     transactionId: transaction.id,
                     productId: Number(item.productId),
                     warehouseId: Number(warehouseId),
-                    // Mengubah nilai menjadi negatif menggunakan -Math.abs()
-                    // Contoh: kalau input 10, dicatat -10. Kalau input -10, tetap dicatat -10.
+                    // Make the value negative using -Math.abs()
+                    // Example: if input is 10, recorded as -10. If input is -10, still recorded as -10.
                     qtyChange: -Math.abs(Number(item.qty)), 
                 },
             });
 
-            // B. Mengurangi jumlah stok yang ada di gudang
+            // B. Deduct the existing stock quantity in the warehouse
             await tx.inventory.update({
                 where: {
                     productId_warehouseId: {
@@ -132,7 +132,7 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
                     },
                 },
                 data: {
-                    // Prisma punya fungsi 'decrement' untuk otomatis mengurangi angka di database
+                    // Prisma has a 'decrement' function to automatically subtract numbers in the database
                     currentQty: {
                         decrement: Number(item.qty),
                     },
@@ -140,7 +140,7 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
             });
         }
         
-        // Kembalikan bukti transaksi yang sudah selesai
+        // Return the completed transaction proof
         return transaction;
     });
 }; 

@@ -1,4 +1,4 @@
-import 'dotenv/config'; // <-- Tambahkan ini untuk membaca file .env
+import 'dotenv/config'; //  ini untuk membaca file .env
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg'; // <-- Import adapter
 import { Pool } from 'pg';
@@ -31,6 +31,11 @@ async function main() {
         data: { name: 'PT Sembako Jaya', contactInfo: '08123456789', address: 'Jl. Industri No. 10, Cikarang' },
     });
 
+    // 3. Buat Supplier 2
+    const supplier2 = await prisma.supplier.create({
+        data: { name: 'PT Sembako Makmur', contactInfo: '08123456785', address: 'Jl. Industri No. 11, Cikarang' },
+    });
+
     // 4. Buat Warehouse (Gudang Fisik)
     const warehouseUtama = await prisma.warehouse.create({
         data: { name: 'Gudang Pusat Cikarang', location: 'Kawasan Industri Jababeka' },
@@ -42,6 +47,9 @@ async function main() {
     });
     const product2 = await prisma.product.create({
         data: { sku: 'MIA-KUD-02', name: 'Minyak Goreng 2L', uom: 'pcs', basePrice: 32000 },
+    });
+    const product3 = await prisma.product.create({
+        data: { sku: 'MIA-KUD-03', name: 'Gula Pasir 1kg', uom: 'pcs', basePrice: 1000 },
     });
 
     // 6. Inisialisasi Inventory awal di Gudang Pusat

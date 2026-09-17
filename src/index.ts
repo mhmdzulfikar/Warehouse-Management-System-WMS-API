@@ -6,6 +6,10 @@ import express, { Request, Response } from 'express';
 import inventoryRoutes from './routes/inventoryRoutes';
 import poRouter from './routes/poRoutes';
 import transactionRoutes from './routes/transactionRoutes';
+import productRoutes from './routes/productRoutes';
+import supplierRoutes from './routes/supplierRoutes';
+import warehouseRoutes from './routes/warehouseRoutes';
+import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,13 +23,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/po', poRouter);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/warehouses', warehouseRoutes);
 
-// Endpoint Tes
+// Test Endpoint
 app.get('/', (req: Request, res: Response) => {
     res.json({ message: 'WMS & Procurement API is running smoothly!' });
 });
 
-// Jalankan Server
+// Global Error Handler (MUST BE LAST MIDDLEWARE)
+app.use(errorHandler);
+
+// Run Server
 app.listen(PORT, () => {
-    console.log(`Server backend aktif di http://localhost:${PORT}`);
+    console.log(`Backend server is active at http://localhost:${PORT}`);
 });

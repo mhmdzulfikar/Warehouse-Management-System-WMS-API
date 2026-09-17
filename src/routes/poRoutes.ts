@@ -8,16 +8,16 @@ import {
 
 const router = Router();
 
-// Ednpoint untuk bikin PO baru (POST)
+// Endpoint to create a new PO (POST)
 router.post('/', createPurchaseOrder);
 
-// Endpoint untuk lihat semua PO (GET)
+// Endpoint to view all POs (GET)
 router.get('/', getAllPurchaseOrders);
 
-// Endpoint untutk Manger nge-Approve PO (PUT)
+// Endpoint for Manager to Approve a PO (PATCH)
 router.patch('/:id/approve', approvePurchaseOrder);
 
-// Endpoint untuk Staf Gudang menerima barang dari PO (POST)
+// Endpoint for Warehouse Staff to receive items from a PO (POST)
 router.post('/:id/receive', receivePurchaseOrder);
 
 export default router;

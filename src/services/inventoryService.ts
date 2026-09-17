@@ -10,23 +10,23 @@ const prisma = new PrismaClient({ adapter });
 export const getWarehouseDashboardReport = async (warehouseId: number) => {
 
     // ==========================================
-    // 1. NGITUNG TOTAL BARANG (Pake JS reduce)
+    // 1. CALCULATE TOTAL ITEMS (Using JS reduce)
     // ==========================================
-    // Ambil dulu SEMUA baris stok di gudang ini
+    // First, fetch ALL stock rows in this warehouse
     const allStocks = await prisma.inventory.findMany({
         where: { warehouseId: Number(warehouseId) },
     });
 
-    // TUGAS 1: Gunakan reduce() untuk menjumlahkan semua 'currentQty' dari 'allStocks'
-    // Clue: Lihat contoh reduce di Tabel 3
+    // TASK 1: Use reduce() to sum up all 'currentQty' from 'allStocks'
+    // Clue: See the reduce example in Table 3
     const totalItemsInWarehouse = allStocks.reduce((total, item) => total + item.currentQty, 0);
 
 
     // ==========================================
-    // 2. NYARI STOK KRITIS (Pake Prisma lt)
+    // 2. FIND CRITICAL STOCKS (Using Prisma lt)
     // ==========================================
-    // TUGAS 2: Cari data inventory di gudang ini yang currentQty-nya KURANG DARI 10
-    // Clue: Lihat contoh 'lt' di Tabel 2
+    // TASK 2: Find inventory data in this warehouse where currentQty is LESS THAN 10
+    // Clue: See the 'lt' example in Table 2
     const criticalStocks = await prisma.inventory.findMany({
         where: {
             warehouseId: Number(warehouseId),
@@ -34,30 +34,31 @@ export const getWarehouseDashboardReport = async (warehouseId: number) => {
                 lt: 10
             }
         },
-        include: { product: true } // Ini biar kita bisa dapet nama produknya
+        include: { product: true } // This allows us to get the product name
     });
 
 
     // ==========================================
-    // 3. NGERAPIHIN DATA BUAT MANAJER (Pake JS map)
+    // 3. FORMAT DATA FOR MANAGER (Using JS map)
     // ==========================================
-    // Data dari database kan panjang banget (ada createdAt, updatedAt, dll).
-    // Manajer cuma butuh 2 hal: Nama Produk & Sisa Stok.
+    // The data from the database is very long (contains createdAt, updatedAt, etc.).
+    // The Manager only needs 2 things: Product Name & Remaining Stock.
 
-    // TUGAS 3: Gunakan map() untuk merombak array criticalStocks
-    // Clue: Return object baru yang isinya cuma 'nama' dan 'sisa'
+    // TASK 3: Use map() to transform the criticalStocks array
+    // Clue: Return a new object that only contains 'itemName' and 'remainingStock'
     const formattedCriticalStocks = criticalStocks.map((item) => {
         return {
-            namaBarang: item.product.name,
-            sisaStok: item.currentQty,
-            produkId: item.productId
+            itemName: item.product.name,
+            remainingStock: item.currentQty,
+            productId: item.productId,
+            status: "RESTOCK IMMEDIATELY"
         };
     });
 
 
-    // Terakhir, kembalikan laporannya
+    // Finally, return the report
     return {
-        totalBarangDiGudang: totalItemsInWarehouse,
-        peringatanStokKritis: formattedCriticalStocks
+        totalItemsInWarehouse: totalItemsInWarehouse,
+        criticalStockWarning: formattedCriticalStocks
     };
 };

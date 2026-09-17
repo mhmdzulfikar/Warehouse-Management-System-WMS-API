@@ -1,37 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
 
-// 1. Satpam Pengecek Login
+// 1. Login Checker Security Guard (Middleware)
 export const checkIsLoggedIn = (req: Request, res: Response, next: NextFunction): void => {
-    // Kita ibaratkan 'x-user-id' di header adalah KTP-nya
+    // We treat 'x-user-id' in the header as the ID Card
     const userId = req.headers['x-user-id'];
 
     if (!userId) {
-        // Ngga bawa KTP? Tendang! (401 Unauthorized)
+        // No ID Card? Kick them out! (401 Unauthorized)
         res.status(401).json({
             success: false,
-            message: 'Akses Ditolak: Anda belum login! (Tidak ada x-user-id di header)'
+            message: 'Access Denied: You are not logged in! (Missing x-user-id in header)'
         });
         return;
     }
 
-    // Kalau bawa KTP, silakan lanjut!
+    // If they brought their ID Card, they can proceed!
     next();
 };
 
-// 2. Satpam Pengecek Jabatan Khusus (Hanya Manajer)
+// 2. Specific Role Checker Security Guard (Only Manager)
 export const checkIsManager = (req: Request, res: Response, next: NextFunction): void => {
-    // Kita cek jabatannya dari header 'x-role'
+    // We check the role from the 'x-role' header
     const role = req.headers['x-role'];
 
     if (role !== 'MANAGER') {
-        // Bawa KTP tapi bukan Manajer? Tendang! (403 Forbidden)
+        // Brought the ID Card but not a Manager? Kick them out! (403 Forbidden)
         res.status(403).json({
             success: false,
-            message: 'Akses Dilarang: Fitur ini hanya untuk MANAGER!'
+            message: 'Access Forbidden: This feature is only for MANAGER!'
         });
         return;
     }
 
-    // Kalau jabatannya beneran MANAGER, silakan lanjut ke Controller!
+    // If the role is really MANAGER, proceed to the Controller!
     next();
 };
