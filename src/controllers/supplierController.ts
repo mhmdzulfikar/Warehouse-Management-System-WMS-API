@@ -6,17 +6,24 @@ import {
     updateSupplier, 
     deleteSupplier 
 } from '../services/supplierService';
-import { AppError } from '../utils/AppError';
 
 // ==========================================
-// 1. GET ALL SUPPLIERS (READ)
+// 1. GET ALL SUPPLIERS (READ - PAGINATED & SEARCHABLE)
 // ==========================================
 export const fetchAllSuppliers = async (req: Request, res: Response) => {
-    const suppliers = await getAllSuppliers();
+    const { page, limit, search } = req.query;
+
+    const result = await getAllSuppliers({
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        search: search as string | undefined
+    });
+
     return res.status(200).json({ 
         success: true, 
-        message: 'Successfully retrieved all active suppliers', 
-        data: suppliers 
+        message: 'Successfully retrieved active suppliers', 
+        data: result.data,
+        pagination: result.pagination
     });
 };
 

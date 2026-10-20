@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocument } from './docs/swagger';
 import authRoutes from './routes/authRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import poRouter from './routes/poRoutes';
@@ -19,6 +21,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Swagger Interactive Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Service Routers
 app.use('/api/auth', authRoutes);

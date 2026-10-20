@@ -59,6 +59,7 @@ model Product {
   name        String
   uom         String    // pcs, kg, box
   basePrice   Decimal   @db.Decimal(10, 2)
+  minStock    Int       @default(10) // Ambang batas minimum stok untuk alert
   deletedAt   DateTime? // Soft Delete
 
   inventories      Inventory[]

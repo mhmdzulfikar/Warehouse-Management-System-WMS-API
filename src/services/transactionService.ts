@@ -1,16 +1,56 @@
 import prisma from '../config/prisma';
+import { AppError } from '../utils/AppError';
 
 // ==========================================
-// SERVICE 1: PROSES BARANG MASUK (IN)
+// 1. GET ALL TRANSACTIONS (AUDIT LEDGER)
+// ==========================================
+export const getAllTransactions = async (query: { page?: number; limit?: number; type?: string }) => {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.type) {
+        where.type = query.type.toUpperCase();
+    }
+
+    const [transactions, total] = await Promise.all([
+        prisma.transaction.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { timestamp: 'desc' },
+            include: {
+                createdBy: {
+                    select: { id: true, username: true, email: true }
+                },
+                transactionItems: {
+                    include: {
+                        product: { select: { id: true, sku: true, name: true, uom: true } },
+                        warehouse: { select: { id: true, name: true } }
+                    }
+                }
+            }
+        }),
+        prisma.transaction.count({ where })
+    ]);
+
+    return {
+        data: transactions,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        }
+    };
+};
+
+// ==========================================
+// 2. PROSES BARANG MASUK (IN)
 // ==========================================
 export const processTransactionIn = async (warehouseId: number, createdByUserId: number, items: any[]) => {
-    // Memulai Transaksi Database. 
-    // Semua proses di dalam blok ini (catat riwayat & tambah stok) harus berhasil semua.
-    // Jika ada satu yang gagal (error), maka semuanya otomatis dibatalkan (rollback).
     return await prisma.$transaction(async (tx) => {
-
-        // Langkah 1: Buat Kertas Bukti Transaksi (Ledger)
-        // Ini mencatat bahwa ada aktivitas "Masuk (IN)" secara "Manual".
         const transaction = await tx.transaction.create({
             data: {
                 type: 'IN',
@@ -19,20 +59,16 @@ export const processTransactionIn = async (warehouseId: number, createdByUserId:
             },
         });
 
-        // Langkah 2: Perulangan (Looping) untuk memproses setiap barang satu per satu
         for (const item of items) {
-
-            // A. Mencatat detail barang ke dalam kertas bukti transaksi tadi
             await tx.transactionItem.create({
                 data: {
-                    transactionId: transaction.id, // Disambungkan ke ID bukti transaksi
+                    transactionId: transaction.id,
                     productId: Number(item.productId),
                     warehouseId: Number(warehouseId),
-                    qtyChange: Number(item.qty), // Karena masuk, nilainya positif (+)
+                    qtyChange: Number(item.qty),
                 },
             });
 
-            // B. Mengecek apakah produk ini sudah pernah disimpan di gudang tersebut sebelumnya
             const existingInventory = await tx.inventory.findUnique({
                 where: {
                     productId_warehouseId: {
@@ -42,15 +78,12 @@ export const processTransactionIn = async (warehouseId: number, createdByUserId:
                 },
             });
 
-            // C. Logika Percabangan (If-Else)
             if (existingInventory) {
-                // Jika barangnya SUDAH ADA di gudang, kita tinggal UPDATE (tambahkan) stok saat ini
                 await tx.inventory.update({
                     where: { id: existingInventory.id },
                     data: { currentQty: existingInventory.currentQty + Number(item.qty) },
                 });
             } else {
-                // Jika barangnya BELUM ADA sama sekali, kita buat baris CREATE stok baru
                 await tx.inventory.create({
                     data: {
                         productId: Number(item.productId),
@@ -61,20 +94,15 @@ export const processTransactionIn = async (warehouseId: number, createdByUserId:
             }
         }
 
-        // Kembalikan bukti transaksi yang sudah selesai dibuat
         return transaction;
     });
 };
 
 // ==========================================
-// SERVICE 2: PROSES BARANG KELUAR (OUT)
+// 3. PROSES BARANG KELUAR (OUT)
 // ==========================================
 export const processTransactionOut = async (warehouseId: number, createdByUserId: number, items: any[]) => {
-    // Memulai Transaksi Database.
     return await prisma.$transaction(async (tx) => {
-
-        // Langkah 1: Pengecekan Stok (Validasi)
-        // Sebelum barang dikeluarkan, kita harus cek dulu apakah stoknya cukup.
         for (const item of items) {
             const inventory = await tx.inventory.findUnique({
                 where: {
@@ -85,15 +113,11 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
                 },
             });
 
-            // Jika barang tidak ada di gudang, ATAU stoknya lebih sedikit dari yang mau dikeluarkan, 
-            // maka lemparkan Error. Proses akan langsung berhenti dan batal.
             if (!inventory || inventory.currentQty < Number(item.qty)) {
-                throw new Error(`Stok tidak mencukupi untuk Product ID: ${item.productId}. Stok saat ini: ${inventory ? inventory.currentQty : 0}`);
+                throw new AppError(`Stok tidak mencukupi untuk Product ID: ${item.productId}. Stok saat ini: ${inventory ? inventory.currentQty : 0}`, 400);
             }
         }
 
-        // Langkah 2: Buat Kertas Bukti Transaksi (Ledger)
-        // Mencatat bahwa ada aktivitas "Keluar (OUT)" secara "Manual".
         const transaction = await tx.transaction.create({
             data: {
                 type: 'OUT',
@@ -102,22 +126,16 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
             },
         });
 
-        // Langkah 3: Perulangan (Looping) untuk mencatat pengeluaran barang & mengurangi stok
         for (const item of items) {
-
-            // A. Mencatat detail barang ke dalam kertas bukti transaksi
             await tx.transactionItem.create({
                 data: {
                     transactionId: transaction.id,
                     productId: Number(item.productId),
                     warehouseId: Number(warehouseId),
-                    // Mengubah nilai menjadi negatif menggunakan -Math.abs()
-                    // Contoh: kalau input 10, dicatat -10. Kalau input -10, tetap dicatat -10.
                     qtyChange: -Math.abs(Number(item.qty)),
                 },
             });
 
-            // B. Mengurangi jumlah stok yang ada di gudang
             await tx.inventory.update({
                 where: {
                     productId_warehouseId: {
@@ -126,7 +144,6 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
                     },
                 },
                 data: {
-                    // Prisma punya fungsi 'decrement' untuk otomatis mengurangi angka di database
                     currentQty: {
                         decrement: Number(item.qty),
                     },
@@ -134,7 +151,195 @@ export const processTransactionOut = async (warehouseId: number, createdByUserId
             });
         }
 
-        // Kembalikan bukti transaksi yang sudah selesai
         return transaction;
     });
-}; 
+};
+
+// ==========================================
+// 4. PROSES PENYESUAIAN STOK (STOCK OPNAME / ADJUST)
+// ==========================================
+export const processTransactionAdjust = async (
+    warehouseId: number,
+    createdByUserId: number,
+    items: { productId: number; actualQty: number; notes?: string }[],
+    reason?: string
+) => {
+    const warehouse = await prisma.warehouse.findUnique({ where: { id: Number(warehouseId) } });
+    if (!warehouse) {
+        throw new AppError(`Warehouse with ID ${warehouseId} not found`, 404);
+    }
+
+    return await prisma.$transaction(async (tx) => {
+        const transaction = await tx.transaction.create({
+            data: {
+                type: 'ADJUST',
+                referenceType: reason || 'Stock Opname',
+                createdByUserId: Number(createdByUserId),
+            },
+        });
+
+        const adjustmentDetails = [];
+
+        for (const item of items) {
+            const existingInventory = await tx.inventory.findUnique({
+                where: {
+                    productId_warehouseId: {
+                        productId: Number(item.productId),
+                        warehouseId: Number(warehouseId),
+                    },
+                },
+            });
+
+            const currentQty = existingInventory ? existingInventory.currentQty : 0;
+            const qtyChange = Number(item.actualQty) - currentQty;
+
+            await tx.transactionItem.create({
+                data: {
+                    transactionId: transaction.id,
+                    productId: Number(item.productId),
+                    warehouseId: Number(warehouseId),
+                    qtyChange: qtyChange,
+                },
+            });
+
+            if (existingInventory) {
+                await tx.inventory.update({
+                    where: { id: existingInventory.id },
+                    data: { currentQty: Number(item.actualQty) },
+                });
+            } else {
+                await tx.inventory.create({
+                    data: {
+                        productId: Number(item.productId),
+                        warehouseId: Number(warehouseId),
+                        currentQty: Number(item.actualQty),
+                    },
+                });
+            }
+
+            adjustmentDetails.push({
+                productId: item.productId,
+                previousQty: currentQty,
+                actualQty: item.actualQty,
+                qtyChange: qtyChange,
+                notes: item.notes
+            });
+        }
+
+        return { transaction, adjustmentDetails };
+    });
+};
+
+// ==========================================
+// 5. PROSES TRANSFER ANTAR GUDANG (TRANSFER)
+// ==========================================
+export const processTransferStock = async (
+    sourceWarehouseId: number,
+    targetWarehouseId: number,
+    createdByUserId: number,
+    items: { productId: number; qty: number }[],
+    notes?: string
+) => {
+    if (Number(sourceWarehouseId) === Number(targetWarehouseId)) {
+        throw new AppError('Source warehouse and target warehouse cannot be the same', 400);
+    }
+
+    const [sourceWarehouse, targetWarehouse] = await Promise.all([
+        prisma.warehouse.findUnique({ where: { id: Number(sourceWarehouseId) } }),
+        prisma.warehouse.findUnique({ where: { id: Number(targetWarehouseId) } })
+    ]);
+
+    if (!sourceWarehouse) throw new AppError(`Source warehouse with ID ${sourceWarehouseId} not found`, 404);
+    if (!targetWarehouse) throw new AppError(`Target warehouse with ID ${targetWarehouseId} not found`, 404);
+
+    return await prisma.$transaction(async (tx) => {
+        // Validate stock availability in source warehouse
+        for (const item of items) {
+            const inventory = await tx.inventory.findUnique({
+                where: {
+                    productId_warehouseId: {
+                        productId: Number(item.productId),
+                        warehouseId: Number(sourceWarehouseId),
+                    },
+                },
+            });
+
+            if (!inventory || inventory.currentQty < Number(item.qty)) {
+                throw new AppError(
+                    `Insufficient stock in ${sourceWarehouse.name} for Product ID ${item.productId}. Available: ${inventory ? inventory.currentQty : 0}, requested: ${item.qty}`,
+                    400
+                );
+            }
+        }
+
+        const transaction = await tx.transaction.create({
+            data: {
+                type: 'TRANSFER',
+                referenceType: notes || `Transfer: ${sourceWarehouse.name} -> ${targetWarehouse.name}`,
+                createdByUserId: Number(createdByUserId),
+            },
+        });
+
+        for (const item of items) {
+            const qty = Number(item.qty);
+
+            // 1. Decrement source inventory & record negative change
+            await tx.transactionItem.create({
+                data: {
+                    transactionId: transaction.id,
+                    productId: Number(item.productId),
+                    warehouseId: Number(sourceWarehouseId),
+                    qtyChange: -qty,
+                },
+            });
+
+            await tx.inventory.update({
+                where: {
+                    productId_warehouseId: {
+                        productId: Number(item.productId),
+                        warehouseId: Number(sourceWarehouseId),
+                    },
+                },
+                data: {
+                    currentQty: { decrement: qty },
+                },
+            });
+
+            // 2. Increment target inventory & record positive change
+            await tx.transactionItem.create({
+                data: {
+                    transactionId: transaction.id,
+                    productId: Number(item.productId),
+                    warehouseId: Number(targetWarehouseId),
+                    qtyChange: qty,
+                },
+            });
+
+            const targetInventory = await tx.inventory.findUnique({
+                where: {
+                    productId_warehouseId: {
+                        productId: Number(item.productId),
+                        warehouseId: Number(targetWarehouseId),
+                    },
+                },
+            });
+
+            if (targetInventory) {
+                await tx.inventory.update({
+                    where: { id: targetInventory.id },
+                    data: { currentQty: { increment: qty } },
+                });
+            } else {
+                await tx.inventory.create({
+                    data: {
+                        productId: Number(item.productId),
+                        warehouseId: Number(targetWarehouseId),
+                        currentQty: qty,
+                    },
+                });
+            }
+        }
+
+        return transaction;
+    });
+};

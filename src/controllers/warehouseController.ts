@@ -6,17 +6,24 @@ import {
     updateWarehouse, 
     deleteWarehouse 
 } from '../services/warehouseService';
-import { AppError } from '../utils/AppError';
 
 // ==========================================
-// 1. GET ALL WAREHOUSES (READ)
+// 1. GET ALL WAREHOUSES (READ - PAGINATED & SEARCHABLE)
 // ==========================================
 export const fetchAllWarehouses = async (req: Request, res: Response) => {
-    const warehouses = await getAllWarehouses();
+    const { page, limit, search } = req.query;
+
+    const result = await getAllWarehouses({
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        search: search as string | undefined
+    });
+
     return res.status(200).json({ 
         success: true, 
-        message: 'Successfully retrieved all warehouses', 
-        data: warehouses 
+        message: 'Successfully retrieved warehouses', 
+        data: result.data,
+        pagination: result.pagination
     });
 };
 
@@ -69,8 +76,6 @@ export const editWarehouse = async (req: Request, res: Response) => {
 export const removeWarehouse = async (req: Request, res: Response) => {
     const { id } = req.params;
     
-    // If it fails due to existing inventories, the Prisma error will bubble up 
-    // and be caught by our global error handler which can map it.
     await deleteWarehouse(Number(id));
     return res.status(200).json({ 
         success: true, 

@@ -5,19 +5,40 @@ import {
     approvePurchaseOrder,
     receivePurchaseOrder
 } from '../controllers/poController';
+import { checkIsLoggedIn, checkRole, checkIsManager } from '../middlewares/authMiddleware';
+import { validateRequest } from '../middlewares/validateRequest';
+import { createPoSchema, approvePoSchema, receivePoSchema } from '../validations/poValidation';
 
 const router = Router();
 
-// Endpoint to create a new PO (POST)
-router.post('/', createPurchaseOrder);
+// 1. POST /api/po -> Create a new PO (Purchasing, Manager, Admin)
+router.post(
+    '/',
+    checkIsLoggedIn,
+    checkRole(['Purchasing', 'Manager', 'Admin']),
+    validateRequest(createPoSchema),
+    createPurchaseOrder
+);
 
-// Endpoint to view all POs (GET)
-router.get('/', getAllPurchaseOrders);
+// 2. GET /api/po -> View all POs (Authenticated users)
+router.get('/', checkIsLoggedIn, getAllPurchaseOrders);
 
-// Endpoint for Manager to Approve a PO (PATCH)
-router.patch('/:id/approve', approvePurchaseOrder);
+// 3. PATCH /api/po/:id/approve -> Manager / Admin approves a PO
+router.patch(
+    '/:id/approve',
+    checkIsLoggedIn,
+    checkIsManager,
+    validateRequest(approvePoSchema),
+    approvePurchaseOrder
+);
 
-// Endpoint for Warehouse Staff to receive items from a PO (POST)
-router.post('/:id/receive', receivePurchaseOrder);
+// 4. POST /api/po/:id/receive -> Staff Gudang / Manager / Admin receives items
+router.post(
+    '/:id/receive',
+    checkIsLoggedIn,
+    checkRole(['Staff Gudang', 'Manager', 'Admin']),
+    validateRequest(receivePoSchema),
+    receivePurchaseOrder
+);
 
 export default router;

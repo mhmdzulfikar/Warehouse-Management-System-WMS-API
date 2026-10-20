@@ -1,15 +1,45 @@
 import prisma from '../config/prisma';
+import { AppError } from '../utils/AppError';
 
 // ==========================================
-// 1. GET ALL SUPPLIERS (READ)
+// 1. GET ALL SUPPLIERS (READ - PAGINATED & SEARCHABLE)
 // ==========================================
-export const getAllSuppliers = async () => {
-    // We only fetch suppliers that are not soft-deleted
-    return await prisma.supplier.findMany({
-        where: {
-            deletedAt: null 
+export const getAllSuppliers = async (query: { page?: number; limit?: number; search?: string } = {}) => {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+        deletedAt: null
+    };
+
+    if (query.search) {
+        where.OR = [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { address: { contains: query.search, mode: 'insensitive' } },
+            { contactInfo: { contains: query.search, mode: 'insensitive' } }
+        ];
+    }
+
+    const [suppliers, total] = await Promise.all([
+        prisma.supplier.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { name: 'asc' }
+        }),
+        prisma.supplier.count({ where })
+    ]);
+
+    return {
+        data: suppliers,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
         }
-    });
+    };
 };
 
 // ==========================================
@@ -21,7 +51,7 @@ export const getSupplierById = async (id: number) => {
     });
 
     if (!supplier || supplier.deletedAt !== null) {
-        throw new Error(`Supplier with ID ${id} not found or has been deleted.`);
+        throw new AppError(`Supplier with ID ${id} not found or has been deleted.`, 404);
     }
 
     return supplier;
@@ -43,8 +73,7 @@ export const createSupplier = async (name: string, contactInfo?: string, address
 // ==========================================
 // 4. UPDATE SUPPLIER (UPDATE)
 // ==========================================
-export const updateSupplier = async (id: number, data: any) => {
-    // Ensure the supplier exists before updating
+export const updateSupplier = async (id: number, data: { name?: string; contactInfo?: string; address?: string }) => {
     await getSupplierById(id);
 
     return await prisma.supplier.update({
@@ -61,10 +90,8 @@ export const updateSupplier = async (id: number, data: any) => {
 // 5. DELETE SUPPLIER (SOFT DELETE)
 // ==========================================
 export const deleteSupplier = async (id: number) => {
-    // Ensure the supplier exists
     await getSupplierById(id);
 
-    // Soft delete by updating `deletedAt`
     return await prisma.supplier.update({
         where: { id: Number(id) },
         data: {

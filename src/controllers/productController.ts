@@ -6,17 +6,24 @@ import {
     updateProduct, 
     deleteProduct 
 } from '../services/productService';
-import { AppError } from '../utils/AppError';
 
 // ==========================================
-// 1. GET ALL PRODUCTS (READ)
+// 1. GET ALL PRODUCTS (READ - PAGINATED & SEARCHABLE)
 // ==========================================
 export const fetchAllProducts = async (req: Request, res: Response) => {
-    const products = await getAllProducts();
+    const { page, limit, search } = req.query;
+
+    const result = await getAllProducts({
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        search: search as string | undefined
+    });
+
     return res.status(200).json({ 
         success: true, 
-        message: 'Successfully retrieved all active products', 
-        data: products 
+        message: 'Successfully retrieved active products', 
+        data: result.data,
+        pagination: result.pagination
     });
 };
 
@@ -38,9 +45,16 @@ export const fetchProductById = async (req: Request, res: Response) => {
 // 3. CREATE NEW PRODUCT (CREATE)
 // ==========================================
 export const addProduct = async (req: Request, res: Response) => {
-    const { sku, name, uom, basePrice } = req.body;
+    const { sku, name, uom, basePrice, minStock } = req.body;
 
-    const newProduct = await createProduct(sku, name, uom, Number(basePrice));
+    const newProduct = await createProduct(
+        sku,
+        name,
+        uom,
+        Number(basePrice),
+        minStock !== undefined ? Number(minStock) : undefined
+    );
+
     return res.status(201).json({ 
         success: true, 
         message: 'Product successfully created!', 

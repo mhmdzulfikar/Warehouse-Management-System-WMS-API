@@ -1,30 +1,56 @@
 import prisma from '../config/prisma';
+import { AppError } from '../utils/AppError';
 
 // ==========================================
-// 1. GET ALL PRODUCTS (READ)
+// 1. GET ALL PRODUCTS (READ - PAGINATED & SEARCHABLE)
 // ==========================================
-export const getAllProducts = async () => {
-    // Kita pakai `findMany` untuk ambil banyak data sekaligus.
-    // Syaratnya: `deletedAt` harus null (berarti belum dihapus / Soft Delete).
-    return await prisma.product.findMany({
-        where: {
-            deletedAt: null 
+export const getAllProducts = async (query: { page?: number; limit?: number; search?: string } = {}) => {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+        deletedAt: null
+    };
+
+    if (query.search) {
+        where.OR = [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { sku: { contains: query.search, mode: 'insensitive' } }
+        ];
+    }
+
+    const [products, total] = await Promise.all([
+        prisma.product.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { name: 'asc' }
+        }),
+        prisma.product.count({ where })
+    ]);
+
+    return {
+        data: products,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
         }
-    });
+    };
 };
 
 // ==========================================
 // 2. GET SINGLE PRODUCT BY ID (READ)
 // ==========================================
 export const getProductById = async (id: number) => {
-    // Pakai `findUnique` kalau cuma mau nyari 1 baris berdasarkan ID
     const product = await prisma.product.findUnique({
         where: { id: Number(id) }
     });
 
-    // Kalau barang tidak ketemu atau sudah dihapus, lempar Error
     if (!product || product.deletedAt !== null) {
-        throw new Error(`Product with ID ${id} not found or has been deleted.`);
+        throw new AppError(`Product with ID ${id} not found or has been deleted.`, 404);
     }
 
     return product;
@@ -33,23 +59,28 @@ export const getProductById = async (id: number) => {
 // ==========================================
 // 3. CREATE NEW PRODUCT (CREATE)
 // ==========================================
-export const createProduct = async (sku: string, name: string, uom: string, basePrice: number) => {
-    // Cek dulu apakah SKU (Barcode) sudah dipakai?
+export const createProduct = async (
+    sku: string,
+    name: string,
+    uom: string,
+    basePrice: number,
+    minStock?: number
+) => {
     const existingProduct = await prisma.product.findUnique({
         where: { sku: sku }
     });
 
     if (existingProduct) {
-        throw new Error(`SKU ${sku} is already in use by another product!`);
+        throw new AppError(`SKU ${sku} is already in use by another product!`, 400);
     }
 
-    // Kalau aman, panggil `create` untuk masukin ke database
     return await prisma.product.create({
         data: {
             sku: sku,
             name: name,
-            uom: uom,       // Unit of Measure (pcs, kg, box, etc.)
-            basePrice: basePrice
+            uom: uom,
+            basePrice: basePrice,
+            minStock: minStock !== undefined ? Number(minStock) : 10
         }
     });
 };
@@ -57,18 +88,19 @@ export const createProduct = async (sku: string, name: string, uom: string, base
 // ==========================================
 // 4. UPDATE PRODUCT (UPDATE)
 // ==========================================
-export const updateProduct = async (id: number, data: any) => {
-    // Pastikan produknya ada dulu sebelum di-update
-    await getProductById(id); // Kita pakai fungsi yang sudah dibuat di atas (nomor 2)
+export const updateProduct = async (
+    id: number,
+    data: { name?: string; uom?: string; basePrice?: number; minStock?: number }
+) => {
+    await getProductById(id);
 
-    // Kalau ada, lakukan update
     return await prisma.product.update({
         where: { id: Number(id) },
         data: {
             name: data.name,
             uom: data.uom,
-            basePrice: data.basePrice
-            // SKU biasanya tidak boleh diganti sembarangan, jadi kita abaikan
+            basePrice: data.basePrice !== undefined ? Number(data.basePrice) : undefined,
+            minStock: data.minStock !== undefined ? Number(data.minStock) : undefined
         }
     });
 };
@@ -77,12 +109,8 @@ export const updateProduct = async (id: number, data: any) => {
 // 5. DELETE PRODUCT (SOFT DELETE)
 // ==========================================
 export const deleteProduct = async (id: number) => {
-    // Pastikan produknya ada
     await getProductById(id);
 
-    // Daripada pakai `prisma.product.delete` (Hard Delete), 
-    // kita pakai `update` lalu isi `deletedAt` dengan waktu sekarang (Soft Delete).
-    // Kenapa? Supaya histori transaksi (Transaction Ledger) tidak error karena barangnya hilang.
     return await prisma.product.update({
         where: { id: Number(id) },
         data: {
