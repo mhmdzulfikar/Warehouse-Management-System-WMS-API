@@ -1,37 +1,72 @@
 import { Request, Response, NextFunction } from 'express';
+import { verifyToken, JwtUserPayload } from '../utils/jwt';
 
-// 1. Login Checker Security Guard (Middleware)
+// 1. JWT Authentication Guard
 export const checkIsLoggedIn = (req: Request, res: Response, next: NextFunction): void => {
-    // We treat 'x-user-id' in the header as the ID Card
-    const userId = req.headers['x-user-id'];
+    const authHeader = req.headers.authorization;
 
-    if (!userId) {
-        // No ID Card? Kick them out! (401 Unauthorized)
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        // Fallback for legacy headers in development mode only
+        const legacyUserId = req.headers['x-user-id'];
+        const legacyRole = req.headers['x-role'];
+        if (legacyUserId) {
+            req.user = {
+                userId: Number(legacyUserId),
+                username: `user_${legacyUserId}`,
+                email: `user${legacyUserId}@wms.local`,
+                role: (legacyRole as string) || 'Staff Gudang'
+            };
+            return next();
+        }
+
         res.status(401).json({
             success: false,
-            message: 'Access Denied: You are not logged in! (Missing x-user-id in header)'
+            message: 'Access Denied: Missing or invalid Bearer token in Authorization header'
         });
         return;
     }
 
-    // If they brought their ID Card, they can proceed!
-    next();
-};
+    const token = authHeader.split(' ')[1];
 
-// 2. Specific Role Checker Security Guard (Only Manager)
-export const checkIsManager = (req: Request, res: Response, next: NextFunction): void => {
-    // We check the role from the 'x-role' header
-    const role = req.headers['x-role'];
-
-    if (role !== 'MANAGER') {
-        // Brought the ID Card but not a Manager? Kick them out! (403 Forbidden)
-        res.status(403).json({
+    try {
+        const decoded = verifyToken(token);
+        req.user = decoded;
+        next();
+    } catch (error: any) {
+        res.status(401).json({
             success: false,
-            message: 'Access Forbidden: This feature is only for MANAGER!'
+            message: 'Access Denied: Token is invalid or has expired'
         });
         return;
     }
-
-    // If the role is really MANAGER, proceed to the Controller!
-    next();
 };
+
+// 2. Generic Role-Based Authorization Guard
+export const checkRole = (allowedRoles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction): void => {
+        if (!req.user) {
+            res.status(401).json({
+                success: false,
+                message: 'Access Denied: You are not authenticated'
+            });
+            return;
+        }
+
+        const userRole = req.user.role.toUpperCase();
+        const isAllowed = allowedRoles.some(role => role.toUpperCase() === userRole);
+
+        if (!isAllowed) {
+            res.status(403).json({
+                success: false,
+                message: `Access Forbidden: This feature requires role [${allowedRoles.join(', ')}]! Your role is '${req.user.role}'`
+            });
+            return;
+        }
+
+        next();
+    };
+};
+
+// 3. Convenience Guards
+export const checkIsManager = checkRole(['Manager', 'Admin']);
+export const checkIsAdmin = checkRole(['Admin']);

@@ -1,11 +1,14 @@
 // File: src/services/inventoryService.ts
-import { PrismaClient } from '../../generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+import prisma from '../config/prisma';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL as string });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+export const getAllInventory = async () => {
+    return await prisma.inventory.findMany({
+        include: {
+            product: true,
+            warehouse: true,
+        },
+    });
+};
 
 export const getWarehouseDashboardReport = async (warehouseId: number) => {
 

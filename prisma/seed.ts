@@ -1,13 +1,11 @@
-import 'dotenv/config'; //  ini untuk membaca file .env
-import { PrismaClient } from '../generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg'; // <-- Import adapter
-import { Pool } from 'pg';
+import 'dotenv/config'; // ini untuk membaca file .env
+import { prisma, pool } from '../src/config/prisma';
+import bcrypt from 'bcryptjs';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 async function main() {
     console.log('🌱 Sedang memasukkan data awal (seeding)...');
+
+    const defaultHashedPassword = await bcrypt.hash('password123', 10);
 
     // 1. Buat Roles
     const adminRole = await prisma.role.create({ data: { name: 'Admin' } });
@@ -17,13 +15,13 @@ async function main() {
 
     // 2. Buat Users berdasarkan Role
     const userManager = await prisma.user.create({
-        data: { username: 'bapak_manager', email: 'manager@wms.com', roleId: managerRole.id },
+        data: { username: 'bapak_manager', email: 'manager@wms.com', password: defaultHashedPassword, roleId: managerRole.id },
     });
     const userPurchasing = await prisma.user.create({
-        data: { username: 'andi_purchasing', email: 'purchasing@wms.com', roleId: purchasingRole.id },
+        data: { username: 'andi_purchasing', email: 'purchasing@wms.com', password: defaultHashedPassword, roleId: purchasingRole.id },
     });
     const userGudang = await prisma.user.create({
-        data: { username: 'joko_gudang', email: 'gudang@wms.com', roleId: staffGudangRole.id },
+        data: { username: 'joko_gudang', email: 'gudang@wms.com', password: defaultHashedPassword, roleId: staffGudangRole.id },
     });
 
     // 3. Buat Supplier
@@ -70,4 +68,5 @@ main()
     })
     .finally(async () => {
         await prisma.$disconnect();
+        await pool.end();
     });

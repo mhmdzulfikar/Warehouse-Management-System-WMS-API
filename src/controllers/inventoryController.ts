@@ -1,21 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '../../generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
-import { getWarehouseDashboardReport } from '../services/inventoryService';
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { getAllInventory, getWarehouseDashboardReport } from '../services/inventoryService';
 
 // Function to fetch all warehouse stock data along with its product details
 export const getInventoryStock = async (req: Request, res: Response) => {
-    const inventories = await prisma.inventory.findMany({
-        include: {
-            product: true,
-            warehouse: true,
-        },
-    });
+    const inventories = await getAllInventory();
 
     return res.status(200).json({
         success: true,
