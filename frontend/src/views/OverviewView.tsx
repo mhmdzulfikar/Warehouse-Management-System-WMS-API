@@ -261,40 +261,40 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-in">INBOUND</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.IN ?? 0}
                 </span>
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stock receipts from PO</span>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-out">OUTBOUND</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.OUT ?? 0}
                 </span>
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Items dispatched</span>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-transfer">TRANSFER</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.TRANSFER ?? 0}
                 </span>
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Inter-warehouse shift</span>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-adjust">OPNAME</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.ADJUST ?? 0}
                 </span>
               </div>

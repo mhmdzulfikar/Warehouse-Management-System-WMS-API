@@ -34,11 +34,6 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* Ambient background glow orbs */}
-      <div className="ambient-bg">
-        <div className="glow-orb-1"></div>
-        <div className="glow-orb-2"></div>
-      </div>
 
       {/* Sidebar Navigation */}
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
