@@ -109,6 +109,16 @@ export const swaggerDocument = {
                 }
             }
         },
+        '/api/dashboard/stats': {
+            get: {
+                tags: ['Dashboard (Analytics & KPIs)'],
+                summary: 'Get consolidated executive dashboard analytics, KPIs, critical stock alerts, and distribution charts',
+                responses: {
+                    200: { description: 'Dashboard metrics and analytics retrieved successfully' },
+                    401: { description: 'Unauthorized: Missing or invalid token' }
+                }
+            }
+        },
         '/api/products': {
             get: {
                 tags: ['Products (Master Data)'],

@@ -5,6 +5,8 @@ dotenv.config();
 import express, { Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerDocument } from './docs/swagger';
+import path from 'path';
+import dashboardRoutes from './routes/dashboardRoutes';
 import authRoutes from './routes/authRoutes';
 import inventoryRoutes from './routes/inventoryRoutes';
 import poRouter from './routes/poRoutes';
@@ -22,11 +24,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve Frontend Static Web Application
+app.use(express.static(path.resolve(process.cwd(), 'public')));
+app.use('/dashboard', express.static(path.resolve(process.cwd(), 'public')));
+
 // Swagger Interactive Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Service Routers
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/po', poRouter);
 app.use('/api/transactions', transactionRoutes);
@@ -34,9 +41,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 
-// Test Endpoint
-app.get('/', (req: Request, res: Response) => {
-    res.json({ message: 'WMS & Procurement API is running smoothly!' });
+// Health Endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+    res.json({ status: 'healthy', message: 'WMS & Procurement API is running smoothly!' });
 });
 
 // Global Error Handler (MUST BE LAST MIDDLEWARE)

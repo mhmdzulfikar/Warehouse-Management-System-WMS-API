@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMS Nexus &bull; Warehouse & Procurement Dashboard</title>
+    <meta name="description" content="Next-generation Warehouse Management System & Procurement Analytics Dashboard">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dark-theme">
+    <!-- Ambient Background Glows -->
+    <div class="glow-orb glow-1"></div>
+    <div class="glow-orb glow-2"></div>
+
+    <div id="app-container" class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="brand-info">
+                    <span class="brand-title">WMS Nexus</span>
+                    <span class="brand-sub">Procurement Core</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <div class="menu-label">Operations</div>
+                <a href="#overview" class="nav-item active" data-tab="overview">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="9"></rect>
+                        <rect x="14" y="3" width="7" height="5"></rect>
+                        <rect x="14" y="12" width="7" height="9"></rect>
+                        <rect x="3" y="16" width="7" height="5"></rect>
+                    </svg>
+                    <span>Overview & KPIs</span>
+                </a>
+                <a href="#inventory" class="nav-item" data-tab="inventory">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    <span>Stock & Inventory</span>
+                    <span class="badge badge-alert" id="sidebar-alert-badge" style="display:none;">0</span>
+                </a>
+                <a href="#pos" class="nav-item" data-tab="pos">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>Purchase Orders</span>
+                    <span class="badge badge-pending" id="sidebar-po-badge" style="display:none;">0</span>
+                </a>
+                <a href="#transactions" class="nav-item" data-tab="transactions">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    <span>Audit Ledger</span>
+                </a>
+
+                <div class="menu-label">Actions</div>
+                <a href="#transfer" class="nav-item" data-tab="transfer">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="17 1 21 5 17 9"></polyline>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                        <polyline points="7 23 3 19 7 15"></polyline>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                    <span>Transfer Stock</span>
+                </a>
+                <a href="#opname" class="nav-item" data-tab="opname">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <path d="M9 14l2 2 4-4"></path>
+                    </svg>
+                    <span>Stock Opname</span>
+                </a>
+
+                <div class="menu-label">Management</div>
+                <a href="#master" class="nav-item" data-tab="master">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Master Data</span>
+                </a>
+                <a href="/api-docs" target="_blank" class="nav-item">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>Swagger Docs</span>
+                    <span class="external-pill">&nearr;</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-card" id="user-profile-badge">
+                    <div class="user-avatar" id="avatar-initials">BM</div>
+                    <div class="user-details">
+                        <div class="user-name" id="profile-name">bapak_manager</div>
+                        <div class="user-role-badge" id="profile-role">Manager</div>
+                    </div>
+                    <button class="logout-btn" id="btn-logout" title="Log out">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="page-title" id="page-title">Executive Dashboard</h1>
+                    <span class="breadcrumb" id="page-subtitle">Real-time procurement & inventory telemetry</span>
+                </div>
+                <div class="topbar-right">
+                    <div class="system-status">
+                        <span class="status-dot pulse"></span>
+                        <span class="status-text">Postgres Live</span>
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="btn-quick-po">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>New PO</span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btn-refresh">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6"></path>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Views Container -->
+            <div class="view-content" id="view-content">
+                <!-- Tab 1: Overview Dashboard -->
+                <div class="tab-pane active" id="pane-overview">
+                    <!-- Metric Cards Grid -->
+                    <div class="metrics-grid">
+                        <div class="metric-card card-glow">
+                            <div class="metric-header">
+                                <span class="metric-label">Total Inventory Units</span>
+                                <div class="metric-icon icon-blue">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                                </div>
+                            </div>
+                            <div class="metric-val" id="metric-stock-units">0</div>
+                            <div class="metric-sub">Across all registered warehouses</div>
+                        </div>
+
+                        <div class="metric-card card-glow">
+                            <div class="metric-header">
+                                <span class="metric-label">Estimated Asset Value</span>
+                                <div class="metric-icon icon-emerald">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                </div>
+                            </div>
+                            <div class="metric-val text-emerald" id="metric-stock-value">Rp 0</div>
+                            <div class="metric-sub">Based on product base prices</div>
+                        </div>
+
+                        <div class="metric-card card-glow">
+                            <div class="metric-header">
+                                <span class="metric-label">Critical Stock Alerts</span>
+                                <div class="metric-icon icon-rose">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                </div>
+                            </div>
+                            <div class="metric-val text-rose" id="metric-critical-count">0</div>
+                            <div class="metric-sub">Items at or below minStock</div>
+                        </div>
+
+                        <div class="metric-card card-glow">
+                            <div class="metric-header">
+                                <span class="metric-label">Pending PO Approval</span>
+                                <div class="metric-icon icon-amber">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                            </div>
+                            <div class="metric-val text-amber" id="metric-pending-po">0</div>
+                            <div class="metric-sub">Awaiting manager decision</div>
+                        </div>
+                    </div>
+
+                    <!-- Warehouse Distribution & Activity -->
+                    <div class="dashboard-row">
+                        <!-- Left: Warehouse Distribution -->
+                        <div class="dash-card col-span-5">
+                            <div class="card-title-bar">
+                                <div class="card-title">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                                    Warehouse Stock Distribution
+                                </div>
+                            </div>
+                            <div class="wh-distribution-list" id="wh-dist-container">
+                                <div class="skeleton-loader">Loading warehouse distribution...</div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Transaction Activity Breakdown -->
+                        <div class="dash-card col-span-7">
+                            <div class="card-title-bar">
+                                <div class="card-title">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                                    Movement Telemetry by Operation
+                                </div>
+                            </div>
+                            <div class="activity-bars-grid" id="activity-bars-container">
+                                <div class="activity-stat-box">
+                                    <div class="act-header">
+                                        <span class="badge badge-in">IN</span>
+                                        <span class="act-count" id="count-in">0</span>
+                                    </div>
+                                    <div class="act-label">Inbound Stock</div>
+                                </div>
+                                <div class="activity-stat-box">
+                                    <div class="act-header">
+                                        <span class="badge badge-out">OUT</span>
+                                        <span class="act-count" id="count-out">0</span>
+                                    </div>
+                                    <div class="act-label">Outbound Stock</div>
+                                </div>
+                                <div class="activity-stat-box">
+                                    <div class="act-header">
+                                        <span class="badge badge-adjust">ADJUST</span>
+                                        <span class="act-count" id="count-adjust">0</span>
+                                    </div>
+                                    <div class="act-label">Stock Opname</div>
+                                </div>
+                                <div class="activity-stat-box">
+                                    <div class="act-header">
+                                        <span class="badge badge-transfer">TRANSFER</span>
+                                        <span class="act-count" id="count-transfer">0</span>
+                                    </div>
+                                    <div class="act-label">Inter-Warehouse</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Critical Stock Warnings Table -->
+                    <div class="dash-card">
+                        <div class="card-title-bar">
+                            <div class="card-title text-rose">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                Critical Stock Restock Radar
+                            </div>
+                            <span class="table-subtitle">Products at or below defined safety thresholds</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>SKU / Barcode</th>
+                                        <th>Product Name</th>
+                                        <th>Warehouse</th>
+                                        <th>Current Qty</th>
+                                        <th>Min Threshold</th>
+                                        <th>Shortage</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="critical-stock-tbody">
+                                    <tr><td colspan="8" class="text-center text-muted">Checking inventory telemetry...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity Columns -->
+                    <div class="dashboard-row">
+                        <!-- Recent POs -->
+                        <div class="dash-card col-span-6">
+                            <div class="card-title-bar">
+                                <div class="card-title">Recent Purchase Orders</div>
+                                <button class="btn btn-outline btn-xs" onclick="switchTab('pos')">View All</button>
+                            </div>
+                            <div class="recent-list" id="recent-pos-list">
+                                <div class="text-muted">Loading purchase orders...</div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Ledger -->
+                        <div class="dash-card col-span-6">
+                            <div class="card-title-bar">
+                                <div class="card-title">Audit Ledger Feed</div>
+                                <button class="btn btn-outline btn-xs" onclick="switchTab('transactions')">View All</button>
+                            </div>
+                            <div class="recent-list" id="recent-transactions-list">
+                                <div class="text-muted">Loading ledger entries...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Stock & Inventory Management -->
+                <div class="tab-pane" id="pane-inventory">
+                    <div class="dash-card">
+                        <div class="card-title-bar">
+                            <div class="search-filter-row">
+                                <div class="input-icon-wrapper">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    <input type="text" id="inv-search" class="form-control" placeholder="Search by product or SKU...">
+                                </div>
+                                <select id="inv-wh-filter" class="form-control form-select">
+                                    <option value="">All Warehouses</option>
+                                </select>
+                            </div>
+                            <div class="action-btn-group">
+                                <button class="btn btn-primary btn-sm" id="btn-open-opname">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    Perform Opname
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="btn-open-transfer">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path></svg>
+                                    Transfer
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Product Name</th>
+                                        <th>Warehouse</th>
+                                        <th>In Stock Qty</th>
+                                        <th>UOM</th>
+                                        <th>Base Price</th>
+                                        <th>Asset Value</th>
+                                        <th>Min Stock</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-tbody">
+                                    <tr><td colspan="9" class="text-center text-muted">Loading inventory data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Purchase Orders -->
+                <div class="tab-pane" id="pane-pos">
+                    <div class="dash-card">
+                        <div class="card-title-bar">
+                            <div class="search-filter-row">
+                                <select id="po-status-filter" class="form-control form-select">
+                                    <option value="">All Statuses</option>
+                                    <option value="PENDING">Pending Approval</option>
+                                    <option value="APPROVED">Approved</option>
+                                    <option value="PARTIALLY_RECEIVED">Partially Received</option>
+                                    <option value="RECEIVED">Fully Received</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary btn-sm" id="btn-open-po-modal">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                Create Purchase Order
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>PO #</th>
+                                        <th>Supplier</th>
+                                        <th>Created By</th>
+                                        <th>Approved By</th>
+                                        <th>Date</th>
+                                        <th>Items Ordered</th>
+                                        <th>Estimated Total</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pos-tbody">
+                                    <tr><td colspan="9" class="text-center text-muted">Loading purchase orders...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Audit Ledger Transactions -->
+                <div class="tab-pane" id="pane-transactions">
+                    <div class="dash-card">
+                        <div class="card-title-bar">
+                            <div class="search-filter-row">
+                                <select id="ledger-type-filter" class="form-control form-select">
+                                    <option value="">All Movement Types</option>
+                                    <option value="IN">IN (Inbound)</option>
+                                    <option value="OUT">OUT (Outbound)</option>
+                                    <option value="ADJUST">ADJUST (Stock Opname)</option>
+                                    <option value="TRANSFER">TRANSFER (Inter-Warehouse)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tx ID</th>
+                                        <th>Type</th>
+                                        <th>Reference / Notes</th>
+                                        <th>Recorded By</th>
+                                        <th>Timestamp</th>
+                                        <th>Item Movements</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-tbody">
+                                    <tr><td colspan="6" class="text-center text-muted">Loading ledger entries...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Transfer Wizard -->
+                <div class="tab-pane" id="pane-transfer">
+                    <div class="dash-card max-w-xl mx-auto">
+                        <div class="card-header-styled">
+                            <h2 class="form-heading">Inter-Warehouse Stock Transfer</h2>
+                            <p class="form-desc">Move items from an origin warehouse to a destination warehouse atomically.</p>
+                        </div>
+
+                        <form id="form-transfer" class="styled-form">
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label>Origin Warehouse (Source)</label>
+                                    <select id="transfer-src-wh" class="form-control" required></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Destination Warehouse (Target)</label>
+                                    <select id="transfer-tgt-wh" class="form-control" required></select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Product to Transfer</label>
+                                <select id="transfer-product" class="form-control" required></select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Quantity to Move</label>
+                                <input type="number" id="transfer-qty" class="form-control" min="1" placeholder="e.g. 10" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Transfer Reference / Notes</label>
+                                <input type="text" id="transfer-notes" class="form-control" placeholder="e.g. Branch replenishment batch #04">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">Execute Transfer</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tab 6: Stock Opname Wizard -->
+                <div class="tab-pane" id="pane-opname">
+                    <div class="dash-card max-w-xl mx-auto">
+                        <div class="card-header-styled">
+                            <h2 class="form-heading">Stock Opname / Physical Adjustment</h2>
+                            <p class="form-desc">Reconcile physical stock counts with digital database records.</p>
+                        </div>
+
+                        <form id="form-opname" class="styled-form">
+                            <div class="form-group">
+                                <label>Select Warehouse</label>
+                                <select id="opname-wh" class="form-control" required></select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Product to Adjust</label>
+                                <select id="opname-product" class="form-control" required></select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Real Physical Counted Quantity</label>
+                                <input type="number" id="opname-actual-qty" class="form-control" min="0" placeholder="e.g. 85" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Reason / Audit Justification</label>
+                                <input type="text" id="opname-reason" class="form-control" placeholder="e.g. Monthly Physical Stock Opname">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Audit Notes</label>
+                                <textarea id="opname-notes" class="form-control" rows="2" placeholder="e.g. 5 extra units found in secondary shelf B"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">Submit Stock Adjustment</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tab 7: Master Data -->
+                <div class="tab-pane" id="pane-master">
+                    <div class="dash-card">
+                        <div class="sub-tab-bar">
+                            <button class="sub-tab active" data-sub="master-products">Products Master</button>
+                            <button class="sub-tab" data-sub="master-warehouses">Warehouses</button>
+                            <button class="sub-tab" data-sub="master-suppliers">Suppliers</button>
+                        </div>
+
+                        <div id="sub-master-products" class="sub-pane active">
+                            <div class="card-title-bar">
+                                <span class="card-title">Registered Products</span>
+                                <button class="btn btn-primary btn-sm" id="btn-create-product">Add Product</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead><tr><th>SKU</th><th>Name</th><th>UOM</th><th>Base Price</th><th>Min Stock</th></tr></thead>
+                                    <tbody id="master-products-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="sub-master-warehouses" class="sub-pane" style="display:none;">
+                            <div class="card-title-bar"><span class="card-title">Gudang / Warehouses</span></div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead><tr><th>ID</th><th>Name</th><th>Location</th></tr></thead>
+                                    <tbody id="master-warehouses-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="sub-master-suppliers" class="sub-pane" style="display:none;">
+                            <div class="card-title-bar"><span class="card-title">Suppliers</span></div>
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead><tr><th>ID</th><th>Supplier Name</th><th>Contact Info</th><th>Address</th></tr></thead>
+                                    <tbody id="master-suppliers-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Modal: Login -->
+    <div class="modal-backdrop" id="modal-login" style="display:none;">
+        <div class="modal-box modal-login-box">
+            <div class="modal-header">
+                <div class="login-brand-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                </div>
+                <h2>Sign in to WMS Nexus</h2>
+                <p class="text-muted">Enter credentials or choose one of the pre-configured system roles:</p>
+            </div>
+            <form id="form-login">
+                <div class="form-group">
+                    <label>Username or Email</label>
+                    <input type="text" id="login-identifier" class="form-control" value="bapak_manager" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" class="form-control" value="password123" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Authenticate &rarr;</button>
+
+                <div class="quick-roles-picker">
+                    <div class="quick-label">Or quick-switch account:</div>
+                    <div class="quick-buttons">
+                        <button type="button" class="btn-role-quick" data-user="bapak_manager" data-pass="password123">
+                            <strong>Manager</strong> (Approval/Opname)
+                        </button>
+                        <button type="button" class="btn-role-quick" data-user="andi_purchasing" data-pass="password123">
+                            <strong>Purchasing</strong> (Create PO)
+                        </button>
+                        <button type="button" class="btn-role-quick" data-user="joko_gudang" data-pass="password123">
+                            <strong>Staff Gudang</strong> (Receiving/Transfer)
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Create PO -->
+    <div class="modal-backdrop" id="modal-create-po" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Draft Purchase Order</h3>
+                <button class="modal-close" onclick="closeModal('modal-create-po')">&times;</button>
+            </div>
+            <form id="form-create-po">
+                <div class="form-group">
+                    <label>Supplier</label>
+                    <select id="po-supplier" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Product</label>
+                    <select id="po-product" class="form-control" required></select>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label>Order Quantity</label>
+                        <input type="number" id="po-qty" class="form-control" min="1" placeholder="e.g. 50" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit Expected Price (Rp)</label>
+                        <input type="number" id="po-price" class="form-control" min="100" placeholder="e.g. 105000" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-create-po')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create PO (Pending)</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Receive PO -->
+    <div class="modal-backdrop" id="modal-receive-po" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Receive Goods from PO #<span id="receive-po-id-label"></span></h3>
+                <button class="modal-close" onclick="closeModal('modal-receive-po')">&times;</button>
+            </div>
+            <form id="form-receive-po">
+                <input type="hidden" id="receive-po-id">
+                <div class="form-group">
+                    <label>Destination Warehouse</label>
+                    <select id="receive-wh" class="form-control" required></select>
+                </div>
+                <div class="receive-items-list" id="receive-items-container">
+                    <!-- Populated dynamically with items and partial quantity inputs -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modal-receive-po')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm Receiving</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
