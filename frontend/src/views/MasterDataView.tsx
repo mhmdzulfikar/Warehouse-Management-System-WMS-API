@@ -7,7 +7,7 @@ import {
   apiGetSuppliers,
   apiGetWarehouses,
 } from '../services/api';
-import { Product, Supplier, Warehouse } from '../types';
+import type { Product, Supplier, Warehouse } from '../types';
 import { Boxes, Building2, Plus, RefreshCw, Truck, X } from 'lucide-react';
 
 interface MasterDataViewProps {
@@ -51,7 +51,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       setSuppliers(sups);
       setWarehouses(whs);
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to load master data', 'error');
+      onShowToast(err.message || 'Gagal memuat master data', 'error');
     } finally {
       setLoading(false);
     }
@@ -71,13 +71,13 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         uom: pUom,
         minStock: Number(pMinStock),
       });
-      onShowToast('Product created successfully!', 'success');
+      onShowToast('Produk baru berhasil disimpan ke master data!', 'success');
       setModalType(null);
       setPName('');
       setPSku('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to create product', 'error');
+      onShowToast(err.message || 'Gagal menyimpan produk', 'error');
     }
   };
 
@@ -89,14 +89,14 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         contact: sContact,
         address: sAddress,
       });
-      onShowToast('Supplier created successfully!', 'success');
+      onShowToast('Mitra supplier berhasil didaftarkan!', 'success');
       setModalType(null);
       setSName('');
       setSContact('');
       setSAddress('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to create supplier', 'error');
+      onShowToast(err.message || 'Gagal menyimpan supplier', 'error');
     }
   };
 
@@ -107,13 +107,13 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         name: wName,
         location: wLocation,
       });
-      onShowToast('Warehouse facility created successfully!', 'success');
+      onShowToast('Fasilitas gudang baru berhasil didaftarkan!', 'success');
       setModalType(null);
       setWName('');
       setWLocation('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to create warehouse', 'error');
+      onShowToast(err.message || 'Gagal menyimpan fasilitas gudang', 'error');
     }
   };
 
@@ -124,52 +124,52 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
   return (
     <div>
       {/* Sub-tab Navigation */}
-      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+      <div className="glass-panel" style={{ padding: '14px 18px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
             <button
               className={`btn-secondary ${subTab === 'products' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('products')}
             >
-              <Boxes size={16} />
-              <span>Products ({products.length})</span>
+              <Boxes size={15} />
+              <span>Data Produk ({products.length})</span>
             </button>
             <button
               className={`btn-secondary ${subTab === 'suppliers' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('suppliers')}
             >
-              <Truck size={16} />
-              <span>Suppliers ({suppliers.length})</span>
+              <Truck size={15} />
+              <span>Mitra Supplier ({suppliers.length})</span>
             </button>
             <button
               className={`btn-secondary ${subTab === 'warehouses' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('warehouses')}
             >
-              <Building2 size={16} />
-              <span>Warehouses ({warehouses.length})</span>
+              <Building2 size={15} />
+              <span>Fasilitas Gudang ({warehouses.length})</span>
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-secondary" onClick={loadData} disabled={loading}>
-              <RefreshCw size={15} />
+              <RefreshCw size={14} />
             </button>
             {subTab === 'products' && (
               <button className="btn-primary" onClick={() => setModalType('product')}>
-                <Plus size={16} />
-                <span>Add Product</span>
+                <Plus size={15} />
+                <span>Tambah Produk</span>
               </button>
             )}
             {subTab === 'suppliers' && (
               <button className="btn-primary" onClick={() => setModalType('supplier')}>
-                <Plus size={16} />
-                <span>Add Supplier</span>
+                <Plus size={15} />
+                <span>Tambah Supplier</span>
               </button>
             )}
             {subTab === 'warehouses' && (
               <button className="btn-primary" onClick={() => setModalType('warehouse')}>
-                <Plus size={16} />
-                <span>Add Warehouse</span>
+                <Plus size={15} />
+                <span>Tambah Gudang</span>
               </button>
             )}
           </div>
@@ -183,28 +183,28 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Product ID</th>
-                  <th>Product Name</th>
-                  <th>SKU Code</th>
-                  <th>Unit Price</th>
-                  <th>UOM</th>
-                  <th>Min Safe Buffer</th>
+                  <th>ID</th>
+                  <th>Nama Barang</th>
+                  <th>Kode SKU</th>
+                  <th>Harga Standar (Rp)</th>
+                  <th>Satuan (UOM)</th>
+                  <th>Batas Minimum (Buffer)</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
                     <td>#{p.id}</td>
-                    <td style={{ fontWeight: 600 }}>{p.name}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</td>
                     <td>
-                      <code style={{ color: 'var(--accent-cyan)' }}>{p.sku}</code>
+                      <code>{p.sku}</code>
                     </td>
-                    <td style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
+                    <td className="tabular-num">
                       {formatRupiah(p.price)}
                     </td>
                     <td>{p.uom}</td>
                     <td>
-                      <span className="badge badge-approved">{p.minStock ?? 50} {p.uom}</span>
+                      <span className="badge badge-approved tabular-num">{p.minStock ?? 50} {p.uom}</span>
                     </td>
                   </tr>
                 ))}
@@ -221,17 +221,17 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Supplier ID</th>
-                  <th>Company / Vendor Name</th>
-                  <th>Contact Info</th>
-                  <th>Physical Address</th>
+                  <th>ID</th>
+                  <th>Nama Perusahaan Vendor</th>
+                  <th>Kontak / Telepon / Email</th>
+                  <th>Alamat Kantor / Pabrik</th>
                 </tr>
               </thead>
               <tbody>
                 {suppliers.map((s) => (
                   <tr key={s.id}>
                     <td>#{s.id}</td>
-                    <td style={{ fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</td>
                     <td>{s.contact || '-'}</td>
                     <td>{s.address || '-'}</td>
                   </tr>
@@ -249,16 +249,16 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Facility ID</th>
-                  <th>Facility Name</th>
-                  <th>Geographic Location</th>
+                  <th>ID</th>
+                  <th>Nama Fasilitas Gudang</th>
+                  <th>Alamat / Lokasi Geografis</th>
                 </tr>
               </thead>
               <tbody>
                 {warehouses.map((w) => (
                   <tr key={w.id}>
                     <td>#{w.id}</td>
-                    <td style={{ fontWeight: 600 }}>{w.name}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{w.name}</td>
                     <td>{w.location || '-'}</td>
                   </tr>
                 ))}
@@ -273,18 +273,18 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         <div className="modal-overlay">
           <div className="modal-box">
             <div className="modal-header">
-              <h3 className="modal-title">Create Master Product</h3>
+              <h3 className="modal-title">Tambah Produk Baru</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
             <form onSubmit={handleCreateProduct}>
               <div className="form-group">
-                <label className="form-label">Product Name</label>
+                <label className="form-label">Nama Barang</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Minyak Goreng Filma 2L"
+                  placeholder="Contoh: Minyak Goreng Filma 2L"
                   value={pName}
                   onChange={(e) => setPName(e.target.value)}
                   required
@@ -293,22 +293,22 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">SKU Code</label>
+                  <label className="form-label">Kode SKU Unik</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. MYK-FLM-02"
+                    placeholder="Contoh: MYK-FLM-02"
                     value={pSku}
                     onChange={(e) => setPSku(e.target.value)}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Unit of Measure (UOM)</label>
+                  <label className="form-label">Satuan Ukuran (UOM)</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. pouch, dus, pcs"
+                    placeholder="Contoh: pouch, dus, pcs"
                     value={pUom}
                     onChange={(e) => setPUom(e.target.value)}
                     required
@@ -318,10 +318,10 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Standard Price (IDR)</label>
+                  <label className="form-label">Harga Standar (Rp)</label>
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-control tabular-num"
                     min={0}
                     value={pPrice}
                     onChange={(e) => setPPrice(Number(e.target.value))}
@@ -329,10 +329,10 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Min Stock Buffer (Threshold)</label>
+                  <label className="form-label">Batas Stok Minimum (Buffer)</label>
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-control tabular-num"
                     min={0}
                     value={pMinStock}
                     onChange={(e) => setPMinStock(Number(e.target.value))}
@@ -341,12 +341,12 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
                 </div>
               </div>
 
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Cancel
+                  Batal
                 </button>
                 <button type="submit" className="btn-primary">
-                  Save Product
+                  Simpan Produk
                 </button>
               </div>
             </form>
@@ -359,18 +359,18 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         <div className="modal-overlay">
           <div className="modal-box">
             <div className="modal-header">
-              <h3 className="modal-title">Register Supplier Vendor</h3>
+              <h3 className="modal-title">Daftarkan Pemasok (Supplier) Baru</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
             <form onSubmit={handleCreateSupplier}>
               <div className="form-group">
-                <label className="form-label">Supplier Name</label>
+                <label className="form-label">Nama Perusahaan Pemasok</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. PT Mitra Logistik Sejahtera"
+                  placeholder="Contoh: PT Mitra Logistik Sejahtera"
                   value={sName}
                   onChange={(e) => setSName(e.target.value)}
                   required
@@ -378,33 +378,33 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
               </div>
 
               <div className="form-group">
-                <label className="form-label">Contact (Phone/Email)</label>
+                <label className="form-label">Kontak Resmi (Telepon / Email)</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. 021-889977 / vendor@mitra.com"
+                  placeholder="Contoh: 021-889977 / vendor@mitra.com"
                   value={sContact}
                   onChange={(e) => setSContact(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Office / Plant Address</label>
+                <label className="form-label">Alamat Kantor / Pergudangan</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Kawasan Industri MM2100, Cikarang"
+                  placeholder="Contoh: Kawasan Industri MM2100, Cikarang"
                   value={sAddress}
                   onChange={(e) => setSAddress(e.target.value)}
                 />
               </div>
 
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Cancel
+                  Batal
                 </button>
                 <button type="submit" className="btn-primary">
-                  Save Supplier
+                  Simpan Pemasok
                 </button>
               </div>
             </form>
@@ -417,18 +417,18 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         <div className="modal-overlay">
           <div className="modal-box">
             <div className="modal-header">
-              <h3 className="modal-title">Register Warehouse Facility</h3>
+              <h3 className="modal-title">Daftarkan Fasilitas Gudang Baru</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
             <form onSubmit={handleCreateWarehouse}>
               <div className="form-group">
-                <label className="form-label">Facility Name</label>
+                <label className="form-label">Nama Fasilitas Gudang</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Gudang Regional Surabaya"
+                  placeholder="Contoh: Gudang Distribusi Surabaya Barat"
                   value={wName}
                   onChange={(e) => setWName(e.target.value)}
                   required
@@ -436,22 +436,22 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
               </div>
 
               <div className="form-group">
-                <label className="form-label">Geographic Location</label>
+                <label className="form-label">Lokasi / Alamat Lengkap</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Rungkut Industri, Surabaya"
+                  placeholder="Contoh: Jl. Rungkut Industri No. 45, Surabaya"
                   value={wLocation}
                   onChange={(e) => setWLocation(e.target.value)}
                 />
               </div>
 
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Cancel
+                  Batal
                 </button>
                 <button type="submit" className="btn-primary">
-                  Save Warehouse
+                  Simpan Fasilitas
                 </button>
               </div>
             </form>

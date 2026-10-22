@@ -13,7 +13,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouseId, setWarehouseId] = useState<number | ''>('');
   const [items, setItems] = useState<Array<{ productId: number; physicalQty: number; reason: string }>>([
-    { productId: 0, physicalQty: 100, reason: 'Physical stock reconciliation' },
+    { productId: 0, physicalQty: 100, reason: 'Hasil audit perhitungan fisik mingguan' },
   ]);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -25,14 +25,14 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
         setWarehouses(whs);
         setProducts(prods);
       } catch (err: any) {
-        onShowToast(err.message || 'Failed to load options', 'error');
+        onShowToast(err.message || 'Gagal memuat daftar fasilitas gudang', 'error');
       }
     };
     fetchData();
   }, []);
 
   const handleAddItem = () => {
-    setItems([...items, { productId: 0, physicalQty: 50, reason: 'Physical count check' }]);
+    setItems([...items, { productId: 0, physicalQty: 50, reason: 'Penyesuaian stok fisik' }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -42,12 +42,12 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!warehouseId) {
-      onShowToast('Please select a warehouse facility', 'error');
+      onShowToast('Silakan pilih lokasi gudang yang diperiksa', 'error');
       return;
     }
     const validItems = items.filter((i) => i.productId > 0);
     if (validItems.length === 0) {
-      onShowToast('Please add at least one product for opname adjustment', 'error');
+      onShowToast('Tambahkan minimal satu jenis barang untuk penyesuaian opname', 'error');
       return;
     }
 
@@ -56,41 +56,41 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
       await apiAdjustStockOpname({
         warehouseId: Number(warehouseId),
         items: validItems,
-        note: note || 'Monthly stock opname audit',
+        note: note || 'Berita Acara Stock Opname Fisik',
       });
-      onShowToast('Stock opname adjustments reconciled successfully!', 'success');
+      onShowToast('Penyesuaian stok opname berhasil diterapkan ke sistem!', 'success');
       onNavigateTab('inventory');
     } catch (err: any) {
-      onShowToast(err.message || 'Opname adjustment failed', 'error');
+      onShowToast(err.message || 'Gagal menyimpan penyesuaian stock opname', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '780px', margin: '0 auto' }}>
       <div className="glass-panel">
         <div className="panel-header">
           <div className="panel-title">
-            <ClipboardCheck size={20} style={{ color: 'var(--accent-amber)' }} />
-            <span>Stock Opname / Physical Count Audit</span>
+            <ClipboardCheck size={18} style={{ color: 'var(--status-amber-text)' }} />
+            <span>Rekonsiliasi Stock Opname Fisik Gudang</span>
           </div>
         </div>
 
-        <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
-          Input the exact physical stock counted during warehouse inspection. The system will automatically calculate discrepancies, update ledger balances, and record an audit trail.
+        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+          Masukkan kuantitas fisik riil hasil perhitungan di lapangan. Sistem akan secara otomatis menghitung selisih (discrepancy), memperbarui saldo inventaris, dan mencatatnya ke buku jurnal mutasi.
         </p>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ maxWidth: '400px', marginBottom: '20px' }}>
-            <label className="form-label">Warehouse Facility</label>
+          <div className="form-group" style={{ maxWidth: '380px', marginBottom: '16px' }}>
+            <label className="form-label">Lokasi Gudang yang Diperiksa</label>
             <select
               className="form-control"
               value={warehouseId}
               onChange={(e) => setWarehouseId(e.target.value ? Number(e.target.value) : '')}
               required
             >
-              <option value="">Select Inspected Warehouse...</option>
+              <option value="">Pilih Gudang yang Diinspeksi...</option>
               {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -99,16 +99,16 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
             </select>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span className="form-label">Physical Count Entries</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span className="form-label" style={{ marginBottom: 0 }}>Daftar Hasil Hitung Fisik Lapangan</span>
             <button
               type="button"
               className="btn-secondary"
-              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+              style={{ padding: '3px 8px', fontSize: '0.72rem' }}
               onClick={handleAddItem}
             >
-              <Plus size={14} />
-              <span>Add Entry</span>
+              <Plus size={13} />
+              <span>Tambah Baris</span>
             </button>
           </div>
 
@@ -118,8 +118,8 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
               style={{
                 display: 'grid',
                 gridTemplateColumns: '2fr 1fr 2fr auto',
-                gap: '10px',
-                marginBottom: '10px',
+                gap: '8px',
+                marginBottom: '8px',
                 alignItems: 'center',
               }}
             >
@@ -133,7 +133,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
                 }}
                 required
               >
-                <option value={0}>Select Product...</option>
+                <option value={0}>Pilih Produk...</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
@@ -143,8 +143,8 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
 
               <input
                 type="number"
-                className="form-control"
-                placeholder="Physical Qty"
+                className="form-control tabular-num"
+                placeholder="Jumlah Fisik"
                 min={0}
                 value={it.physicalQty}
                 onChange={(e) => {
@@ -158,7 +158,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
               <input
                 type="text"
                 className="form-control"
-                placeholder="Discrepancy Reason"
+                placeholder="Alasan / Bukti Selisih"
                 value={it.reason}
                 onChange={(e) => {
                   const updated = [...items];
@@ -172,33 +172,33 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '8px', color: 'var(--accent-rose)' }}
+                  style={{ padding: '7px', color: 'var(--status-rose-text)' }}
                   onClick={() => handleRemoveItem(idx)}
                 >
-                  <X size={16} />
+                  <X size={15} />
                 </button>
               )}
             </div>
           ))}
 
-          <div className="form-group" style={{ marginTop: '20px' }}>
-            <label className="form-label">Audit Batch Note / Reference</label>
+          <div className="form-group" style={{ marginTop: '16px' }}>
+            <label className="form-label">No. Berita Acara / Keterangan Batch Opname</label>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. End of Month Q3 Physical Inventory Count"
+              placeholder="Contoh: Berita Acara No. BA/OPN/2026/04 - Audit Stok Akhir Bulan"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
             <button type="button" className="btn-secondary" onClick={() => onNavigateTab('inventory')}>
-              Cancel
+              Batal
             </button>
             <button type="submit" className="btn-primary" disabled={submitting}>
-              <Check size={16} />
-              <span>{submitting ? 'Applying Adjustments...' : 'Submit Physical Count'}</span>
+              <Check size={15} />
+              <span>{submitting ? 'Menyimpan Penyesuaian...' : 'Terapkan Hasil Opname Fisik'}</span>
             </button>
           </div>
         </form>

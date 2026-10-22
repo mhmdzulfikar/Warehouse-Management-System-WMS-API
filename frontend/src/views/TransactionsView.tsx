@@ -18,7 +18,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({ onShowToast 
       const data = await apiGetTransactions();
       setTransactions(data);
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to load transaction movements', 'error');
+      onShowToast(err.message || 'Gagal memuat buku jurnal mutasi', 'error');
     } finally {
       setLoading(false);
     }
@@ -56,25 +56,31 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({ onShowToast 
 
   return (
     <div>
-      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+      <div className="glass-panel" style={{ padding: '14px 18px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <Filter size={16} style={{ color: 'var(--text-muted)' }} />
-            {['ALL', 'IN', 'OUT', 'TRANSFER', 'ADJUST'].map((t) => (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <Filter size={15} style={{ color: 'var(--text-muted)' }} />
+            {[
+              { id: 'ALL', label: 'Semua Mutasi' },
+              { id: 'IN', label: 'Inbound (Masuk)' },
+              { id: 'OUT', label: 'Outbound (Keluar)' },
+              { id: 'TRANSFER', label: 'Transfer Lokasi' },
+              { id: 'ADJUST', label: 'Opname Fisik' },
+            ].map((t) => (
               <button
-                key={t}
-                onClick={() => setFilterType(t)}
-                className={`btn-secondary ${filterType === t ? 'btn-primary' : ''}`}
-                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                key={t.id}
+                onClick={() => setFilterType(t.id)}
+                className={`btn-secondary ${filterType === t.id ? 'btn-primary' : ''}`}
+                style={{ padding: '5px 10px', fontSize: '0.75rem' }}
               >
-                {t}
+                {t.label}
               </button>
             ))}
           </div>
 
           <button className="btn-secondary" onClick={loadData} disabled={loading}>
-            <RefreshCw size={15} />
-            <span>Refresh Ledger</span>
+            <RefreshCw size={14} />
+            <span>Perbarui Jurnal</span>
           </button>
         </div>
       </div>
@@ -82,8 +88,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({ onShowToast 
       <div className="glass-panel">
         <div className="panel-header">
           <div className="panel-title">
-            <History size={20} />
-            <span>Audit Journal & Historical Movements ({filtered.length} entries)</span>
+            <History size={18} />
+            <span>Buku Jurnal Riwayat Pergerakan Barang ({filtered.length} entri)</span>
           </div>
         </div>
 
@@ -91,13 +97,13 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({ onShowToast 
           <table className="data-table">
             <thead>
               <tr>
-                <th>Tx ID</th>
-                <th>Type</th>
-                <th>Reference</th>
-                <th>Operator</th>
-                <th>Items Movement</th>
-                <th>Notes / Reason</th>
-                <th>Timestamp</th>
+                <th>No. Mutasi</th>
+                <th>Jenis</th>
+                <th>Dokumen Referensi</th>
+                <th>Petugas Pelaksana</th>
+                <th>Rincian Kuantitas Barang</th>
+                <th>Catatan / Keterangan</th>
+                <th>Waktu Transaksi</th>
               </tr>
             </thead>
             <tbody>
@@ -110,23 +116,23 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({ onShowToast 
                     <span className={`badge ${getBadgeClass(tx.type)}`}>{tx.type}</span>
                   </td>
                   <td>{tx.referenceType || '-'}</td>
-                  <td>{tx.user?.username || 'System'}</td>
+                  <td style={{ fontWeight: 500 }}>{tx.user?.username || 'Sistem'}</td>
                   <td>
                     {tx.items?.map((it, idx) => (
-                      <div key={idx} style={{ fontSize: '0.82rem' }}>
-                        • {it.product?.name || `Product #${it.productId}`} ({it.quantity > 0 ? `+${it.quantity}` : it.quantity})
-                        {' '}@ {it.warehouse?.name || `WH #${it.warehouseId}`}
+                      <div key={idx} style={{ fontSize: '0.8rem' }} className="tabular-num">
+                        • {it.product?.name || `Produk #${it.productId}`} ({it.quantity > 0 ? `+${it.quantity}` : it.quantity})
+                        {' '}@ {it.warehouse?.name || `Gudang #${it.warehouseId}`}
                       </div>
                     ))}
                   </td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{tx.note || '-'}</td>
-                  <td>{formatDate(tx.timestamp)}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{tx.note || '-'}</td>
+                  <td className="tabular-num">{formatDate(tx.timestamp)}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '30px' }}>
-                    {loading ? 'Loading movements...' : 'No transaction records found.'}
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '28px' }}>
+                    {loading ? 'Memuat mutasi...' : 'Tidak ada catatan mutasi yang ditemukan.'}
                   </td>
                 </tr>
               )}

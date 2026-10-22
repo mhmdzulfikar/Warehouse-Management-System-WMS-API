@@ -7,7 +7,7 @@ import {
   ArrowRightLeft,
   ClipboardCheck,
   Database,
-  Layers,
+  Building2,
 } from 'lucide-react';
 
 export type TabType =
@@ -26,13 +26,13 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   const navItems: Array<{ id: TabType; label: string; icon: React.ReactNode }> = [
-    { id: 'overview', label: 'Dashboard Overview', icon: <LayoutDashboard size={18} /> },
-    { id: 'inventory', label: 'Stock & Inventory', icon: <Boxes size={18} /> },
-    { id: 'pos', label: 'Purchase Orders', icon: <ShoppingCart size={18} /> },
-    { id: 'transactions', label: 'Audit Movements', icon: <History size={18} /> },
-    { id: 'transfer', label: 'Inter-Warehouse Transfer', icon: <ArrowRightLeft size={18} /> },
-    { id: 'opname', label: 'Stock Opname', icon: <ClipboardCheck size={18} /> },
-    { id: 'master', label: 'Master Data', icon: <Database size={18} /> },
+    { id: 'overview', label: 'Ringkasan Operasional', icon: <LayoutDashboard size={18} /> },
+    { id: 'inventory', label: 'Stok & Fasilitas Gudang', icon: <Boxes size={18} /> },
+    { id: 'pos', label: 'Purchase Orders (PO)', icon: <ShoppingCart size={18} /> },
+    { id: 'transactions', label: 'Riwayat Mutasi Barang', icon: <History size={18} /> },
+    { id: 'transfer', label: 'Transfer Antar Gudang', icon: <ArrowRightLeft size={18} /> },
+    { id: 'opname', label: 'Stock Opname Fisik', icon: <ClipboardCheck size={18} /> },
+    { id: 'master', label: 'Master Data Katalog', icon: <Database size={18} /> },
   ];
 
   return (
@@ -40,17 +40,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
       {/* Brand */}
       <div className="brand-section">
         <div className="brand-icon-box">
-          <Layers size={22} />
+          <Building2 size={20} />
         </div>
         <div>
-          <div className="brand-title">WMS Nexus</div>
-          <span className="brand-badge">ENTERPRISE CORE</span>
+          <div className="brand-title">WMS Logistics</div>
+          <span className="brand-badge">SISTEM OPERASIONAL</span>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        <div className="nav-heading">Operations & Modules</div>
+        <div className="nav-heading">Modul Pergudangan</div>
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
       <div className="sidebar-footer">
         <div className="system-status">
           <span className="pulse-dot"></span>
-          <span>PostgreSQL Live Sync</span>
+          <span>PostgreSQL Terhubung</span>
         </div>
       </div>
     </aside>

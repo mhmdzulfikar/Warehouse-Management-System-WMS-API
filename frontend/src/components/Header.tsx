@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, UserCheck } from 'lucide-react';
-import { TabType } from './Sidebar';
+import type { TabType } from './Sidebar';
 
 interface HeaderProps {
   activeTab: TabType;
@@ -14,46 +14,46 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
 
   const titles: Record<TabType, { title: string; subtitle: string }> = {
     overview: {
-      title: 'Executive Dashboard',
-      subtitle: 'Real-time telemetry and warehouse analytics',
+      title: 'Ringkasan Operasional Pergudangan',
+      subtitle: 'Monitoring stok barang, status pesanan pengadaan, dan pergerakan mutasi harian',
     },
     inventory: {
-      title: 'Stock & Inventory Balances',
-      subtitle: 'Monitor facility stock levels and replenishment thresholds',
+      title: 'Saldo Stok & Ketersediaan Barang',
+      subtitle: 'Monitoring kuantitas barang per gudang dan peringatan batas minimum stok',
     },
     pos: {
-      title: 'Purchase Orders (Procurement)',
-      subtitle: 'Manage supplier orders, approvals, and receiving flow',
+      title: 'Purchase Orders (Pengadaan Barang)',
+      subtitle: 'Daftar pesanan pengadaan ke pemasok dan proses penerimaan barang',
     },
     transactions: {
-      title: 'Audit Movement Ledger',
-      subtitle: 'Chronological history of inbound, outbound, transfer, and adjustments',
+      title: 'Buku Jurnal Mutasi Barang',
+      subtitle: 'Audit kronologis mutasi keluar-masuk, transfer lokasi, dan penyesuaian opname',
     },
     transfer: {
-      title: 'Inter-Warehouse Transfer Wizard',
-      subtitle: 'Shift inventory safely between distribution centers',
+      title: 'Transfer Stok Antar Gudang',
+      subtitle: 'Pemindahan fisik inventaris antar fasilitas gudang secara atomik',
     },
     opname: {
-      title: 'Stock Opname / Physical Count',
-      subtitle: 'Reconcile digital system balance with physical count',
+      title: 'Rekonsiliasi Stock Opname Fisik',
+      subtitle: 'Penyesuaian selisih antara perhitungan fisik gudang dengan sistem digital',
     },
     master: {
-      title: 'Master Data Catalog',
-      subtitle: 'Configure products, suppliers, and warehouse facilities',
+      title: 'Katalog Master Data',
+      subtitle: 'Pengaturan data produk, daftar pemasok (supplier), dan fasilitas gudang',
     },
   };
 
   const currentInfo = titles[activeTab] || {
-    title: 'WMS Nexus',
-    subtitle: 'Warehouse Management System',
+    title: 'WMS Logistics',
+    subtitle: 'Sistem Manajemen Pergudangan & Pengadaan',
   };
 
   const handleQuickSwitch = async (username: string) => {
     try {
       await quickLogin(username);
-      onShowToast(`Switched account to ${username}`, 'success');
+      onShowToast(`Beralih akun ke ${username}`, 'success');
     } catch (e: any) {
-      onShowToast(e.message || 'Login failed', 'error');
+      onShowToast(e.message || 'Gagal login', 'error');
     }
   };
 
@@ -67,27 +67,27 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
       <div className="header-right">
         {/* Quick Demo Switcher */}
         <div className="quick-roles">
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', paddingLeft: '6px' }}>
-            Quick Switch:
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: '4px' }}>
+            Akun Demo:
           </span>
           <button
             className="btn-quick-role"
             onClick={() => handleQuickSwitch('bapak_manager')}
-            title="Login as Manager"
+            title="Masuk sebagai Manager"
           >
             Manager
           </button>
           <button
             className="btn-quick-role"
             onClick={() => handleQuickSwitch('andi_purchasing')}
-            title="Login as Purchasing"
+            title="Masuk sebagai Purchasing"
           >
             Purchasing
           </button>
           <button
             className="btn-quick-role"
             onClick={() => handleQuickSwitch('joko_gudang')}
-            title="Login as Staff Gudang"
+            title="Masuk sebagai Staff Gudang"
           >
             Staff Gudang
           </button>
@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
             <button
               className="btn-logout"
               onClick={logout}
-              title="Logout session"
+              title="Keluar / Logout"
             >
               <LogOut size={16} />
             </button>
@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
         ) : (
           <button className="btn-primary" onClick={onOpenLogin}>
             <UserCheck size={16} />
-            <span>Login Session</span>
+            <span>Masuk Sistem</span>
           </button>
         )}
       </div>

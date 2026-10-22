@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiGetInventory, apiGetWarehouses } from '../services/api';
-import { InventoryItem, Warehouse } from '../types';
+import type { InventoryItem, Warehouse } from '../types';
 import { Boxes, Filter, RefreshCw, Search } from 'lucide-react';
 
 interface InventoryViewProps {
@@ -25,7 +25,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
       setInventory(invData);
       setWarehouses(whData);
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to load inventory', 'error');
+      onShowToast(err.message || 'Gagal memuat saldo stok gudang', 'error');
     } finally {
       setLoading(false);
     }
@@ -44,31 +44,31 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
 
   return (
     <div>
-      {/* Control Bar */}
-      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Filter & Control Bar */}
+      <div className="glass-panel" style={{ padding: '14px 18px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: 1, minWidth: '280px' }}>
             <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-dim)' }} />
+              <Search size={15} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 className="form-control"
-                style={{ paddingLeft: '38px' }}
-                placeholder="Search products by SKU or name..."
+                style={{ paddingLeft: '36px' }}
+                placeholder="Cari barang berdasarkan nama produk atau SKU..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Filter size={16} style={{ color: 'var(--text-muted)' }} />
+              <Filter size={15} style={{ color: 'var(--text-muted)' }} />
               <select
                 className="form-control"
-                style={{ width: '200px' }}
+                style={{ width: '210px' }}
                 value={selectedWarehouse}
                 onChange={(e) => setSelectedWarehouse(e.target.value)}
               >
-                <option value="">All Warehouses</option>
+                <option value="">Semua Lokasi Gudang</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}
@@ -78,13 +78,13 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-secondary" onClick={loadData} disabled={loading}>
-              <RefreshCw size={15} />
-              <span>Refresh</span>
+              <RefreshCw size={14} />
+              <span>Perbarui</span>
             </button>
             <button className="btn-primary" onClick={() => onNavigateTab('transfer')}>
-              Transfer Stock
+              Transfer Barang
             </button>
           </div>
         </div>
@@ -94,8 +94,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
       <div className="glass-panel">
         <div className="panel-header">
           <div className="panel-title">
-            <Boxes size={20} />
-            <span>Facility Stock Records ({filteredItems.length} entries)</span>
+            <Boxes size={18} />
+            <span>Daftar Saldo Stok Barang ({filteredItems.length} baris)</span>
           </div>
         </div>
 
@@ -104,12 +104,12 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Product Name</th>
-                <th>SKU</th>
-                <th>Warehouse Facility</th>
-                <th>Quantity Balance</th>
-                <th>Min Stock Threshold</th>
-                <th>Stock Status</th>
+                <th>Nama Produk / Barang</th>
+                <th>Kode SKU</th>
+                <th>Lokasi Fasilitas Gudang</th>
+                <th>Saldo Stok Fisik</th>
+                <th>Batas Minimum (Buffer)</th>
+                <th>Status Ketersediaan</th>
               </tr>
             </thead>
             <tbody>
@@ -120,22 +120,24 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
                 return (
                   <tr key={item.id}>
                     <td>#{item.id}</td>
-                    <td style={{ fontWeight: 600 }}>{item.product?.name || 'Unknown'}</td>
-                    <td>
-                      <code style={{ color: 'var(--accent-cyan)' }}>{item.product?.sku || '-'}</code>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {item.product?.name || 'Produk Tidak Dikenal'}
                     </td>
-                    <td>{item.warehouse?.name || `Warehouse #${item.warehouseId}`}</td>
                     <td>
-                      <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>
+                      <code>{item.product?.sku || '-'}</code>
+                    </td>
+                    <td>{item.warehouse?.name || `Gudang #${item.warehouseId}`}</td>
+                    <td>
+                      <strong style={{ fontSize: '0.95rem' }} className="tabular-num">
                         {item.quantity} {item.product?.uom || 'pcs'}
-                      </span>
+                      </strong>
                     </td>
-                    <td>{minStock} {item.product?.uom || 'pcs'}</td>
+                    <td className="tabular-num">{minStock} {item.product?.uom || 'pcs'}</td>
                     <td>
                       {isCritical ? (
-                        <span className="badge badge-critical">CRITICAL LOW</span>
+                        <span className="badge badge-critical">KRITIS / KURANG</span>
                       ) : (
-                        <span className="badge badge-in">HEALTHY</span>
+                        <span className="badge badge-in">AMAN (NORMAL)</span>
                       )}
                     </td>
                   </tr>
@@ -143,8 +145,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({ onShowToast, onNav
               })}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '30px' }}>
-                    {loading ? 'Loading inventory data...' : 'No inventory records matched your query.'}
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '28px' }}>
+                    {loading ? 'Memuat data inventaris...' : 'Tidak ada data stok yang sesuai dengan pencarian.'}
                   </td>
                 </tr>
               )}

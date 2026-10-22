@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { apiGetDashboardStats } from '../services/api';
 import type { DashboardStats } from '../types';
 import {
-  AlertTriangle,
+  AlertCircle,
   Boxes,
   CircleDollarSign,
   Clock,
@@ -27,7 +27,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
       const data = await apiGetDashboardStats();
       setStats(data);
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to load telemetry stats', 'error');
+      onShowToast(err.message || 'Gagal mengambil ringkasan data gudang', 'error');
     } finally {
       setLoading(false);
     }
@@ -70,87 +70,87 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
       {/* Refresh Trigger */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
         <button className="btn-secondary" onClick={fetchStats} disabled={loading}>
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-          <span>Sync Telemetry</span>
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          <span>Perbarui Data</span>
         </button>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Clean, Monochrome, Grounded Enterprise) */}
       <div className="kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-icon indigo">
-            <Boxes size={26} />
+          <div className="kpi-icon">
+            <Boxes size={22} />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Total Stock Units</span>
-            <span className="kpi-value">
+            <span className="kpi-label">Total Unit Fisik Stok</span>
+            <span className="kpi-value tabular-num">
               {stats?.metrics.totalStockUnits.toLocaleString('id-ID') ?? '...'}
             </span>
             <span className="kpi-sub">
-              Across {stats?.metrics.totalWarehouses ?? 0} facility locations
+              Tersebar di {stats?.metrics.totalWarehouses ?? 0} lokasi gudang
             </span>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon emerald">
-            <CircleDollarSign size={26} />
+          <div className="kpi-icon">
+            <CircleDollarSign size={22} />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Estimated Valuation</span>
-            <span className="kpi-value" style={{ fontSize: '1.45rem' }}>
+            <span className="kpi-label">Estimasi Valuasi Stok</span>
+            <span className="kpi-value tabular-num" style={{ fontSize: '1.35rem' }}>
               {stats ? formatRupiah(stats.metrics.totalStockValue) : '...'}
             </span>
             <span className="kpi-sub">
-              {stats?.metrics.totalProducts ?? 0} unique SKUs cataloged
+              {stats?.metrics.totalProducts ?? 0} jenis SKU terdaftar
             </span>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon amber">
-            <AlertTriangle size={26} />
+          <div className="kpi-icon">
+            <AlertCircle size={22} style={{ color: (stats?.metrics.criticalStockCount ?? 0) > 0 ? '#b91c1c' : 'inherit' }} />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Critical Restock Radar</span>
+            <span className="kpi-label">Stok di Bawah Batas Aman</span>
             <span
-              className="kpi-value"
-              style={{ color: stats?.metrics.criticalStockCount ? 'var(--accent-rose)' : 'inherit' }}
+              className="kpi-value tabular-num"
+              style={{ color: (stats?.metrics.criticalStockCount ?? 0) > 0 ? '#b91c1c' : 'inherit' }}
             >
               {stats?.metrics.criticalStockCount ?? 0}
             </span>
             <span className="kpi-sub">
-              Items below minimum buffer threshold
+              Item membutuhkan re-order pengadaan
             </span>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon cyan">
-            <Clock size={26} />
+          <div className="kpi-icon">
+            <Clock size={22} />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Active PO Orders</span>
-            <span className="kpi-value">
+            <span className="kpi-label">Pesanan Pembelian Aktif</span>
+            <span className="kpi-value tabular-num">
               {(stats?.metrics.pendingPoCount ?? 0) + (stats?.metrics.partiallyReceivedPoCount ?? 0)}
             </span>
             <span className="kpi-sub">
-              Pending approval & partial deliveries
+              Status menunggu approval / pengiriman
             </span>
           </div>
         </div>
       </div>
 
-      {/* Critical Stock Radar */}
+      {/* Peringatan Stok Minimum (Low Stock Alert) */}
       {stats && stats.criticalStocks.length > 0 && (
-        <div className="glass-panel" style={{ borderColor: 'rgba(244, 63, 94, 0.4)' }}>
+        <div className="glass-panel" style={{ borderColor: 'var(--status-rose-border)', background: '#fff' }}>
           <div className="panel-header">
-            <div className="panel-title" style={{ color: 'var(--accent-rose)' }}>
-              <AlertTriangle size={20} />
-              <span>Critical Stock Restock Radar</span>
+            <div className="panel-title" style={{ color: 'var(--status-rose-text)' }}>
+              <AlertCircle size={18} />
+              <span>Daftar Peringatan Stok di Bawah Minimum (Perlu Pengadaan)</span>
             </div>
             <button className="btn-secondary" onClick={() => onNavigateTab('pos')}>
-              Create Restock PO
+              Buat PO Pengadaan
             </button>
           </div>
 
@@ -158,39 +158,39 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Product Name</th>
-                  <th>SKU</th>
-                  <th>Warehouse Facility</th>
-                  <th>Current Qty</th>
-                  <th>Min Safe Stock</th>
-                  <th>Deficit / Shortage</th>
-                  <th>Action</th>
+                  <th>Nama Barang</th>
+                  <th>Kode SKU</th>
+                  <th>Lokasi Fasilitas</th>
+                  <th>Stok Saat Ini</th>
+                  <th>Batas Minimum</th>
+                  <th>Defisit / Kurang</th>
+                  <th>Tindakan</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.criticalStocks.map((item) => (
                   <tr key={item.inventoryId}>
-                    <td style={{ fontWeight: 600 }}>{item.productName}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.productName}</td>
                     <td>
-                      <code style={{ color: 'var(--accent-cyan)' }}>{item.sku}</code>
+                      <code>{item.sku}</code>
                     </td>
                     <td>{item.warehouseName}</td>
                     <td>
-                      <span className="badge badge-critical">
+                      <span className="badge badge-critical tabular-num">
                         {item.currentQty} {item.uom}
                       </span>
                     </td>
-                    <td>{item.minStock} {item.uom}</td>
-                    <td style={{ color: 'var(--accent-rose)', fontWeight: 700 }}>
+                    <td className="tabular-num">{item.minStock} {item.uom}</td>
+                    <td style={{ color: 'var(--status-rose-text)', fontWeight: 700 }} className="tabular-num">
                       -{item.shortage} {item.uom}
                     </td>
                     <td>
                       <button
                         className="btn-primary"
-                        style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                        style={{ padding: '5px 10px', fontSize: '0.75rem' }}
                         onClick={() => onNavigateTab('pos')}
                       >
-                        Procure
+                        Pesan Ulang
                       </button>
                     </td>
                   </tr>
@@ -201,17 +201,17 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
         </div>
       )}
 
-      {/* Grid: Warehouse Distribution & Movement Totals */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        {/* Facilities */}
+      {/* Grid: Distribusi Stok per Fasilitas & Mutasi */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+        {/* Fasilitas Gudang */}
         <div className="glass-panel" style={{ margin: 0 }}>
           <div className="panel-header">
             <div className="panel-title">
               <Warehouse size={18} />
-              <span>Facility Stock Balances</span>
+              <span>Distribusi Stok per Gudang</span>
             </div>
             <button className="btn-secondary" onClick={() => onNavigateTab('inventory')}>
-              Explore
+              Lihat Detail
             </button>
           </div>
 
@@ -219,27 +219,27 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Warehouse</th>
-                  <th>Active SKUs</th>
-                  <th>Total Units</th>
+                  <th>Fasilitas Gudang</th>
+                  <th>Jenis SKU</th>
+                  <th>Total Unit Fisik</th>
                 </tr>
               </thead>
               <tbody>
                 {stats?.warehouseDistribution.map((w) => (
                   <tr key={w.id}>
                     <td style={{ fontWeight: 600 }}>{w.name}</td>
-                    <td>{w.uniqueProducts} types</td>
+                    <td>{w.uniqueProducts} jenis</td>
                     <td>
-                      <span className="badge badge-approved">
-                        {w.totalItems.toLocaleString('id-ID')} units
+                      <span className="badge badge-approved tabular-num">
+                        {w.totalItems.toLocaleString('id-ID')} unit
                       </span>
                     </td>
                   </tr>
                 ))}
                 {(!stats || stats.warehouseDistribution.length === 0) && (
                   <tr>
-                    <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-dim)' }}>
-                      No facility inventory recorded
+                    <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '20px' }}>
+                      Belum ada data saldo stok gudang
                     </td>
                   </tr>
                 )}
@@ -248,71 +248,71 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
           </div>
         </div>
 
-        {/* Movement Breakdown */}
+        {/* Ringkasan Mutasi Barang */}
         <div className="glass-panel" style={{ margin: 0 }}>
           <div className="panel-header">
             <div className="panel-title">
               <History size={18} />
-              <span>Transaction Type Distribution</span>
+              <span>Ringkasan Mutasi Barang</span>
             </div>
             <button className="btn-secondary" onClick={() => onNavigateTab('transactions')}>
-              Ledger
+              Buku Jurnal
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
-            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '6px' }}>
+            <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-in">INBOUND</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
+                <span style={{ fontSize: '1.3rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.IN ?? 0}
                 </span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stock receipts from PO</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Penerimaan PO Supplier</span>
             </div>
 
-            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
+            <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-out">OUTBOUND</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
+                <span style={{ fontSize: '1.3rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.OUT ?? 0}
                 </span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Items dispatched</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Pengeluaran Barang</span>
             </div>
 
-            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
+            <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-transfer">TRANSFER</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
+                <span style={{ fontSize: '1.3rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.TRANSFER ?? 0}
                 </span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Inter-warehouse shift</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Pindah Antar Gudang</span>
             </div>
 
-            <div style={{ background: 'var(--bg-canvas)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
+            <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-adjust">OPNAME</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 700 }} className="tabular-num">
+                <span style={{ fontSize: '1.3rem', fontWeight: 700 }} className="tabular-num">
                   {stats?.transactionTypeCounts.ADJUST ?? 0}
                 </span>
               </div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Physical count adjustments</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Penyesuaian Selisih Fisik</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Activity Ledger */}
+      {/* Riwayat Mutasi Terbaru */}
       <div className="glass-panel">
         <div className="panel-header">
           <div className="panel-title">
-            <PackageCheck size={20} />
-            <span>Recent Movement Ledger</span>
+            <PackageCheck size={18} />
+            <span>Aktivitas Mutasi Terakhir</span>
           </div>
           <button className="btn-secondary" onClick={() => onNavigateTab('transactions')}>
-            View All Ledger
+            Buka Seluruh Riwayat
           </button>
         </div>
 
@@ -320,17 +320,19 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
           <table className="data-table">
             <thead>
               <tr>
-                <th>Tx ID</th>
-                <th>Type</th>
-                <th>Operator</th>
-                <th>Movement Summary</th>
-                <th>Timestamp</th>
+                <th>No. Mutasi</th>
+                <th>Jenis</th>
+                <th>Petugas</th>
+                <th>Detail Barang & Perubahan</th>
+                <th>Waktu Transaksi</th>
               </tr>
             </thead>
             <tbody>
               {stats?.recentTransactions.map((tx) => (
                 <tr key={tx.id}>
-                  <td>#{tx.id}</td>
+                  <td>
+                    <strong>#{tx.id}</strong>
+                  </td>
                   <td>
                     <span className={`badge ${getBadgeClass(tx.type)}`}>
                       {tx.type}
@@ -339,7 +341,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
                   <td>{tx.createdByUser}</td>
                   <td>
                     {tx.items?.map((it, idx) => (
-                      <span key={idx} style={{ display: 'inline-block', marginRight: '10px' }}>
+                      <span key={idx} style={{ display: 'inline-block', marginRight: '10px' }} className="tabular-num">
                         {it.productName} ({it.qtyChange > 0 ? `+${it.qtyChange}` : it.qtyChange})
                       </span>
                     ))}
@@ -349,8 +351,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({ onShowToast, onNavig
               ))}
               {(!stats || stats.recentTransactions.length === 0) && (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-dim)' }}>
-                    No recent transactions recorded
+                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '24px' }}>
+                    Belum ada riwayat mutasi tercatat
                   </td>
                 </tr>
               )}

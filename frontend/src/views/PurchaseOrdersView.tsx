@@ -47,7 +47,7 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
       setProducts(prods);
       setWarehouses(whs);
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to load purchase orders', 'error');
+      onShowToast(err.message || 'Gagal memuat daftar Purchase Order', 'error');
     } finally {
       setLoading(false);
     }
@@ -68,12 +68,12 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supplierId) {
-      onShowToast('Please select a supplier', 'error');
+      onShowToast('Silakan pilih mitra pemasok (supplier)', 'error');
       return;
     }
     const validItems = orderItems.filter((i) => i.productId > 0 && i.quantity > 0);
     if (validItems.length === 0) {
-      onShowToast('Please add at least one valid product item', 'error');
+      onShowToast('Tambahkan minimal satu baris barang yang valid', 'error');
       return;
     }
 
@@ -83,12 +83,12 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
         warehouseId: warehouseId ? Number(warehouseId) : undefined,
         items: validItems,
       });
-      onShowToast('Purchase Order created successfully!', 'success');
+      onShowToast('Dokumen Purchase Order berhasil diterbitkan!', 'success');
       setShowCreateModal(false);
       setOrderItems([{ productId: 0, quantity: 10, price: 50000 }]);
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to create PO', 'error');
+      onShowToast(err.message || 'Gagal membuat Purchase Order', 'error');
     }
   };
 
@@ -114,26 +114,26 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
       }));
 
     if (payloadItems.length === 0) {
-      onShowToast('Enter at least 1 quantity to receive', 'error');
+      onShowToast('Masukkan minimal 1 unit kuantitas yang diterima fisik', 'error');
       return;
     }
 
     try {
       await apiReceivePurchaseOrder(selectedPo.id, payloadItems);
-      onShowToast(`Items successfully received for PO #${selectedPo.id}`, 'success');
+      onShowToast(`Penerimaan barang PO #${selectedPo.id} berhasil dicatat!`, 'success');
       setSelectedPo(null);
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Failed to process PO receiving', 'error');
+      onShowToast(err.message || 'Gagal memproses penerimaan barang PO', 'error');
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'RECEIVED': return <span className="badge badge-received">RECEIVED</span>;
-      case 'PARTIALLY_RECEIVED': return <span className="badge badge-partial">PARTIAL</span>;
-      case 'APPROVED': return <span className="badge badge-approved">APPROVED</span>;
-      default: return <span className="badge badge-pending">PENDING</span>;
+      case 'RECEIVED': return <span className="badge badge-received">SELESAI (DITERIMA)</span>;
+      case 'PARTIALLY_RECEIVED': return <span className="badge badge-partial">DITERIMA SEBAGIAN</span>;
+      case 'APPROVED': return <span className="badge badge-approved">DISETUJUI (APPROVED)</span>;
+      default: return <span className="badge badge-pending">MENUNGGU (PENDING)</span>;
     }
   };
 
@@ -143,21 +143,21 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
 
   return (
     <div>
-      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+      <div className="glass-panel" style={{ padding: '14px 18px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShoppingCart size={20} style={{ color: 'var(--accent-primary)' }} />
-            <span style={{ fontWeight: 600 }}>Total Purchase Orders: {orders.length}</span>
+            <ShoppingCart size={18} style={{ color: 'var(--accent-primary)' }} />
+            <span style={{ fontWeight: 600 }}>Total Dokumen Purchase Order: {orders.length}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-secondary" onClick={loadData} disabled={loading}>
-              <RefreshCw size={15} />
-              <span>Refresh</span>
+              <RefreshCw size={14} />
+              <span>Perbarui</span>
             </button>
             <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
-              <Plus size={16} />
-              <span>New Purchase Order</span>
+              <Plus size={15} />
+              <span>Buat PO Baru</span>
             </button>
           </div>
         </div>
@@ -169,13 +169,13 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
           <table className="data-table">
             <thead>
               <tr>
-                <th>PO ID</th>
-                <th>Supplier</th>
-                <th>Items Ordered</th>
-                <th>Total Value</th>
-                <th>Status</th>
-                <th>Created At</th>
-                <th>Actions</th>
+                <th>No. Dokumen</th>
+                <th>Mitra Pemasok (Supplier)</th>
+                <th>Rincian Barang & Kuantitas</th>
+                <th>Total Nilai Pesanan</th>
+                <th>Status PO</th>
+                <th>Tanggal Pengajuan</th>
+                <th>Tindakan Operasional</th>
               </tr>
             </thead>
             <tbody>
@@ -187,34 +187,36 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                 return (
                   <tr key={po.id}>
                     <td>
-                      <strong>#{po.id}</strong>
+                      <strong>PO-{String(po.id).padStart(4, '0')}</strong>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{po.supplier?.name || `Supplier #${po.supplierId}`}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {po.supplier?.name || `Supplier #${po.supplierId}`}
+                    </td>
                     <td>
                       {po.items?.map((it, idx) => (
-                        <div key={idx} style={{ fontSize: '0.8rem' }}>
-                          • {it.product?.name || `Product #${it.productId}`} ({it.receivedQty || 0}/{it.quantity})
+                        <div key={idx} style={{ fontSize: '0.8rem' }} className="tabular-num">
+                          • {it.product?.name || `Item #${it.productId}`} ({it.receivedQty || 0}/{it.quantity} {it.product?.uom || 'unit'})
                         </div>
                       ))}
                     </td>
-                    <td style={{ fontWeight: 600, color: 'var(--accent-emerald)' }}>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }} className="tabular-num">
                       {formatRupiah(totalValue)}
                     </td>
                     <td>{getStatusBadge(po.status)}</td>
-                    <td>{new Date(po.createdAt).toLocaleDateString('id-ID')}</td>
+                    <td className="tabular-num">{new Date(po.createdAt).toLocaleDateString('id-ID')}</td>
                     <td>
                       {!isFullyReceived && (
                         <button
                           className="btn-primary"
-                          style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                          style={{ padding: '5px 10px', fontSize: '0.75rem' }}
                           onClick={() => openReceiveModal(po)}
                         >
-                          <PackagePlus size={14} />
-                          <span>Receive Items</span>
+                          <PackagePlus size={13} />
+                          <span>Terima Barang</span>
                         </button>
                       )}
                       {isFullyReceived && (
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>Fulfilled</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Pesanan Terpenuhi</span>
                       )}
                     </td>
                   </tr>
@@ -222,8 +224,8 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
               })}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '30px' }}>
-                    {loading ? 'Loading orders...' : 'No purchase orders recorded yet.'}
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '28px' }}>
+                    {loading ? 'Memuat data pesanan...' : 'Belum ada dokumen Purchase Order.'}
                   </td>
                 </tr>
               )}
@@ -232,28 +234,28 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
         </div>
       </div>
 
-      {/* Modal: Create PO */}
+      {/* Modal: Buat PO */}
       {showCreateModal && (
         <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: '650px' }}>
+          <div className="modal-box" style={{ maxWidth: '640px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Create New Purchase Order</h3>
+              <h3 className="modal-title">Formulir Purchase Order (PO) Baru</h3>
               <button className="modal-close" onClick={() => setShowCreateModal(false)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleCreateSubmit}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Target Supplier</label>
+                  <label className="form-label">Mitra Pemasok (Supplier)</label>
                   <select
                     className="form-control"
                     value={supplierId}
                     onChange={(e) => setSupplierId(e.target.value ? Number(e.target.value) : '')}
                     required
                   >
-                    <option value="">Select Supplier...</option>
+                    <option value="">Pilih Supplier...</option>
                     {suppliers.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
@@ -263,13 +265,13 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Destination Facility</label>
+                  <label className="form-label">Gudang Tujuan Penerimaan</label>
                   <select
                     className="form-control"
                     value={warehouseId}
                     onChange={(e) => setWarehouseId(e.target.value ? Number(e.target.value) : '')}
                   >
-                    <option value="">Optional Default Warehouse...</option>
+                    <option value="">Gudang Default...</option>
                     {warehouses.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
@@ -280,15 +282,15 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
               </div>
 
               <div style={{ margin: '14px 0 8px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="form-label">Order Line Items</span>
+                <span className="form-label" style={{ marginBottom: 0 }}>Item Barang Pesanan</span>
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                  style={{ padding: '3px 8px', fontSize: '0.72rem' }}
                   onClick={handleAddItemRow}
                 >
-                  <Plus size={14} />
-                  <span>Add Line</span>
+                  <Plus size={13} />
+                  <span>Tambah Baris</span>
                 </button>
               </div>
 
@@ -298,9 +300,9 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '2fr 1fr 1.5fr auto',
-                    gap: '10px',
+                    gap: '8px',
                     alignItems: 'center',
-                    marginBottom: '10px',
+                    marginBottom: '8px',
                   }}
                 >
                   <select
@@ -315,7 +317,7 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                     }}
                     required
                   >
-                    <option value={0}>Select Product...</option>
+                    <option value={0}>Pilih Produk...</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name} ({p.sku})
@@ -325,7 +327,7 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
 
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-control tabular-num"
                     placeholder="Qty"
                     min={1}
                     value={item.quantity}
@@ -339,8 +341,8 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
 
                   <input
                     type="number"
-                    className="form-control"
-                    placeholder="Unit Price"
+                    className="form-control tabular-num"
+                    placeholder="Harga Satuan"
                     min={0}
                     value={item.price}
                     onChange={(e) => {
@@ -355,21 +357,21 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                     <button
                       type="button"
                       className="btn-secondary"
-                      style={{ padding: '8px', color: 'var(--accent-rose)' }}
+                      style={{ padding: '7px', color: 'var(--status-rose-text)' }}
                       onClick={() => handleRemoveItemRow(idx)}
                     >
-                      <X size={16} />
+                      <X size={15} />
                     </button>
                   )}
                 </div>
               ))}
 
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>
-                  Cancel
+                  Batal
                 </button>
                 <button type="submit" className="btn-primary">
-                  Submit Purchase Order
+                  Terbitkan Dokumen PO
                 </button>
               </div>
             </form>
@@ -377,21 +379,20 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
         </div>
       )}
 
-      {/* Modal: Receive PO */}
+      {/* Modal: Terima Barang PO */}
       {selectedPo && (
         <div className="modal-overlay">
           <div className="modal-box">
             <div className="modal-header">
-              <h3 className="modal-title">Receive PO #{selectedPo.id}</h3>
+              <h3 className="modal-title">Penerimaan Barang Fisik PO #{selectedPo.id}</h3>
               <button className="modal-close" onClick={() => setSelectedPo(null)}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleReceiveSubmit}>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                Enter received quantity for each item below. Partial deliveries will update status to{' '}
-                <strong style={{ color: 'var(--accent-cyan)' }}>PARTIALLY_RECEIVED</strong>.
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                Masukkan kuantitas fisik barang yang tiba di gudang. Sistem secara fleksibel mendukung penerimaan bertahap (parsial).
               </p>
 
               {selectedPo.items?.map((it) => {
@@ -401,26 +402,28 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                   <div
                     key={it.productId}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      padding: '12px 16px',
-                      borderRadius: '10px',
+                      background: '#f8fafc',
+                      padding: '12px 14px',
+                      borderRadius: 'var(--radius-md)',
                       marginBottom: '10px',
-                      border: '1px solid var(--border-subtle)',
+                      border: '1px solid var(--border-default)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontWeight: 600 }}>{it.product?.name || `Product #${it.productId}`}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                        Ordered: {it.quantity} | Received: {it.receivedQty || 0}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {it.product?.name || `Produk #${it.productId}`}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }} className="tabular-num">
+                        Dipesan: {it.quantity} | Masuk: {it.receivedQty || 0}
                       </span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Receive Now:</label>
+                      <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Kuantitas Masuk:</label>
                       <input
                         type="number"
-                        className="form-control"
-                        style={{ width: '120px' }}
+                        className="form-control tabular-num"
+                        style={{ width: '110px' }}
                         min={0}
                         max={remaining}
                         value={receiveQtys[it.productId] ?? 0}
@@ -431,21 +434,21 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onShowTo
                           })
                         }
                       />
-                      <span style={{ fontSize: '0.78rem', color: 'var(--accent-emerald)' }}>
-                        Max remaining: {remaining}
+                      <span style={{ fontSize: '0.75rem', color: 'var(--status-emerald-text)' }} className="tabular-num">
+                        Sisa belum tiba: {remaining} {it.product?.uom || 'unit'}
                       </span>
                     </div>
                   </div>
                 );
               })}
 
-              <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setSelectedPo(null)}>
-                  Cancel
+                  Batal
                 </button>
                 <button type="submit" className="btn-primary">
-                  <CheckCircle2 size={16} />
-                  <span>Confirm Receipt & Update Stock</span>
+                  <CheckCircle2 size={15} />
+                  <span>Konfirmasi Penerimaan Gudang</span>
                 </button>
               </div>
             </form>

@@ -26,7 +26,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
         setWarehouses(whs);
         setProducts(prods);
       } catch (err: any) {
-        onShowToast(err.message || 'Failed to load options', 'error');
+        onShowToast(err.message || 'Gagal memuat daftar fasilitas gudang', 'error');
       }
     };
     fetchDropdowns();
@@ -43,16 +43,16 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fromWh || !toWh) {
-      onShowToast('Please select both source and destination warehouses', 'error');
+      onShowToast('Silakan pilih gudang asal dan gudang tujuan', 'error');
       return;
     }
     if (fromWh === toWh) {
-      onShowToast('Source and destination warehouses cannot be the same', 'error');
+      onShowToast('Gudang asal dan tujuan tidak boleh sama', 'error');
       return;
     }
     const validItems = items.filter((i) => i.productId > 0 && i.quantity > 0);
     if (validItems.length === 0) {
-      onShowToast('Please add at least one product with valid quantity', 'error');
+      onShowToast('Tambahkan minimal satu jenis barang dengan jumlah valid', 'error');
       return;
     }
 
@@ -62,42 +62,42 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
         fromWarehouseId: Number(fromWh),
         toWarehouseId: Number(toWh),
         items: validItems,
-        note: note || 'Inter-warehouse stock balancing',
+        note: note || 'Penyeimbangan stok antar fasilitas gudang',
       });
-      onShowToast('Stock transferred successfully!', 'success');
+      onShowToast('Stok berhasil dipindahkan antar fasilitas gudang!', 'success');
       onNavigateTab('inventory');
     } catch (err: any) {
-      onShowToast(err.message || 'Stock transfer failed', 'error');
+      onShowToast(err.message || 'Gagal memproses pemindahan stok', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '750px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '720px', margin: '0 auto' }}>
       <div className="glass-panel">
         <div className="panel-header">
           <div className="panel-title">
-            <ArrowRightLeft size={20} style={{ color: 'var(--accent-cyan)' }} />
-            <span>Inter-Warehouse Stock Transfer</span>
+            <ArrowRightLeft size={18} style={{ color: 'var(--accent-blue)' }} />
+            <span>Formulir Pemindahan Stok Antar Fasilitas Gudang</span>
           </div>
         </div>
 
-        <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
-          Execute atomic inventory transfer between distribution facilities. The ledger will automatically debit the origin warehouse and credit the destination warehouse.
+        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+          Jalankan pemindahan fisik inventaris antar lokasi gudang secara atomik. Sistem secara otomatis mendebit stok pada gudang asal dan mengkredit gudang tujuan dalam satu transaksi ledger.
         </p>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
             <div className="form-group">
-              <label className="form-label">Origin Facility (From)</label>
+              <label className="form-label">Gudang Asal (Pengirim)</label>
               <select
                 className="form-control"
                 value={fromWh}
                 onChange={(e) => setFromWh(e.target.value ? Number(e.target.value) : '')}
                 required
               >
-                <option value="">Select Origin Warehouse...</option>
+                <option value="">Pilih Gudang Asal...</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}
@@ -107,14 +107,14 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
             </div>
 
             <div className="form-group">
-              <label className="form-label">Destination Facility (To)</label>
+              <label className="form-label">Gudang Tujuan (Penerima)</label>
               <select
                 className="form-control"
                 value={toWh}
                 onChange={(e) => setToWh(e.target.value ? Number(e.target.value) : '')}
                 required
               >
-                <option value="">Select Destination Warehouse...</option>
+                <option value="">Pilih Gudang Tujuan...</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}
@@ -124,16 +124,16 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span className="form-label">Products to Relocate</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span className="form-label" style={{ marginBottom: 0 }}>Daftar Barang yang Dipindahkan</span>
             <button
               type="button"
               className="btn-secondary"
-              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+              style={{ padding: '3px 8px', fontSize: '0.72rem' }}
               onClick={handleAddItem}
             >
-              <Plus size={14} />
-              <span>Add Item</span>
+              <Plus size={13} />
+              <span>Tambah Barang</span>
             </button>
           </div>
 
@@ -143,8 +143,8 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
               style={{
                 display: 'grid',
                 gridTemplateColumns: '2fr 1fr auto',
-                gap: '12px',
-                marginBottom: '10px',
+                gap: '8px',
+                marginBottom: '8px',
                 alignItems: 'center',
               }}
             >
@@ -158,7 +158,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
                 }}
                 required
               >
-                <option value={0}>Select Product...</option>
+                <option value={0}>Pilih Produk...</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
@@ -168,8 +168,8 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
 
               <input
                 type="number"
-                className="form-control"
-                placeholder="Quantity"
+                className="form-control tabular-num"
+                placeholder="Jumlah (Qty)"
                 min={1}
                 value={it.quantity}
                 onChange={(e) => {
@@ -184,33 +184,33 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '8px', color: 'var(--accent-rose)' }}
+                  style={{ padding: '7px', color: 'var(--status-rose-text)' }}
                   onClick={() => handleRemoveItem(idx)}
                 >
-                  <X size={16} />
+                  <X size={15} />
                 </button>
               )}
             </div>
           ))}
 
-          <div className="form-group" style={{ marginTop: '20px' }}>
-            <label className="form-label">Transfer Reference Note / Reason</label>
+          <div className="form-group" style={{ marginTop: '16px' }}>
+            <label className="form-label">Keterangan / No. Surat Jalan</label>
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. Replenishment for branch retail demand"
+              placeholder="Contoh: Surat Jalan SJ/2026/04/001 - Penyeimbangan stok cabang"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
             <button type="button" className="btn-secondary" onClick={() => onNavigateTab('inventory')}>
-              Cancel
+              Batal
             </button>
             <button type="submit" className="btn-primary" disabled={submitting}>
-              <Check size={16} />
-              <span>{submitting ? 'Executing Transfer...' : 'Confirm Stock Transfer'}</span>
+              <Check size={15} />
+              <span>{submitting ? 'Memproses Transfer...' : 'Konfirmasi Pemindahan Stok'}</span>
             </button>
           </div>
         </form>
