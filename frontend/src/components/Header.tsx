@@ -22,8 +22,12 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
       subtitle: 'Monitoring kuantitas barang per gudang dan peringatan batas minimum stok',
     },
     pos: {
-      title: 'Purchase Orders (Pengadaan Barang)',
-      subtitle: 'Daftar pesanan pengadaan ke pemasok dan proses penerimaan barang',
+      title: 'Inbound Purchase Orders (Penerimaan)',
+      subtitle: 'Daftar pesanan pengadaan ke pemasok dan proses penerimaan barang ke gudang',
+    },
+    so: {
+      title: 'Outbound Sales Orders & Pengiriman',
+      subtitle: 'Fulfillment pesanan pelanggan, proses picking & packing, dan penerbitan Surat Jalan Keluar',
     },
     transactions: {
       title: 'Buku Jurnal Mutasi Barang',

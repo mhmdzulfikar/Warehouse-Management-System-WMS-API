@@ -14,6 +14,9 @@ import transactionRoutes from './routes/transactionRoutes';
 import productRoutes from './routes/productRoutes';
 import supplierRoutes from './routes/supplierRoutes';
 import warehouseRoutes from './routes/warehouseRoutes';
+import customerRoutes from './routes/customerRoutes';
+import salesOrderRoutes from './routes/salesOrderRoutes';
+import deliveryOrderRoutes from './routes/deliveryOrderRoutes';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
@@ -40,6 +43,9 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/sales-orders', salesOrderRoutes);
+app.use('/api/delivery-orders', deliveryOrderRoutes);
 
 // Health Endpoint
 app.get('/api/health', (req: Request, res: Response) => {

@@ -36,6 +36,8 @@ model User {
   // Relasi khusus karena 1 User bisa bikin banyak PO, dan 1 Manager bisa approve banyak PO
   createdPos  PurchaseOrder[] @relation("PoCreator")
   approvedPos PurchaseOrder[] @relation("PoApprover")
+  createdSos  SalesOrder[]    @relation("SoCreator")
+  dispatchedDos DeliveryOrder[] @relation("DoDispatcher")
   
   transactions Transaction[]
 }
@@ -53,6 +55,17 @@ model Supplier {
   purchaseOrders PurchaseOrder[]
 }
 
+model Customer {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique // e.g. CUST-001
+  name        String
+  contactInfo String?
+  address     String?
+  deletedAt   DateTime? // Soft Delete
+
+  salesOrders SalesOrder[]
+}
+
 model Product {
   id          Int       @id @default(autoincrement())
   sku         String    @unique
@@ -62,9 +75,11 @@ model Product {
   minStock    Int       @default(10) // Ambang batas minimum stok untuk alert
   deletedAt   DateTime? // Soft Delete
 
-  inventories      Inventory[]
-  poItems          PoItem[]
-  transactionItems TransactionItem[]
+  inventories        Inventory[]
+  poItems            PoItem[]
+  soItems            SoItem[]
+  deliveryOrderItems DeliveryOrderItem[]
+  transactionItems   TransactionItem[]
 }
 
 model Warehouse {
@@ -73,6 +88,8 @@ model Warehouse {
   location String
 
   inventories      Inventory[]
+  salesOrders      SalesOrder[]
+  deliveryOrders   DeliveryOrder[]
   transactionItems TransactionItem[]
 }
 
@@ -93,7 +110,7 @@ model Inventory {
 }
 
 // -------------------------------------------------
-// 4. Procurement (Pembelanjaan / Pembelian)
+// 4. Procurement (Inbound Pembelian)
 // -------------------------------------------------
 model PurchaseOrder {
   id               Int      @id @default(autoincrement())
@@ -123,13 +140,82 @@ model PoItem {
 }
 
 // -------------------------------------------------
-// 5. Audit Trail & Transaksi (The Ledger / Riwayat)
+// 5. Outbound (Sales Order & Fulfillment Pengiriman)
+// -------------------------------------------------
+model SalesOrder {
+  id               Int       @id @default(autoincrement())
+  soNumber         String    @unique // e.g. SO-2026-0001
+  customerId       Int
+  warehouseId      Int       // Gudang asal pengambilan barang
+  createdByUserId  Int
+  status           String    @default("PENDING") // PENDING, CONFIRMED, PICKING, PACKED, SHIPPED, CANCELLED
+  orderDate        DateTime  @default(now())
+  deliveryDate     DateTime?
+  shippingAddress  String?
+  totalAmount      Decimal   @default(0) @db.Decimal(12, 2)
+  note             String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  warehouse      Warehouse       @relation(fields: [warehouseId], references: [id])
+  createdBy      User            @relation("SoCreator", fields: [createdByUserId], references: [id])
+  soItems        SoItem[]
+  deliveryOrders DeliveryOrder[]
+}
+
+model SoItem {
+  id         Int     @id @default(autoincrement())
+  soId       Int
+  productId  Int
+  qty        Int     // Jumlah yang dipesan customer
+  pickedQty  Int     @default(0) // Jumlah yang sudah di-pick dari rak
+  packedQty  Int     @default(0) // Jumlah yang sudah dikemas
+  shippedQty Int     @default(0) // Jumlah yang sudah diberangkatkan
+  unitPrice  Decimal @db.Decimal(10, 2)
+
+  salesOrder SalesOrder @relation(fields: [soId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
+}
+
+model DeliveryOrder {
+  id             Int       @id @default(autoincrement())
+  doNumber       String    @unique // e.g. DO-2026-0001 (No. Surat Jalan)
+  salesOrderId   Int
+  warehouseId    Int
+  dispatchedById Int
+  status         String    @default("SHIPPED") // SHIPPED, DELIVERED
+  driverName     String?
+  vehiclePlate   String?
+  recipientName  String?
+  shippedAt      DateTime  @default(now())
+  deliveredAt    DateTime?
+  note           String?
+
+  salesOrder   SalesOrder          @relation(fields: [salesOrderId], references: [id])
+  warehouse    Warehouse           @relation(fields: [warehouseId], references: [id])
+  dispatchedBy User                @relation("DoDispatcher", fields: [dispatchedById], references: [id])
+  doItems      DeliveryOrderItem[]
+}
+
+model DeliveryOrderItem {
+  id              Int @id @default(autoincrement())
+  deliveryOrderId Int
+  productId       Int
+  qty             Int // Jumlah barang yang keluar di surat jalan ini
+
+  deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+}
+
+// -------------------------------------------------
+// 6. Audit Trail & Transaksi (The Ledger / Riwayat Mutasi)
 // -------------------------------------------------
 model Transaction {
   id              Int      @id @default(autoincrement())
-  type            String   // "IN", "OUT", "ADJUST"
-  referenceType   String?  // "PO", "Manual"
-  referenceId     Int?     // ID dari tabel PurchaseOrder (jika ada)
+  type            String   // "IN", "OUT", "TRANSFER", "ADJUST"
+  referenceType   String?  // "PO", "DELIVERY_ORDER", "TRANSFER", "OPNAME", "MANUAL"
+  referenceId     Int?     // ID dari tabel referensi (jika ada)
   createdByUserId Int
   timestamp       DateTime @default(now())
 

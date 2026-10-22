@@ -6,6 +6,7 @@ import { LoginModal } from './components/LoginModal';
 import { OverviewView } from './views/OverviewView';
 import { InventoryView } from './views/InventoryView';
 import { PurchaseOrdersView } from './views/PurchaseOrdersView';
+import { SalesOrdersView } from './views/SalesOrdersView';
 import { TransactionsView } from './views/TransactionsView';
 import { TransferView } from './views/TransferView';
 import { OpnameView } from './views/OpnameView';
@@ -63,6 +64,10 @@ const AppContent: React.FC = () => {
 
           {activeTab === 'pos' && (
             <PurchaseOrdersView onShowToast={showToast} />
+          )}
+
+          {activeTab === 'so' && (
+            <SalesOrdersView onShowToast={showToast} />
           )}
 
           {activeTab === 'transactions' && (

@@ -1,9 +1,12 @@
 import {
   AuthResponse,
+  Customer,
   DashboardStats,
+  DeliveryOrder,
   InventoryItem,
   Product,
   PurchaseOrder,
+  SalesOrder,
   Supplier,
   Transaction,
   User,
@@ -177,3 +180,109 @@ export const apiCreateWarehouse = async (payload: {
     body: JSON.stringify(payload),
   });
 };
+
+// Customer APIs
+export const apiGetCustomers = async (): Promise<Customer[]> => {
+  return request<Customer[]>('/api/customers');
+};
+
+export const apiCreateCustomer = async (payload: {
+  name: string;
+  code?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+}): Promise<Customer> => {
+  return request<Customer>('/api/customers', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+// Sales Order (Outbound) APIs
+export const apiGetSalesOrders = async (): Promise<SalesOrder[]> => {
+  return request<SalesOrder[]>('/api/sales-orders');
+};
+
+export const apiGetSalesOrderById = async (id: number): Promise<SalesOrder> => {
+  return request<SalesOrder>(`/api/sales-orders/${id}`);
+};
+
+export const apiCreateSalesOrder = async (payload: {
+  customerId: number;
+  warehouseId: number;
+  notes?: string;
+  note?: string;
+  items: Array<{ productId: number; quantity: number; unitPrice?: number; price?: number }>;
+}): Promise<SalesOrder> => {
+  const body = {
+    customerId: payload.customerId,
+    warehouseId: payload.warehouseId,
+    note: payload.note || payload.notes,
+    items: payload.items.map((it) => ({
+      productId: it.productId,
+      quantity: it.quantity,
+      price: it.price !== undefined ? it.price : (it.unitPrice || 0),
+    })),
+  };
+  return request<SalesOrder>('/api/sales-orders', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+};
+
+export const apiConfirmSalesOrder = async (id: number): Promise<SalesOrder> => {
+  return request<SalesOrder>(`/api/sales-orders/${id}/confirm`, {
+    method: 'POST',
+  });
+};
+
+export const apiPickSalesOrder = async (
+  id: number,
+  items: Array<{ productId: number; pickedQty: number }>
+): Promise<SalesOrder> => {
+  return request<SalesOrder>(`/api/sales-orders/${id}/pick`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  });
+};
+
+export const apiPackSalesOrder = async (
+  id: number,
+  items: Array<{ productId: number; packedQty: number }>
+): Promise<SalesOrder> => {
+  return request<SalesOrder>(`/api/sales-orders/${id}/pack`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  });
+};
+
+export const apiShipSalesOrder = async (
+  id: number,
+  payload: {
+    driverName?: string;
+    vehiclePlate?: string;
+    recipientName?: string;
+    recipientAddress?: string;
+    shippingMethod?: string;
+    trackingNumber?: string;
+    note?: string;
+    items?: Array<{ productId: number; quantity: number }>;
+  }
+): Promise<DeliveryOrder> => {
+  return request<DeliveryOrder>(`/api/sales-orders/${id}/ship`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+// Delivery Orders (Surat Jalan Keluar) APIs
+export const apiGetDeliveryOrders = async (): Promise<DeliveryOrder[]> => {
+  return request<DeliveryOrder[]>('/api/delivery-orders');
+};
+
+export const apiGetDeliveryOrderById = async (id: number): Promise<DeliveryOrder> => {
+  return request<DeliveryOrder>(`/api/delivery-orders/${id}`);
+};
+

@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Boxes,
   ShoppingCart,
+  Truck,
   History,
   ArrowRightLeft,
   ClipboardCheck,
@@ -14,6 +15,7 @@ export type TabType =
   | 'overview'
   | 'inventory'
   | 'pos'
+  | 'so'
   | 'transactions'
   | 'transfer'
   | 'opname'
@@ -28,7 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   const navItems: Array<{ id: TabType; label: string; icon: React.ReactNode }> = [
     { id: 'overview', label: 'Ringkasan Operasional', icon: <LayoutDashboard size={18} /> },
     { id: 'inventory', label: 'Stok & Fasilitas Gudang', icon: <Boxes size={18} /> },
-    { id: 'pos', label: 'Purchase Orders (PO)', icon: <ShoppingCart size={18} /> },
+    { id: 'pos', label: 'Inbound PO (Penerimaan)', icon: <ShoppingCart size={18} /> },
+    { id: 'so', label: 'Outbound SO (Pengiriman)', icon: <Truck size={18} /> },
     { id: 'transactions', label: 'Riwayat Mutasi Barang', icon: <History size={18} /> },
     { id: 'transfer', label: 'Transfer Antar Gudang', icon: <ArrowRightLeft size={18} /> },
     { id: 'opname', label: 'Stock Opname Fisik', icon: <ClipboardCheck size={18} /> },

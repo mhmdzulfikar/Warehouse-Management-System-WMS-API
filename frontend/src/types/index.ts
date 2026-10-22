@@ -146,3 +146,91 @@ export interface DashboardStats {
     }>;
   }>;
 }
+
+export interface Customer {
+  id: number;
+  code: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  createdAt: string;
+}
+
+export type SalesOrderStatus = 'PENDING' | 'CONFIRMED' | 'PICKING' | 'PACKED' | 'SHIPPED' | 'CANCELLED';
+
+export interface SoItem {
+  id: number;
+  soId?: number;
+  salesOrderId?: number;
+  productId: number;
+  qty?: number;
+  quantity?: number;
+  pickedQty: number;
+  packedQty: number;
+  shippedQty?: number;
+  unitPrice: number;
+  totalPrice?: number;
+  product?: Product;
+}
+
+export interface DeliveryOrderItem {
+  id: number;
+  deliveryOrderId?: number;
+  doId?: number;
+  productId: number;
+  qty?: number;
+  quantity?: number;
+  product?: Product;
+}
+
+export interface DeliveryOrder {
+  id: number;
+  doNumber: string;
+  salesOrderId: number;
+  warehouseId?: number;
+  recipientName: string;
+  driverName?: string;
+  vehiclePlate?: string;
+  note?: string;
+  shippingAddress?: string;
+  status: string;
+  createdAt?: string;
+  shippedAt?: string;
+  doItems?: DeliveryOrderItem[];
+  items?: DeliveryOrderItem[];
+  salesOrder?: {
+    id: number;
+    soNumber: string;
+    orderNumber?: string;
+    customer?: Customer;
+    warehouse?: Warehouse;
+  };
+}
+
+export interface SalesOrder {
+  id: number;
+  soNumber: string;
+  orderNumber?: string;
+  customerId: number;
+  warehouseId: number;
+  createdByUserId?: number;
+  status: SalesOrderStatus;
+  totalAmount: number;
+  note?: string | null;
+  notes?: string | null;
+  shippingAddress?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  customer?: Customer;
+  warehouse?: Warehouse;
+  createdBy?: { id: number; username: string };
+  user?: { id: number; username: string };
+  soItems?: SoItem[];
+  items?: SoItem[];
+  deliveryOrders?: DeliveryOrder[];
+  deliveryOrder?: DeliveryOrder | null;
+}
+
+
