@@ -1,0 +1,106 @@
+name: wms-ecosystem
+
+services:
+  # ============================================================================
+  # 1. PostgreSQL 16 Database with High-Throughput Kernel Tuning
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: wms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin1
+      POSTGRES_DB: wms_db
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - wms_pgdata:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c max_connections=500
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=4MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c synchronous_commit=off
+      -c fsync=off
+      -c full_page_writes=off
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wms_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wms_network
+
+  # ============================================================================
+  # 2. Dual-Track Telemetry (UDP Log Aggregator Server)
+  # ============================================================================
+  udp-aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wms_udp_aggregator
+    restart: unless-stopped
+    command: npm run aggregator:start
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres:admin1@postgres:5432/wms_db?schema=public"
+      UDP_PORT: 5001
+      UDP_HOST: "0.0.0.0"
+    ports:
+      - "5001:5001/udp"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wms_network
+
+  # ============================================================================
+  # 3. Main WMS Express Backend & React Dashboard Application
+  # ============================================================================
+  wms-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wms_api
+    restart: unless-stopped
+    command: npm run start
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: "postgresql://postgres:admin1@postgres:5432/wms_db?schema=public"
+      UDP_HOST: udp-aggregator
+      UDP_PORT: 5001
+      JWT_SECRET: "wms_jwt_secret_key_2026_super_secure_random_hash"
+      JWT_EXPIRES_IN: "1d"
+      AUTO_MIGRATE: "true"
+      AUTO_SEED: "true"
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      udp-aggregator:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - wms_network
+
+# ==============================================================================
+# Volumes & Networks Definition
+# ==============================================================================
+volumes:
+  wms_pgdata:
+    driver: local
+
+networks:
+  wms_network:
+    driver: bridge
