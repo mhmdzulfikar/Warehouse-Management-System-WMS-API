@@ -92,16 +92,40 @@ npm run dev:fe
 
 ---
 
-## 📊 Benchmark & Verifikasi Telemetri
+## 📊 Benchmark Autocannon & Verifikasi Telemetri
 
-Uji perbandingan latensi antara synchronous database logging vs asynchronous UDP log dispatcher:
+Sistem dilengkapi dua endpoint khusus untuk benchmark beban tinggi (*high-load load-testing*) menggunakan **Autocannon**:
+1. `/api/benchmark/sync-log`: Simulasi penulisan log secara sinkron langsung ke database (blocking I/O event loop).
+2. `/api/benchmark/udp-log`: Pengiriman telemetri asinkron via UDP datagram tanpa menunggu database (non-blocking).
+
+### 🚀 Cara Menjalankan Benchmark Autocannon
+
+Pastikan server WMS API dan UDP Log Aggregator sudah berjalan (`npm run aggregator:dev` dan `npm run dev`), lalu buka terminal baru dan jalankan:
+
+#### 1. Uji UDP Logging (Asinkron / Non-Blocking Fire-and-Forget)
 ```bash
-# Benchmark Sync Log (menulis langsung ke DB per request): ~300ms
-curl http://localhost:5000/api/benchmark/sync-log
+npm run benchmark:udp
+```
+*Atau perintah langsung:*
+```bash
+npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/udp-log
+```
 
-# Benchmark UDP Log (kirim datagram fire-and-forget): ~0.3ms (1000x lebih cepat)
-curl http://localhost:5000/api/benchmark/udp-log
+#### 2. Uji Synchronous DB Logging (Sinkron / Blocking DB Transaction)
+```bash
+npm run benchmark:sync
+```
+*Atau perintah langsung:*
+```bash
+npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/sync-log
+```
 
-# Pantau metrik agregator real-time
+#### 3. Pantau Metrik Agregator Real-Time
+Melihat statistik paket UDP diterima, sequence ID terakhir, packet loss, dan ukuran buffer:
+```bash
+npm run benchmark:metrics
+```
+*Atau:*
+```bash
 curl http://localhost:5000/api/benchmark/metrics
 ```
