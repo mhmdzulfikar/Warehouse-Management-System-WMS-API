@@ -17,6 +17,9 @@ import warehouseRoutes from './routes/warehouseRoutes';
 import customerRoutes from './routes/customerRoutes';
 import salesOrderRoutes from './routes/salesOrderRoutes';
 import deliveryOrderRoutes from './routes/deliveryOrderRoutes';
+import benchmarkRoutes from './routes/benchmarkRoutes';
+import { telemetryMiddleware } from './middlewares/telemetryMiddleware';
+import { startHeartbeat } from './utils/udpLogger';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
@@ -26,6 +29,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Dual-Track Telemetry (Global UDP Log Dispatcher)
+app.use(telemetryMiddleware);
 
 // Serve Frontend Static Web Application
 app.use(express.static(path.resolve(process.cwd(), 'public')));
@@ -46,6 +52,7 @@ app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/sales-orders', salesOrderRoutes);
 app.use('/api/delivery-orders', deliveryOrderRoutes);
+app.use('/api/benchmark', benchmarkRoutes);
 
 // Health Endpoint
 app.get('/api/health', (req: Request, res: Response) => {
@@ -55,7 +62,8 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Global Error Handler (MUST BE LAST MIDDLEWARE)
 app.use(errorHandler);
 
-// Run Server
+// Run Server & Start UDP Heartbeat
 app.listen(PORT, () => {
     console.log(`Backend server is active at http://localhost:${PORT}`);
+    startHeartbeat(5000);
 });

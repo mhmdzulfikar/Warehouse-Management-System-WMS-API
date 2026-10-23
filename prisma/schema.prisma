@@ -235,3 +235,24 @@ model TransactionItem {
   product     Product     @relation(fields: [productId], references: [id])
   warehouse   Warehouse   @relation(fields: [warehouseId], references: [id])
 }
+
+// -------------------------------------------------
+// 7. Dual-Track Telemetry (UDP Log Aggregator)
+// -------------------------------------------------
+model TelemetryLog {
+  id         Int      @id @default(autoincrement())
+  seqId      Int
+  level      String   @default("INFO")
+  method     String?
+  endpoint   String?
+  statusCode Int?
+  latencyMs  Float?
+  userId     Int?
+  message    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([endpoint])
+  @@index([seqId])
+}

@@ -6,6 +6,8 @@
     "scripts": {
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
         "dev:fe": "npm --prefix frontend run dev",
+        "aggregator:dev": "ts-node-dev --respawn --transpile-only src/aggregator/index.ts",
+        "aggregator:start": "node dist/src/aggregator/index.js",
         "build": "npx prisma generate && tsc",
         "build:fe": "npm --prefix frontend run build",
         "start": "node dist/src/index.js",

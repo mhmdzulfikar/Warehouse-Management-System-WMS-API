@@ -7,10 +7,10 @@ async function testFullOutboundFlow() {
   const customer = await prisma.customer.findFirst();
   const product = await prisma.product.findFirst();
   const warehouse = await prisma.warehouse.findFirst();
-  const user = await prisma.user.findFirst({ where: { username: 'admin' } });
+  const user = await prisma.user.findFirst({ where: { username: 'bapak_manager' } }) || await prisma.user.findFirst();
 
   console.log(`Customer: ${customer?.name} (ID: ${customer?.id})`);
-  console.log(`Product: ${product?.name} (ID: ${product?.id}, Stock Price: ${product?.price})`);
+  console.log(`Product: ${product?.name} (ID: ${product?.id}, Base Price: ${product?.basePrice})`);
   console.log(`Warehouse: ${warehouse?.name} (ID: ${warehouse?.id})`);
 
   if (!customer || !product || !warehouse || !user) {
@@ -23,41 +23,40 @@ async function testFullOutboundFlow() {
   });
   if (!inv) {
     inv = await prisma.inventory.create({
-      data: { productId: product.id, warehouseId: warehouse.id, quantity: 200 },
+      data: { productId: product.id, warehouseId: warehouse.id, currentQty: 200 },
     });
-  } else if (inv.quantity < 20) {
+  } else if (inv.currentQty < 20) {
     await prisma.inventory.update({
       where: { id: inv.id },
-      data: { quantity: 200 },
+      data: { currentQty: 200 },
     });
   }
-  console.log(`Current inventory: ${inv.quantity} units`);
+  console.log(`Current inventory: ${inv.currentQty} units`);
 
   // 2. Create Sales Order
-  const orderNumber = `SO-TEST-${Date.now().toString().slice(-4)}`;
+  const soNumber = `SO-TEST-${Date.now().toString().slice(-4)}`;
   const order = await prisma.salesOrder.create({
     data: {
-      orderNumber,
+      soNumber,
       customerId: customer.id,
       warehouseId: warehouse.id,
-      userId: user.id,
-      totalAmount: 10 * Number(product.price),
+      createdByUserId: user.id,
+      totalAmount: 10 * Number(product.basePrice),
       status: 'PENDING',
-      notes: 'Test order from automated script',
-      items: {
+      note: 'Test order from automated script',
+      soItems: {
         create: [
           {
             productId: product.id,
-            quantity: 10,
-            unitPrice: Number(product.price),
-            totalPrice: 10 * Number(product.price),
+            qty: 10,
+            unitPrice: Number(product.basePrice),
           },
         ],
       },
     },
-    include: { items: true },
+    include: { soItems: true },
   });
-  console.log(`[PASS] Created SO: ${order.orderNumber} (ID: ${order.id}) with status ${order.status}`);
+  console.log(`[PASS] Created SO: ${order.soNumber} (ID: ${order.id}) with status ${order.status}`);
 
   // 3. Confirm SO
   const confirmed = await prisma.salesOrder.update({
@@ -67,7 +66,7 @@ async function testFullOutboundFlow() {
   console.log(`[PASS] Confirmed SO: Status is now ${confirmed.status}`);
 
   // 4. Picking
-  const item = order.items[0];
+  const item = order.soItems[0];
   await prisma.soItem.update({
     where: { id: item.id },
     data: { pickedQty: 10 },
@@ -98,32 +97,12 @@ async function testFullOutboundFlow() {
     const invItem = await tx.inventory.findFirst({
       where: { productId: product.id, warehouseId: warehouse.id },
     });
-    if (!invItem || invItem.quantity < 10) {
+    if (!invItem || invItem.currentQty < 10) {
       throw new Error('Insufficient inventory for shipping');
     }
     await tx.inventory.update({
       where: { id: invItem.id },
-      data: { quantity: { decrement: 10 } },
-    });
-
-    // Create Audit Transaction OUT
-    await tx.transaction.create({
-      data: {
-        type: 'OUT',
-        referenceType: 'DELIVERY_ORDER',
-        referenceId: order.id,
-        userId: user.id,
-        note: `Fulfillment pengiriman keluar Surat Jalan ${doNumber} untuk ${order.orderNumber}`,
-        items: {
-          create: [
-            {
-              productId: product.id,
-              warehouseId: warehouse.id,
-              quantity: 10,
-            },
-          ],
-        },
-      },
+      data: { currentQty: { decrement: 10 } },
     });
 
     // Create Delivery Order
@@ -131,20 +110,40 @@ async function testFullOutboundFlow() {
       data: {
         doNumber,
         salesOrderId: order.id,
+        warehouseId: warehouse.id,
+        dispatchedById: user.id,
         recipientName: customer.name,
-        recipientAddress: customer.address || 'Alamat Customer',
-        shippingMethod: 'Armada Truk Internal',
-        trackingNumber: 'B 9999 WMS',
-        items: {
+        driverName: 'Armada Truk Internal',
+        vehiclePlate: 'B 9999 WMS',
+        doItems: {
           create: [
             {
               productId: product.id,
-              quantity: 10,
+              qty: 10,
             },
           ],
         },
       },
-      include: { items: true },
+      include: { doItems: true },
+    });
+
+    // Create Audit Transaction OUT
+    await tx.transaction.create({
+      data: {
+        type: 'OUT',
+        referenceType: 'DELIVERY_ORDER',
+        referenceId: doRecord.id,
+        createdByUserId: user.id,
+        transactionItems: {
+          create: [
+            {
+              productId: product.id,
+              warehouseId: warehouse.id,
+              qtyChange: -10,
+            },
+          ],
+        },
+      },
     });
 
     // Update SO status
@@ -160,7 +159,7 @@ async function testFullOutboundFlow() {
   const postInv = await prisma.inventory.findFirst({
     where: { productId: product.id, warehouseId: warehouse.id },
   });
-  console.log(`[PASS] Post-shipping inventory: ${postInv?.quantity} (decremented by 10)`);
+  console.log(`[PASS] Post-shipping inventory: ${postInv?.currentQty} (decremented by 10)`);
   console.log('--- ALL OUTBOUND LOGIC VERIFIED SUCCESSFULLY ---');
 }
 
