@@ -14,50 +14,50 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
 
   const titles: Record<TabType, { title: string; subtitle: string }> = {
     overview: {
-      title: 'Ringkasan Operasional Pergudangan',
-      subtitle: 'Monitoring stok barang, status pesanan pengadaan, dan pergerakan mutasi harian',
+      title: 'Global Warehouse Intelligence & Telemetry Overview',
+      subtitle: 'Real-time multi-facility ledger, dock-to-stock replenishment, and dual-track audit telemetry',
     },
     inventory: {
-      title: 'Saldo Stok & Ketersediaan Barang',
-      subtitle: 'Monitoring kuantitas barang per gudang dan peringatan batas minimum stok',
+      title: 'Multi-Facility Inventory & Bin Storage Ledger',
+      subtitle: 'Granular location bin mapping, lot/batch tracking, barcodes, and automated buffer alerts',
     },
     pos: {
-      title: 'Inbound Purchase Orders (Penerimaan)',
-      subtitle: 'Daftar pesanan pengadaan ke pemasok dan proses penerimaan barang ke gudang',
+      title: 'Inbound Procurement & Goods Receipt Note (GRN)',
+      subtitle: 'Supplier purchase orders, ASN receiving dock workflows, and partial fulfillment processing',
     },
     so: {
-      title: 'Outbound Sales Orders & Pengiriman',
-      subtitle: 'Fulfillment pesanan pelanggan, proses picking & packing, dan penerbitan Surat Jalan Keluar',
+      title: 'Outbound Order Fulfillment & Dispatch Management',
+      subtitle: 'Sales orders wave-picking, container packing verification, and Delivery Docket (BOL) issuance',
     },
     transactions: {
-      title: 'Buku Jurnal Mutasi Barang',
-      subtitle: 'Audit kronologis mutasi keluar-masuk, transfer lokasi, dan penyesuaian opname',
+      title: 'Immutable Audit Ledger & Material Movements',
+      subtitle: 'High-throughput chronological ledger tracking IN/OUT, transfers, and inventory adjustments',
     },
     transfer: {
-      title: 'Transfer Stok Antar Gudang',
-      subtitle: 'Pemindahan fisik inventaris antar fasilitas gudang secara atomik',
+      title: 'Inter-Facility & Bin-to-Bin Stock Movements',
+      subtitle: 'Atomic real-time inventory repositioning across global distribution centers and storage zones',
     },
     opname: {
-      title: 'Rekonsiliasi Stock Opname Fisik',
-      subtitle: 'Penyesuaian selisih antara perhitungan fisik gudang dengan sistem digital',
+      title: 'Physical Inventory Audit & Cycle Count Reconciliation',
+      subtitle: 'Variance analysis between physical cycle counts and digital ledger with discrepancy tracking',
     },
     master: {
-      title: 'Katalog Master Data',
-      subtitle: 'Pengaturan data produk, daftar pemasok (supplier), dan fasilitas gudang',
+      title: 'Enterprise Master Catalog & Facility Network',
+      subtitle: 'Centralized catalog management, tier-1 suppliers, global customer accounts, and logistics hubs',
     },
   };
 
   const currentInfo = titles[activeTab] || {
-    title: 'WMS Logistics',
-    subtitle: 'Sistem Manajemen Pergudangan & Pengadaan',
+    title: 'WMS Nexus Enterprise',
+    subtitle: 'Global Warehouse & Supply Chain Operating System',
   };
 
-  const handleQuickSwitch = async (username: string) => {
+  const handleQuickSwitch = async (username: string, roleName: string) => {
     try {
       await quickLogin(username);
-      onShowToast(`Beralih akun ke ${username}`, 'success');
+      onShowToast(`Switched active persona to ${roleName} (${username})`, 'success');
     } catch (e: any) {
-      onShowToast(e.message || 'Gagal login', 'error');
+      onShowToast(e.message || 'Login failed', 'error');
     }
   };
 
@@ -71,29 +71,36 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
       <div className="header-right">
         {/* Quick Demo Switcher */}
         <div className="quick-roles">
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: '4px' }}>
-            Akun Demo:
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: '4px', fontWeight: 500 }}>
+            Quick Personas:
           </span>
           <button
             className="btn-quick-role"
-            onClick={() => handleQuickSwitch('bapak_manager')}
-            title="Masuk sebagai Manager"
+            onClick={() => handleQuickSwitch('ops_director', 'Director')}
+            title="Sign in as Operations Director"
           >
-            Manager
+            Director
           </button>
           <button
             className="btn-quick-role"
-            onClick={() => handleQuickSwitch('andi_purchasing')}
-            title="Masuk sebagai Purchasing"
+            onClick={() => handleQuickSwitch('inv_supervisor', 'Inbound Lead')}
+            title="Sign in as Inbound & Purchasing Lead"
           >
-            Purchasing
+            Inbound
           </button>
           <button
             className="btn-quick-role"
-            onClick={() => handleQuickSwitch('joko_gudang')}
-            title="Masuk sebagai Staff Gudang"
+            onClick={() => handleQuickSwitch('logistics_lead', 'Logistics Lead')}
+            title="Sign in as Fulfillment Specialist"
           >
-            Staff Gudang
+            Logistics
+          </button>
+          <button
+            className="btn-quick-role"
+            onClick={() => handleQuickSwitch('sysadmin', 'SysAdmin')}
+            title="Sign in as System Administrator"
+          >
+            Admin
           </button>
         </div>
 
@@ -109,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
             <button
               className="btn-logout"
               onClick={logout}
-              title="Keluar / Logout"
+              title="Sign Out"
             >
               <LogOut size={16} />
             </button>
@@ -117,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, onOpenLogin, onShowTo
         ) : (
           <button className="btn-primary" onClick={onOpenLogin}>
             <UserCheck size={16} />
-            <span>Masuk Sistem</span>
+            <span>Sign In</span>
           </button>
         )}
       </div>

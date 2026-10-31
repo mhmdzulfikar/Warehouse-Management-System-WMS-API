@@ -1,6 +1,135 @@
-node_modules
-# Keep environment variables out of version control
-.env
+# ==============================================================================
+# Dependencies & Package Managers
+# ==============================================================================
+node_modules/
+*/node_modules/
+.pnp/
+.pnp.js
+.pnpm-store/
 
-/generated/prisma
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# Environment & Sensitive Credentials
+# ==============================================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+*.env.*
+
+# Always keep example templates in version control!
+!.env.example
+!.env.template
+
+# Private Keys & Certificates
+*.pem
+*.key
+*.cert
+*.crt
+
+# ==============================================================================
+# Build & Compilation Outputs
+# ==============================================================================
 dist/
+*/dist/
+build/
+*/build/
+out/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Prisma ORM generated client & local DB artifacts
+/generated/
+/generated/prisma/
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+# ==============================================================================
+# Frontend & Bundler Caches (Vite, Oxlint, ESLint)
+# ==============================================================================
+.vite/
+*/.vite/
+.parcel-cache/
+.eslintcache
+.oxlintcache
+.stylelintcache
+
+# ==============================================================================
+# Telemetry, Benchmarking, Logs & Runtime
+# ==============================================================================
+logs/
+*.log
+benchmark-results/
+autocannon-*.json
+*.pid
+*.seed
+*.pid.lock
+
+# ==============================================================================
+# Testing & Code Coverage
+# ==============================================================================
+coverage/
+*/coverage/
+.nyc_output/
+*.lcov
+
+# ==============================================================================
+# Docker Local Overrides
+# ==============================================================================
+docker-compose.override.yml
+.docker/
+
+# ==============================================================================
+# IDEs & Code Editors
+# ==============================================================================
+# JetBrains (WebStorm, IntelliJ IDEA, etc.)
+.idea/
+*.iws
+*.iml
+
+# Visual Studio Code (ignore user workspace state, but keep team configs if any)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Other Editors
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ==============================================================================
+# Operating System Artifacts
+# ==============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory

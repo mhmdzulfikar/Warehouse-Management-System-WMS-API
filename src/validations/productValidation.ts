@@ -5,12 +5,20 @@ export const createProductSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
     uom: z.string().min(1, 'Unit of Measure (uom) is required'),
     basePrice: z.number().positive('Base Price must be greater than 0'),
-    minStock: z.number().int().nonnegative('Minimum stock must be 0 or greater').optional()
+    minStock: z.number().int().nonnegative('Minimum stock must be 0 or greater').optional(),
+    barcode: z.string().optional(),
+    category: z.string().optional(),
+    weightKg: z.number().positive('Weight must be greater than 0').optional(),
+    storageTemp: z.string().optional(),
 });
 
 export const updateProductSchema = z.object({
     name: z.string().min(1, 'Product name is required').optional(),
     uom: z.string().min(1, 'Unit of Measure (uom) is required').optional(),
     basePrice: z.number().positive('Base Price must be greater than 0').optional(),
-    minStock: z.number().int().nonnegative('Minimum stock must be 0 or greater').optional()
+    minStock: z.number().int().nonnegative('Minimum stock must be 0 or greater').optional(),
+    barcode: z.string().optional(),
+    category: z.string().optional(),
+    weightKg: z.number().positive('Weight must be greater than 0').optional(),
+    storageTemp: z.string().optional(),
 });

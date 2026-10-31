@@ -1,9 +1,9 @@
 export const swaggerDocument = {
     openapi: '3.0.0',
     info: {
-        title: 'Warehouse Management System (WMS) & Procurement API',
-        version: '1.0.0',
-        description: 'Complete RESTful API specification for WMS, Procurement, Stock Control, Inventory Ledger, and Role-Based Access Control (RBAC).'
+        title: 'WMS Nexus Enterprise • Global Warehouse Management & Telemetry API',
+        version: '2.0.0',
+        description: 'Production-grade RESTful specification for Multi-Facility WMS, High-Velocity Inbound Goods Receipt (GRN), Outbound Order Fulfillment & Waybill Dispatch, Granular Location Bins, Barcode Tracking, and Dual-Track UDP Telemetry.'
     },
     servers: [
         {
@@ -58,8 +58,8 @@ export const swaggerDocument = {
                                 type: 'object',
                                 required: ['username', 'email', 'password', 'roleId'],
                                 properties: {
-                                    username: { type: 'string', example: 'ahmad_staff' },
-                                    email: { type: 'string', example: 'ahmad@wms.com' },
+                                    username: { type: 'string', example: 'sarah.supervisor' },
+                                    email: { type: 'string', example: 'sarah.supervisor@wms-nexus.io' },
                                     password: { type: 'string', example: 'password123' },
                                     roleId: { type: 'integer', example: 2, description: '1=Admin, 2=Staff Gudang, 3=Purchasing, 4=Manager' }
                                 }
@@ -141,10 +141,12 @@ export const swaggerDocument = {
                                 type: 'object',
                                 required: ['sku', 'name', 'uom', 'basePrice'],
                                 properties: {
-                                    sku: { type: 'string', example: 'KOPI-LUV-01' },
-                                    name: { type: 'string', example: 'Kopi Luwak Premium' },
-                                    uom: { type: 'string', example: 'box' },
-                                    basePrice: { type: 'number', example: 85000 },
+                                    sku: { type: 'string', example: 'SKU-ELEC-SRV-90' },
+                                    barcode: { type: 'string', example: '0849312004521' },
+                                    name: { type: 'string', example: 'Enterprise Dual-Socket Blade Server Module 2U' },
+                                    category: { type: 'string', example: 'Computing & Infrastructure' },
+                                    uom: { type: 'string', example: 'unit' },
+                                    basePrice: { type: 'number', example: 2450.00 },
                                     minStock: { type: 'integer', example: 15 }
                                 }
                             }

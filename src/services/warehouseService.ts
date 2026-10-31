@@ -13,7 +13,9 @@ export const getAllWarehouses = async (query: { page?: number; limit?: number; s
     if (query.search) {
         where.OR = [
             { name: { contains: query.search, mode: 'insensitive' } },
-            { location: { contains: query.search, mode: 'insensitive' } }
+            { location: { contains: query.search, mode: 'insensitive' } },
+            { code: { contains: query.search, mode: 'insensitive' } },
+            { zoneType: { contains: query.search, mode: 'insensitive' } },
         ];
     }
 
@@ -56,11 +58,13 @@ export const getWarehouseById = async (id: number) => {
 // ==========================================
 // 3. CREATE NEW WAREHOUSE (CREATE)
 // ==========================================
-export const createWarehouse = async (name: string, location: string) => {
+export const createWarehouse = async (name: string, location: string, code?: string, zoneType?: string) => {
     return await prisma.warehouse.create({
         data: {
             name,
-            location
+            location,
+            code: code || null,
+            zoneType: zoneType || null,
         }
     });
 };
@@ -68,14 +72,16 @@ export const createWarehouse = async (name: string, location: string) => {
 // ==========================================
 // 4. UPDATE WAREHOUSE (UPDATE)
 // ==========================================
-export const updateWarehouse = async (id: number, data: { name?: string; location?: string }) => {
+export const updateWarehouse = async (id: number, data: { name?: string; location?: string; code?: string; zoneType?: string }) => {
     await getWarehouseById(id);
 
     return await prisma.warehouse.update({
         where: { id: Number(id) },
         data: {
             name: data.name,
-            location: data.location
+            location: data.location,
+            code: data.code,
+            zoneType: data.zoneType,
         }
     });
 };

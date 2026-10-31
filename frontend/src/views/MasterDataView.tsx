@@ -10,7 +10,16 @@ import {
   apiGetWarehouses,
 } from '../services/api';
 import type { Customer, Product, Supplier, Warehouse } from '../types';
-import { Boxes, Building2, Plus, RefreshCw, Truck, Users, X } from 'lucide-react';
+import { 
+  Boxes, 
+  Building2, 
+  Plus, 
+  RefreshCw, 
+  Truck, 
+  Users, 
+  X, 
+  Barcode 
+} from 'lucide-react';
 
 interface MasterDataViewProps {
   onShowToast: (msg: string, type: 'success' | 'error' | 'info') => void;
@@ -28,20 +37,28 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
   // Modals
   const [modalType, setModalType] = useState<'product' | 'supplier' | 'warehouse' | 'customer' | null>(null);
 
-  // Form states
+  // Form states - Product
   const [pName, setPName] = useState('');
   const [pSku, setPSku] = useState('');
-  const [pPrice, setPPrice] = useState(15000);
-  const [pUom, setPUom] = useState('pcs');
-  const [pMinStock, setPMinStock] = useState(50);
+  const [pBarcode, setPBarcode] = useState('');
+  const [pCategory, setPCategory] = useState('Computing & Infrastructure');
+  const [pPrice, setPPrice] = useState(1250);
+  const [pUom, setPUom] = useState('unit');
+  const [pMinStock, setPMinStock] = useState(15);
+  const [pStorageTemp, setPStorageTemp] = useState('Ambient');
 
+  // Form states - Supplier
   const [sName, setSName] = useState('');
   const [sContact, setSContact] = useState('');
   const [sAddress, setSAddress] = useState('');
 
+  // Form states - Warehouse
   const [wName, setWName] = useState('');
+  const [wCode, setWCode] = useState('');
   const [wLocation, setWLocation] = useState('');
+  const [wZoneType, setWZoneType] = useState('General High-Bay & Automated Storage');
 
+  // Form states - Customer
   const [cName, setCName] = useState('');
   const [cCode, setCCode] = useState('');
   const [cEmail, setCEmail] = useState('');
@@ -58,12 +75,12 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         apiGetWarehouses(),
         apiGetCustomers(),
       ]);
-      setProducts(prods);
-      setSuppliers(sups);
-      setWarehouses(whs);
-      setCustomers(custs);
+      setProducts(Array.isArray(prods) ? prods : []);
+      setSuppliers(Array.isArray(sups) ? sups : []);
+      setWarehouses(Array.isArray(whs) ? whs : []);
+      setCustomers(Array.isArray(custs) ? custs : []);
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal memuat master data', 'error');
+      onShowToast(err.message || 'Failed to load enterprise master catalog', 'error');
     } finally {
       setLoading(false);
     }
@@ -79,17 +96,21 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       await apiCreateProduct({
         name: pName,
         sku: pSku,
+        barcode: pBarcode || undefined,
+        category: pCategory || undefined,
         price: Number(pPrice),
         uom: pUom,
         minStock: Number(pMinStock),
+        storageTemp: pStorageTemp || undefined,
       });
-      onShowToast('Produk baru berhasil disimpan ke master data!', 'success');
+      onShowToast('New enterprise SKU registered in master catalog!', 'success');
       setModalType(null);
       setPName('');
       setPSku('');
+      setPBarcode('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal menyimpan produk', 'error');
+      onShowToast(err.message || 'Failed to save product specification', 'error');
     }
   };
 
@@ -101,14 +122,14 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         contact: sContact,
         address: sAddress,
       });
-      onShowToast('Mitra supplier berhasil didaftarkan!', 'success');
+      onShowToast('Tier-1 Global Supplier registered successfully!', 'success');
       setModalType(null);
       setSName('');
       setSContact('');
       setSAddress('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal menyimpan supplier', 'error');
+      onShowToast(err.message || 'Failed to register supplier', 'error');
     }
   };
 
@@ -117,15 +138,18 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
     try {
       await apiCreateWarehouse({
         name: wName,
+        code: wCode || undefined,
         location: wLocation,
+        zoneType: wZoneType || undefined,
       });
-      onShowToast('Fasilitas gudang baru berhasil didaftarkan!', 'success');
+      onShowToast('Global Logistics Hub added to facility network!', 'success');
       setModalType(null);
       setWName('');
+      setWCode('');
       setWLocation('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal mendaftarkan gudang', 'error');
+      onShowToast(err.message || 'Failed to register logistics facility', 'error');
     }
   };
 
@@ -140,7 +164,7 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
         address: cAddress || undefined,
         city: cCity || undefined,
       });
-      onShowToast('Mitra Customer baru berhasil didaftarkan!', 'success');
+      onShowToast('Enterprise Customer Account registered!', 'success');
       setModalType(null);
       setCName('');
       setCCode('');
@@ -150,76 +174,76 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       setCCity('');
       await loadData();
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal mendaftarkan customer', 'error');
+      onShowToast(err.message || 'Failed to register customer account', 'error');
     }
   };
 
-  const formatRupiah = (amount: number) => {
-    return 'Rp ' + (amount || 0).toLocaleString('id-ID');
+  const formatCurrency = (amount: number) => {
+    return '$' + (amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Sub-tab Navigation */}
-      <div className="glass-panel" style={{ padding: '14px 18px', marginBottom: '16px' }}>
+      <div className="card" style={{ padding: '14px 18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               className={`btn-secondary ${subTab === 'products' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('products')}
             >
               <Boxes size={15} />
-              <span>Data Produk ({products.length})</span>
+              <span>SKU Catalog ({products.length})</span>
             </button>
             <button
               className={`btn-secondary ${subTab === 'customers' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('customers')}
             >
               <Users size={15} />
-              <span>Mitra Customer ({customers.length})</span>
+              <span>Global Customers ({customers.length})</span>
             </button>
             <button
               className={`btn-secondary ${subTab === 'suppliers' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('suppliers')}
             >
               <Truck size={15} />
-              <span>Mitra Supplier ({suppliers.length})</span>
+              <span>Tier-1 Suppliers ({suppliers.length})</span>
             </button>
             <button
               className={`btn-secondary ${subTab === 'warehouses' ? 'btn-primary' : ''}`}
               onClick={() => setSubTab('warehouses')}
             >
               <Building2 size={15} />
-              <span>Fasilitas Gudang ({warehouses.length})</span>
+              <span>Logistics Facilities ({warehouses.length})</span>
             </button>
           </div>
 
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn-secondary" onClick={loadData} disabled={loading} title="Perbarui data">
+            <button className="btn-secondary" onClick={loadData} disabled={loading} title="Refresh records">
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
             </button>
             {subTab === 'products' && (
               <button className="btn-primary" onClick={() => setModalType('product')}>
                 <Plus size={15} />
-                <span>Tambah Produk</span>
+                <span>Register SKU</span>
               </button>
             )}
             {subTab === 'customers' && (
               <button className="btn-primary" onClick={() => setModalType('customer')}>
                 <Plus size={15} />
-                <span>Tambah Customer</span>
+                <span>Add Customer</span>
               </button>
             )}
             {subTab === 'suppliers' && (
               <button className="btn-primary" onClick={() => setModalType('supplier')}>
                 <Plus size={15} />
-                <span>Tambah Supplier</span>
+                <span>Add Supplier</span>
               </button>
             )}
             {subTab === 'warehouses' && (
               <button className="btn-primary" onClick={() => setModalType('warehouse')}>
                 <Plus size={15} />
-                <span>Tambah Gudang</span>
+                <span>Add Facility</span>
               </button>
             )}
           </div>
@@ -228,75 +252,105 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
       {/* SUB-PANE 1: PRODUCTS */}
       {subTab === 'products' && (
-        <div className="glass-panel">
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Nama Barang / Produk</th>
-                  <th>Kode SKU</th>
-                  <th>Harga Standar</th>
-                  <th>Satuan (UOM)</th>
-                  <th>Ambang Minimum</th>
+                  <th style={{ width: '60px' }}>ID</th>
+                  <th>Product Specification & Name</th>
+                  <th>SKU & Barcode (GTIN)</th>
+                  <th>Enterprise Category</th>
+                  <th style={{ textAlign: 'right' }}>Standard Base Price</th>
+                  <th>UOM</th>
+                  <th>Buffer Threshold</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td>#{p.id}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</td>
+                    <td className="tabular-num" style={{ color: 'var(--text-muted)' }}>#{p.id}</td>
                     <td>
-                      <code>{p.sku}</code>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</div>
+                      {p.storageTemp && p.storageTemp !== 'Ambient' && (
+                        <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '0.72rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 500 }}>
+                          {p.storageTemp}
+                        </span>
+                      )}
                     </td>
-                    <td className="tabular-num">{formatRupiah(p.price)}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <code>{p.sku}</code>
+                      </div>
+                      {p.barcode && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <Barcode size={12} />
+                          <span className="tabular-num">{p.barcode}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        {p.category || 'General Industrial'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }} className="tabular-num">
+                      {formatCurrency(p.basePrice ?? p.price)}
+                    </td>
                     <td>{p.uom}</td>
                     <td>
-                      <span className="badge badge-approved tabular-num">{p.minStock ?? 50} {p.uom}</span>
+                      <span className="badge badge-approved tabular-num">{p.minStock ?? 10} {p.uom}</span>
                     </td>
                   </tr>
                 ))}
+                {products.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No enterprise SKUs registered in the master catalog.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* SUB-PANE 2: CUSTOMERS (PEMBELI) */}
+      {/* SUB-PANE 2: CUSTOMERS */}
       {subTab === 'customers' && (
-        <div className="glass-panel">
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Kode Customer</th>
-                  <th>Nama Perusahaan / Pembeli</th>
-                  <th>Kontak Telepon & Email</th>
-                  <th>Kota / Wilayah</th>
-                  <th>Alamat Kantor / Gudang Tujuan</th>
+                  <th>Account Code</th>
+                  <th>Corporate Customer / Enterprise Partner</th>
+                  <th>Corporate Contact</th>
+                  <th>Region / Logistics Hub</th>
+                  <th>Destination Address / Receiving Bay</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.length === 0 ? (
                   <tr>
                     <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                      Belum ada data customer terdaftar.
+                      No enterprise customer accounts registered yet.
                     </td>
                   </tr>
                 ) : (
                   customers.map((c) => (
                     <tr key={c.id}>
                       <td>
-                        <strong>{c.code}</strong>
+                        <code style={{ fontWeight: 600 }}>{c.code}</code>
                       </td>
                       <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</td>
                       <td>
-                        <div>{c.phone || '-'}</div>
+                        <div>{c.phone || c.contactInfo || '-'}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.email || ''}</div>
                       </td>
                       <td>
                         <span className="badge badge-partial" style={{ background: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>
-                          {c.city || 'Indonesia'}
+                          {c.city || 'Global Hub'}
                         </span>
                       </td>
                       <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{c.address || '-'}</td>
@@ -311,26 +365,33 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
       {/* SUB-PANE 3: SUPPLIERS */}
       {subTab === 'suppliers' && (
-        <div className="glass-panel">
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Nama Perusahaan Vendor</th>
-                  <th>Kontak / Telepon / Email</th>
-                  <th>Alamat Kantor / Pabrik</th>
+                  <th style={{ width: '60px' }}>ID</th>
+                  <th>Tier-1 Supplier Enterprise</th>
+                  <th>Official Corporate Contact</th>
+                  <th>Global Manufacturing / Logistics Address</th>
                 </tr>
               </thead>
               <tbody>
                 {suppliers.map((s) => (
                   <tr key={s.id}>
-                    <td>#{s.id}</td>
+                    <td className="tabular-num" style={{ color: 'var(--text-muted)' }}>#{s.id}</td>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</td>
-                    <td>{s.contact || '-'}</td>
-                    <td>{s.address || '-'}</td>
+                    <td style={{ fontSize: '0.85rem' }}>{s.contactInfo || s.contact || '-'}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{s.address || '-'}</td>
                   </tr>
                 ))}
+                {suppliers.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No tier-1 suppliers registered.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -339,24 +400,39 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
       {/* SUB-PANE 4: WAREHOUSES */}
       {subTab === 'warehouses' && (
-        <div className="glass-panel">
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Nama Fasilitas Gudang</th>
-                  <th>Alamat / Lokasi Geografis</th>
+                  <th style={{ width: '80px' }}>Code</th>
+                  <th>Logistics Facility Name</th>
+                  <th>Geographic Location & Terminal</th>
+                  <th>Storage Architecture & Zone Type</th>
                 </tr>
               </thead>
               <tbody>
                 {warehouses.map((w) => (
                   <tr key={w.id}>
-                    <td>#{w.id}</td>
+                    <td>
+                      <code style={{ fontWeight: 700 }}>{w.code || `WH-${w.id}`}</code>
+                    </td>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{w.name}</td>
-                    <td>{w.location || '-'}</td>
+                    <td style={{ fontSize: '0.85rem' }}>{w.location || '-'}</td>
+                    <td>
+                      <span className="badge badge-approved" style={{ background: '#f8fafc', color: '#1e293b', borderColor: '#e2e8f0', fontSize: '0.75rem' }}>
+                        {w.zoneType || 'General High-Bay Logistics'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
+                {warehouses.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      No logistics facilities registered in the network.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -366,20 +442,20 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       {/* Modal: Add Product */}
       {modalType === 'product' && (
         <div className="modal-overlay">
-          <div className="modal-box">
+          <div className="modal-box" style={{ maxWidth: '520px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Tambah Produk Baru</h3>
+              <h3 className="modal-title">Register Enterprise SKU</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
                 <X size={18} />
               </button>
             </div>
             <form onSubmit={handleCreateProduct}>
               <div className="form-group">
-                <label className="form-label">Nama Barang</label>
+                <label className="form-label">Product Name & Specification</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Contoh: Minyak Goreng Filma 2L"
+                  placeholder="e.g. Industrial Solid-State LiDAR Sensor 2D"
                   value={pName}
                   onChange={(e) => setPName(e.target.value)}
                   required
@@ -388,22 +464,45 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Kode SKU Unik</label>
+                  <label className="form-label">SKU Identifier</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Contoh: MYK-FLM-02"
+                    placeholder="e.g. SKU-LID-AUT-08"
                     value={pSku}
                     onChange={(e) => setPSku(e.target.value)}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Satuan Ukuran (UOM)</label>
+                  <label className="form-label">Barcode / GTIN</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Contoh: pouch, dus, pcs"
+                    placeholder="e.g. 0819238472910"
+                    value={pBarcode}
+                    onChange={(e) => setPBarcode(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group">
+                  <label className="form-label">Enterprise Category</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Automotive & Robotics"
+                    value={pCategory}
+                    onChange={(e) => setPCategory(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Unit of Measure (UOM)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. unit, box, kit"
                     value={pUom}
                     onChange={(e) => setPUom(e.target.value)}
                     required
@@ -413,18 +512,19 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Harga Standar (Rp)</label>
+                  <label className="form-label">Base Price ($ USD)</label>
                   <input
                     type="number"
                     className="form-control tabular-num"
                     min={0}
+                    step="0.01"
                     value={pPrice}
                     onChange={(e) => setPPrice(Number(e.target.value))}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Batas Stok Minimum (Buffer)</label>
+                  <label className="form-label">Buffer Minimum Stock</label>
                   <input
                     type="number"
                     className="form-control tabular-num"
@@ -436,12 +536,23 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
                 </div>
               </div>
 
+              <div className="form-group">
+                <label className="form-label">Storage Class / Temperature</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Ambient, -20°C Cold-Chain, Hazmat"
+                  value={pStorageTemp}
+                  onChange={(e) => setPStorageTemp(e.target.value)}
+                />
+              </div>
+
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Batal
+                  Cancel
                 </button>
                 <button type="submit" className="btn-primary">
-                  Simpan Produk
+                  Save SKU Specification
                 </button>
               </div>
             </form>
@@ -452,9 +563,9 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       {/* Modal: Add Customer */}
       {modalType === 'customer' && (
         <div className="modal-overlay">
-          <div className="modal-box">
+          <div className="modal-box" style={{ maxWidth: '520px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Daftarkan Mitra Customer Baru</h3>
+              <h3 className="modal-title">Register Global Customer Account</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
                 <X size={18} />
               </button>
@@ -462,21 +573,21 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
             <form onSubmit={handleCreateCustomer}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Kode (Opsional)</label>
+                  <label className="form-label">Account Code</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="CUST-004"
+                    placeholder="e.g. CUST-GLB-005"
                     value={cCode}
                     onChange={(e) => setCCode(e.target.value)}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Nama Perusahaan / Customer *</label>
+                  <label className="form-label">Corporate Enterprise Name *</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="PT Retail Makmur Sejahtera"
+                    placeholder="e.g. Apex Industrial Systems Inc"
                     value={cName}
                     onChange={(e) => setCName(e.target.value)}
                     required
@@ -486,21 +597,21 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Kontak Telepon</label>
+                  <label className="form-label">Corporate Telephone</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="0812-3456-7890"
+                    placeholder="+1-800-555-0199"
                     value={cPhone}
                     onChange={(e) => setCPhone(e.target.value)}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Email PIC</label>
+                  <label className="form-label">Official Logistics Email</label>
                   <input
                     type="email"
                     className="form-control"
-                    placeholder="purchasing@retailmakmur.com"
+                    placeholder="logistics@apexsystems.com"
                     value={cEmail}
                     onChange={(e) => setCEmail(e.target.value)}
                   />
@@ -509,21 +620,21 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '14px' }}>
                 <div className="form-group">
-                  <label className="form-label">Alamat Kantor / Gudang Tujuan</label>
+                  <label className="form-label">Receiving Hub Address</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Jl. Ahmad Yani No. 120"
+                    placeholder="1200 Logistics Parkway, Dock 4"
                     value={cAddress}
                     onChange={(e) => setCAddress(e.target.value)}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Kota / Wilayah</label>
+                  <label className="form-label">Metro / Region</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Surabaya"
+                    placeholder="California, USA"
                     value={cCity}
                     onChange={(e) => setCCity(e.target.value)}
                   />
@@ -532,10 +643,10 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Batal
+                  Cancel
                 </button>
                 <button type="submit" className="btn-primary">
-                  Simpan Customer
+                  Register Account
                 </button>
               </div>
             </form>
@@ -546,20 +657,20 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       {/* Modal: Add Supplier */}
       {modalType === 'supplier' && (
         <div className="modal-overlay">
-          <div className="modal-box">
+          <div className="modal-box" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Daftarkan Pemasok (Supplier) Baru</h3>
+              <h3 className="modal-title">Register Tier-1 Supplier</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
                 <X size={18} />
               </button>
             </div>
             <form onSubmit={handleCreateSupplier}>
               <div className="form-group">
-                <label className="form-label">Nama Perusahaan Pemasok</label>
+                <label className="form-label">Supplier Enterprise Name</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Contoh: PT Mitra Logistik Sejahtera"
+                  placeholder="e.g. Continental Precision Dynamics GmbH"
                   value={sName}
                   onChange={(e) => setSName(e.target.value)}
                   required
@@ -567,22 +678,22 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
               </div>
 
               <div className="form-group">
-                <label className="form-label">Kontak Resmi (Telepon / Email)</label>
+                <label className="form-label">Corporate Contact (Phone / Email)</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Contoh: 021-889977 / vendor@mitra.com"
+                  placeholder="+49-69-700-1100 | logistics@continental.de"
                   value={sContact}
                   onChange={(e) => setSContact(e.target.value)}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Alamat Kantor / Pergudangan</label>
+                <label className="form-label">Headquarters / Manufacturing Facility Address</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Contoh: Kawasan Industri MM2100, Cikarang"
+                  placeholder="Vahrenwalder Str. 9, 30165 Hannover, Germany"
                   value={sAddress}
                   onChange={(e) => setSAddress(e.target.value)}
                 />
@@ -590,10 +701,10 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
 
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Batal
+                  Cancel
                 </button>
                 <button type="submit" className="btn-primary">
-                  Simpan Pemasok
+                  Register Supplier
                 </button>
               </div>
             </form>
@@ -604,43 +715,66 @@ export const MasterDataView: React.FC<MasterDataViewProps> = ({ onShowToast }) =
       {/* Modal: Add Warehouse */}
       {modalType === 'warehouse' && (
         <div className="modal-overlay">
-          <div className="modal-box">
+          <div className="modal-box" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3 className="modal-title">Daftarkan Fasilitas Gudang Baru</h3>
+              <h3 className="modal-title">Register Logistics Facility Hub</h3>
               <button className="modal-close" onClick={() => setModalType(null)}>
                 <X size={18} />
               </button>
             </div>
             <form onSubmit={handleCreateWarehouse}>
-              <div className="form-group">
-                <label className="form-label">Nama Fasilitas Gudang</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Contoh: Gudang Distribusi Surabaya Barat"
-                  value={wName}
-                  onChange={(e) => setWName(e.target.value)}
-                  required
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px' }}>
+                <div className="form-group">
+                  <label className="form-label">Facility Code</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="GLOBAL-DC-04"
+                    value={wCode}
+                    onChange={(e) => setWCode(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Facility Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tokyo Air Freight Gateway Hub"
+                    value={wName}
+                    onChange={(e) => setWName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Lokasi / Alamat Lengkap</label>
+                <label className="form-label">Geographic Location</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Contoh: Jl. Rungkut Industri No. 45, Surabaya"
+                  placeholder="Narita International Airport Cargo Bay, Chiba, Japan"
                   value={wLocation}
                   onChange={(e) => setWLocation(e.target.value)}
                 />
               </div>
 
+              <div className="form-group">
+                <label className="form-label">Zone Architecture & Capabilities</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="High-Velocity Cross-Dock & Cold-Chain Vault"
+                  value={wZoneType}
+                  onChange={(e) => setWZoneType(e.target.value)}
+                />
+              </div>
+
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button type="button" className="btn-secondary" onClick={() => setModalType(null)}>
-                  Batal
+                  Cancel
                 </button>
                 <button type="submit" className="btn-primary">
-                  Simpan Fasilitas
+                  Save Facility Hub
                 </button>
               </div>
             </form>

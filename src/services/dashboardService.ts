@@ -22,10 +22,10 @@ export const getDashboardSummary = async () => {
         prisma.inventory.findMany({
             include: {
                 product: {
-                    select: { id: true, name: true, sku: true, basePrice: true, minStock: true, uom: true }
+                    select: { id: true, name: true, sku: true, barcode: true, category: true, basePrice: true, minStock: true, uom: true }
                 },
                 warehouse: {
-                    select: { id: true, name: true, location: true }
+                    select: { id: true, code: true, name: true, location: true }
                 }
             }
         }),
@@ -47,8 +47,8 @@ export const getDashboardSummary = async () => {
                 createdBy: { select: { id: true, username: true } },
                 transactionItems: {
                     include: {
-                        product: { select: { id: true, name: true, sku: true } },
-                        warehouse: { select: { id: true, name: true } }
+                        product: { select: { id: true, name: true, sku: true, barcode: true } },
+                        warehouse: { select: { id: true, code: true, name: true } }
                     }
                 }
             }
@@ -79,8 +79,11 @@ export const getDashboardSummary = async () => {
                 productId: inv.product.id,
                 productName: inv.product.name,
                 sku: inv.product.sku,
+                barcode: inv.product.barcode,
+                category: inv.product.category,
                 uom: inv.product.uom,
                 warehouseId: inv.warehouse.id,
+                warehouseCode: inv.warehouse.code,
                 warehouseName: inv.warehouse.name,
                 currentQty: inv.currentQty,
                 minStock: inv.product.minStock,
@@ -95,6 +98,7 @@ export const getDashboardSummary = async () => {
         const totalQty = wh.inventories.reduce((acc, curr) => acc + curr.currentQty, 0);
         return {
             id: wh.id,
+            code: wh.code,
             name: wh.name,
             totalItems: totalQty,
             uniqueProducts: wh.inventories.length

@@ -45,9 +45,9 @@ export const fetchWarehouseById = async (req: Request, res: Response) => {
 // 3. CREATE NEW WAREHOUSE (CREATE)
 // ==========================================
 export const addWarehouse = async (req: Request, res: Response) => {
-    const { name, location } = req.body;
+    const { name, location, code, zoneType } = req.body;
 
-    const newWarehouse = await createWarehouse(name, location);
+    const newWarehouse = await createWarehouse(name, location, code, zoneType);
     return res.status(201).json({ 
         success: true, 
         message: 'Warehouse successfully created!', 

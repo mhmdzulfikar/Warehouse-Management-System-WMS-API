@@ -13,7 +13,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouseId, setWarehouseId] = useState<number | ''>('');
   const [items, setItems] = useState<Array<{ productId: number; physicalQty: number; reason: string }>>([
-    { productId: 0, physicalQty: 100, reason: 'Hasil audit perhitungan fisik mingguan' },
+    { productId: 0, physicalQty: 100, reason: 'Routine weekly physical cycle count' },
   ]);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -22,17 +22,17 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
     const fetchData = async () => {
       try {
         const [whs, prods] = await Promise.all([apiGetWarehouses(), apiGetProducts()]);
-        setWarehouses(whs);
-        setProducts(prods);
+        setWarehouses(Array.isArray(whs) ? whs : []);
+        setProducts(Array.isArray(prods) ? prods : []);
       } catch (err: any) {
-        onShowToast(err.message || 'Gagal memuat daftar fasilitas gudang', 'error');
+        onShowToast(err.message || 'Failed to retrieve master facility list', 'error');
       }
     };
     fetchData();
   }, []);
 
   const handleAddItem = () => {
-    setItems([...items, { productId: 0, physicalQty: 50, reason: 'Penyesuaian stok fisik' }]);
+    setItems([...items, { productId: 0, physicalQty: 50, reason: 'Physical cycle count adjustment' }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -42,12 +42,12 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!warehouseId) {
-      onShowToast('Silakan pilih lokasi gudang yang diperiksa', 'error');
+      onShowToast('Please select the audit facility hub', 'error');
       return;
     }
     const validItems = items.filter((i) => i.productId > 0);
     if (validItems.length === 0) {
-      onShowToast('Tambahkan minimal satu jenis barang untuk penyesuaian opname', 'error');
+      onShowToast('Add at least one product SKU to reconcile', 'error');
       return;
     }
 
@@ -56,59 +56,60 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
       await apiAdjustStockOpname({
         warehouseId: Number(warehouseId),
         items: validItems,
-        note: note || 'Berita Acara Stock Opname Fisik',
+        note: note || 'Official Physical Inventory Cycle Count Reconciliation Docket',
       });
-      onShowToast('Penyesuaian stok opname berhasil diterapkan ke sistem!', 'success');
+      onShowToast('Cycle count audit reconciliation applied to inventory ledger!', 'success');
       onNavigateTab('inventory');
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal menyimpan penyesuaian stock opname', 'error');
+      onShowToast(err.message || 'Failed to apply cycle count adjustment', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '780px', margin: '0 auto' }}>
-      <div className="glass-panel">
-        <div className="panel-header">
-          <div className="panel-title">
-            <ClipboardCheck size={18} style={{ color: 'var(--status-amber-text)' }} />
-            <span>Rekonsiliasi Stock Opname Fisik Gudang</span>
+    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--border-default)', paddingBottom: '14px' }}>
+          <div style={{ background: '#0f172a', color: '#ffffff', padding: '8px', borderRadius: '8px' }}>
+            <ClipboardCheck size={20} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Physical Inventory Cycle Count Audit</h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Reconcile physical on-floor bin counts against digital records with immutable audit reason codes.
+            </p>
           </div>
         </div>
 
-        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-          Masukkan kuantitas fisik riil hasil perhitungan di lapangan. Sistem akan secara otomatis menghitung selisih (discrepancy), memperbarui saldo inventaris, dan mencatatnya ke buku jurnal mutasi.
-        </p>
-
         <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ maxWidth: '380px', marginBottom: '16px' }}>
-            <label className="form-label">Lokasi Gudang yang Diperiksa</label>
+          <div className="form-group" style={{ marginBottom: '18px' }}>
+            <label className="form-label">Audit Target Logistics Facility *</label>
             <select
               className="form-control"
               value={warehouseId}
               onChange={(e) => setWarehouseId(e.target.value ? Number(e.target.value) : '')}
               required
             >
-              <option value="">Pilih Gudang yang Diinspeksi...</option>
+              <option value="">Select Audit Facility...</option>
               {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.name}
+                  {w.code ? `[${w.code}] ` : ''}{w.name}
                 </option>
               ))}
             </select>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span className="form-label" style={{ marginBottom: 0 }}>Daftar Hasil Hitung Fisik Lapangan</span>
+          <div style={{ margin: '16px 0 10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="form-label" style={{ marginBottom: 0, fontWeight: 600 }}>Audited SKUs & Actual Counted Quantities</span>
             <button
               type="button"
               className="btn-secondary"
-              style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
               onClick={handleAddItem}
             >
               <Plus size={13} />
-              <span>Tambah Baris</span>
+              <span>Add Line Item</span>
             </button>
           </div>
 
@@ -118,9 +119,9 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
               style={{
                 display: 'grid',
                 gridTemplateColumns: '2fr 1fr 2fr auto',
-                gap: '8px',
-                marginBottom: '8px',
+                gap: '10px',
                 alignItems: 'center',
+                marginBottom: '10px',
               }}
             >
               <select
@@ -133,7 +134,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
                 }}
                 required
               >
-                <option value={0}>Pilih Produk...</option>
+                <option value={0}>Select Product SKU...</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
@@ -144,7 +145,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
               <input
                 type="number"
                 className="form-control tabular-num"
-                placeholder="Jumlah Fisik"
+                placeholder="Actual Count"
                 min={0}
                 value={it.physicalQty}
                 onChange={(e) => {
@@ -158,7 +159,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
               <input
                 type="text"
                 className="form-control"
-                placeholder="Alasan / Bukti Selisih"
+                placeholder="Reason / Variance Cause"
                 value={it.reason}
                 onChange={(e) => {
                   const updated = [...items];
@@ -172,7 +173,7 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '7px', color: 'var(--status-rose-text)' }}
+                  style={{ padding: '8px', color: '#991b1b' }}
                   onClick={() => handleRemoveItem(idx)}
                 >
                   <X size={15} />
@@ -182,23 +183,28 @@ export const OpnameView: React.FC<OpnameViewProps> = ({ onShowToast, onNavigateT
           ))}
 
           <div className="form-group" style={{ marginTop: '16px' }}>
-            <label className="form-label">No. Berita Acara / Keterangan Batch Opname</label>
+            <label className="form-label">Audit Certificate / Official Discrepancy Minutes</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Contoh: Berita Acara No. BA/OPN/2026/04 - Audit Stok Akhir Bulan"
+              placeholder="e.g. Q4 Global Logistics Physical Cycle Count Audit Sign-off"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
-            <button type="button" className="btn-secondary" onClick={() => onNavigateTab('inventory')}>
-              Batal
+          <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onNavigateTab('inventory')}
+              disabled={submitting}
+            >
+              Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={submitting}>
-              <Check size={15} />
-              <span>{submitting ? 'Menyimpan Penyesuaian...' : 'Terapkan Hasil Opname Fisik'}</span>
+              <Check size={16} />
+              <span>{submitting ? 'Applying Reconciliation...' : 'Commit Cycle Count Adjustment'}</span>
             </button>
           </div>
         </form>

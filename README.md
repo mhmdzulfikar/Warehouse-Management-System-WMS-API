@@ -4,7 +4,7 @@ Sistem Manajemen Pergudangan modern (*Enterprise Warehouse Management System*) t
 
 ---
 
-## 🏗️ Arsitektur Sistem
+##  Arsitektur Sistem
 
 Ekosistem WMS dirancang untuk throughput tinggi, efisiensi alur data (*data flow efficiency*), dan latensi ultra-rendah:
 
@@ -31,7 +31,7 @@ Ekosistem WMS dirancang untuk throughput tinggi, efisiensi alur data (*data flow
 
 ---
 
-## 🚀 Menjalankan dengan Docker Compose
+##  Menjalankan dengan Docker Compose
 
 ### 1. Prasyarat
 - Docker Engine & Docker Compose terpasang di sistem.
@@ -56,20 +56,20 @@ Docker Compose akan otomatis:
 
 ---
 
-## 👤 Kredensial Login Default
+## 👥 Kredensial Login Multi-Persona (Enterprise & Demo)
 
 Semua akun default menggunakan password: `password123`
 
-| Peran (Role) | Email | Username | Deskripsi Hak Akses |
+| Peran (Role) | Email Korporat | Username | Deskripsi Hak Akses |
 |---|---|---|---|
-| **Manager** | `manager@wms.com` | `bapak_manager` | Akses penuh laporan eksekutif, PO, dan approval |
-| **Staff Gudang** | `gudang@wms.com` | `joko_gudang` | Mutasi stok, opname fisik, picking & delivery order |
-| **Purchasing** | `purchasing@wms.com` | `andi_purchasing` | Pembuatan & pemrosesan Purchase Order ke supplier |
-| **Admin** | `admin@wms.com` | `admin_master` | Manajemen master data pengguna dan konfigurasi |
+| **Operations Director** | `marcus.director@wms-nexus.io` *(alt: manager@wms.com)* | `ops_director` *(alt: bapak_manager)* | Kontrol penuh eksekutif, approval PO, audit valuasi aset |
+| **Inbound & PO Lead** | `elena.inventory@wms-nexus.io` *(alt: purchasing@wms.com)* | `inv_supervisor` *(alt: andi_purchasing)* | Penerbitan PO ke supplier, manajemen ASN dan katalog SKU |
+| **Logistics Specialist** | `david.fulfillment@wms-nexus.io` *(alt: gudang@wms.com)* | `logistics_lead` *(alt: joko_gudang)* | Goods receipt dock (GRN), wave picking, packing, surat jalan DO |
+| **System Admin** | `admin@wms-nexus.io` *(alt: admin@wms.com)* | `sysadmin` *(alt: admin_master)* | Konfigurasi jaringan fasilitas, RBAC, dan audit telemetri |
 
 ---
 
-## 🛠️ Pengembangan Lokal (Tanpa Docker)
+##  Pengembangan Lokal (Tanpa Docker)
 
 ```bash
 # 1. Install dependencies
@@ -92,13 +92,13 @@ npm run dev:fe
 
 ---
 
-## 📊 Benchmark Autocannon & Verifikasi Telemetri
+##  Benchmark Autocannon & Verifikasi Telemetri
 
 Sistem dilengkapi dua endpoint khusus untuk benchmark beban tinggi (*high-load load-testing*) menggunakan **Autocannon**:
 1. `/api/benchmark/sync-log`: Simulasi penulisan log secara sinkron langsung ke database (blocking I/O event loop).
 2. `/api/benchmark/udp-log`: Pengiriman telemetri asinkron via UDP datagram tanpa menunggu database (non-blocking).
 
-### 🚀 Cara Menjalankan Benchmark Autocannon
+###  Cara Menjalankan Benchmark Autocannon
 
 Pastikan server WMS API dan UDP Log Aggregator sudah berjalan (`npm run aggregator:dev` dan `npm run dev`), lalu buka terminal baru dan jalankan:
 

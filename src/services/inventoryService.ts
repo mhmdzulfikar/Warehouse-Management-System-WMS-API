@@ -20,6 +20,11 @@ export const getAllInventory = async (query: { page?: number; limit?: number; wa
                 product: true,
                 warehouse: true,
             },
+            orderBy: [
+                { warehouseId: 'asc' },
+                { storageLocation: 'asc' },
+                { id: 'asc' }
+            ]
         }),
         prisma.inventory.count({ where })
     ]);
@@ -57,8 +62,11 @@ export const getWarehouseDashboardReport = async (warehouseId: number) => {
         return {
             productId: item.productId,
             sku: item.product.sku,
+            barcode: item.product.barcode,
             itemName: item.product.name,
+            category: item.product.category,
             remainingStock: item.currentQty,
+            storageLocation: item.storageLocation,
             minStockThreshold: item.product.minStock,
             shortage: Math.max(0, item.product.minStock - item.currentQty),
             status: item.currentQty === 0 ? 'OUT OF STOCK' : 'CRITICAL - RESTOCK RECOMMENDED'
@@ -68,8 +76,10 @@ export const getWarehouseDashboardReport = async (warehouseId: number) => {
     return {
         warehouse: {
             id: warehouse.id,
+            code: warehouse.code,
             name: warehouse.name,
-            location: warehouse.location
+            location: warehouse.location,
+            zoneType: warehouse.zoneType
         },
         totalProductsTracked: allStocks.length,
         totalItemsInWarehouse: totalItemsInWarehouse,

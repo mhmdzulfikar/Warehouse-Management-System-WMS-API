@@ -2,7 +2,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  role: 'Manager' | 'Purchasing' | 'Staff Gudang' | string;
+  role: 'Manager' | 'Purchasing' | 'Staff Gudang' | 'Admin' | string;
 }
 
 export interface AuthResponse {
@@ -14,29 +14,41 @@ export interface Product {
   id: number;
   name: string;
   sku: string;
+  barcode?: string;
+  category?: string;
   price: number;
+  basePrice?: number;
   uom: string;
   minStock?: number;
+  weightKg?: number;
+  storageTemp?: string;
 }
 
 export interface Supplier {
   id: number;
   name: string;
   contact?: string;
+  contactInfo?: string;
   address?: string;
 }
 
 export interface Warehouse {
   id: number;
+  code?: string;
   name: string;
   location?: string;
+  zoneType?: string;
 }
 
 export interface InventoryItem {
   id: number;
   productId: number;
   warehouseId: number;
-  quantity: number;
+  quantity?: number;
+  currentQty?: number;
+  storageLocation?: string;
+  batchNumber?: string;
+  expiryDate?: string;
   product?: Product;
   warehouse?: Warehouse;
 }
@@ -45,8 +57,10 @@ export interface PurchaseOrderItem {
   id: number;
   productId: number;
   quantity: number;
+  qty?: number;
   receivedQty: number;
   price: number;
+  expectedPrice?: number;
   product?: Product;
 }
 
@@ -54,21 +68,25 @@ export interface PurchaseOrder {
   id: number;
   supplierId: number;
   warehouseId?: number;
-  userId: number;
+  userId?: number;
   status: 'PENDING' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | string;
   createdAt: string;
   supplier?: Supplier;
   items?: PurchaseOrderItem[];
+  poItems?: PurchaseOrderItem[];
   totalAmount?: number;
+  createdBy?: { username: string };
+  approvedBy?: { username: string } | null;
 }
 
 export interface TransactionItem {
   id: number;
   productId: number;
   warehouseId: number;
-  quantity: number;
-  product?: { name: string; sku: string };
-  warehouse?: { name: string };
+  quantity?: number;
+  qtyChange?: number;
+  product?: { name: string; sku: string; barcode?: string };
+  warehouse?: { name: string; code?: string };
 }
 
 export interface Transaction {
@@ -79,7 +97,9 @@ export interface Transaction {
   note?: string;
   timestamp: string;
   user?: { username: string };
+  createdBy?: { username: string };
   items?: TransactionItem[];
+  transactionItems?: TransactionItem[];
 }
 
 export interface CriticalStockItem {
@@ -87,8 +107,11 @@ export interface CriticalStockItem {
   productId: number;
   productName: string;
   sku: string;
+  barcode?: string;
+  category?: string;
   uom: string;
   warehouseId: number;
+  warehouseCode?: string;
   warehouseName: string;
   currentQty: number;
   minStock: number;
@@ -112,6 +135,7 @@ export interface DashboardStats {
   metrics: DashboardMetrics;
   warehouseDistribution: Array<{
     id: number;
+    code?: string;
     name: string;
     totalItems: number;
     uniqueProducts: number;
@@ -153,6 +177,7 @@ export interface Customer {
   name: string;
   email?: string | null;
   phone?: string | null;
+  contactInfo?: string | null;
   address?: string | null;
   city?: string | null;
   createdAt: string;
@@ -232,5 +257,3 @@ export interface SalesOrder {
   deliveryOrders?: DeliveryOrder[];
   deliveryOrder?: DeliveryOrder | null;
 }
-
-

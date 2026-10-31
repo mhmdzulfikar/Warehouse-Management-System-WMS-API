@@ -445,13 +445,28 @@ code, .tabular-num {
 }
 
 /* Surface Panels */
-.glass-panel {
+.glass-panel,
+.card {
   background: #ffffff;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   padding: 20px 22px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-xs);
+}
+
+.spin,
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .panel-header {

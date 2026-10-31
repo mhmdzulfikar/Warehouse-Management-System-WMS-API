@@ -88,21 +88,43 @@ export const apiGetPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
 export const apiCreatePurchaseOrder = async (payload: {
   supplierId: number;
   warehouseId?: number;
-  items: Array<{ productId: number; quantity: number; price: number }>;
+  items: Array<{ productId: number; quantity?: number; qtyOrdered?: number; price?: number; unitPrice?: number }>;
 }): Promise<PurchaseOrder> => {
+  const body = {
+    supplierId: payload.supplierId,
+    items: payload.items.map((i) => ({
+      productId: i.productId,
+      qtyOrdered: i.qtyOrdered ?? i.quantity ?? 1,
+      unitPrice: i.unitPrice ?? i.price ?? 0,
+    })),
+  };
   return request<PurchaseOrder>('/api/po', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
+  });
+};
+
+export const apiApprovePurchaseOrder = async (poId: number): Promise<any> => {
+  return request(`/api/po/${poId}/approve`, {
+    method: 'PATCH',
   });
 };
 
 export const apiReceivePurchaseOrder = async (
   poId: number,
-  items: Array<{ productId: number; quantity: number }>
+  items: Array<{ productId: number; quantity?: number; qtyReceived?: number }>,
+  warehouseId: number = 1
 ): Promise<any> => {
+  const body = {
+    warehouseId,
+    items: items.map((i) => ({
+      productId: i.productId,
+      qtyReceived: i.qtyReceived ?? i.quantity ?? 1,
+    })),
+  };
   return request(`/api/po/${poId}/receive`, {
     method: 'POST',
-    body: JSON.stringify({ items }),
+    body: JSON.stringify(body),
   });
 };
 
@@ -142,13 +164,21 @@ export const apiGetProducts = async (): Promise<Product[]> => {
 export const apiCreateProduct = async (payload: {
   name: string;
   sku: string;
-  price: number;
+  price?: number;
+  basePrice?: number;
   uom: string;
   minStock?: number;
+  barcode?: string;
+  category?: string;
+  weightKg?: number;
+  storageTemp?: string;
 }): Promise<Product> => {
   return request<Product>('/api/products', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      basePrice: payload.basePrice ?? payload.price ?? 0,
+    }),
   });
 };
 
@@ -159,11 +189,16 @@ export const apiGetSuppliers = async (): Promise<Supplier[]> => {
 export const apiCreateSupplier = async (payload: {
   name: string;
   contact?: string;
+  contactInfo?: string;
   address?: string;
 }): Promise<Supplier> => {
   return request<Supplier>('/api/suppliers', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      name: payload.name,
+      contactInfo: payload.contactInfo ?? payload.contact,
+      address: payload.address,
+    }),
   });
 };
 
@@ -174,6 +209,8 @@ export const apiGetWarehouses = async (): Promise<Warehouse[]> => {
 export const apiCreateWarehouse = async (payload: {
   name: string;
   location?: string;
+  code?: string;
+  zoneType?: string;
 }): Promise<Warehouse> => {
   return request<Warehouse>('/api/warehouses', {
     method: 'POST',
@@ -181,7 +218,7 @@ export const apiCreateWarehouse = async (payload: {
   });
 };
 
-// Customer APIs
+// Customers APIs
 export const apiGetCustomers = async (): Promise<Customer[]> => {
   return request<Customer[]>('/api/customers');
 };
@@ -191,6 +228,7 @@ export const apiCreateCustomer = async (payload: {
   code?: string;
   email?: string;
   phone?: string;
+  contactInfo?: string;
   address?: string;
   city?: string;
 }): Promise<Customer> => {
@@ -200,7 +238,7 @@ export const apiCreateCustomer = async (payload: {
   });
 };
 
-// Sales Order (Outbound) APIs
+// Sales Orders (Outbound) APIs
 export const apiGetSalesOrders = async (): Promise<SalesOrder[]> => {
   return request<SalesOrder[]>('/api/sales-orders');
 };
@@ -212,18 +250,19 @@ export const apiGetSalesOrderById = async (id: number): Promise<SalesOrder> => {
 export const apiCreateSalesOrder = async (payload: {
   customerId: number;
   warehouseId: number;
-  notes?: string;
+  shippingAddress?: string;
   note?: string;
-  items: Array<{ productId: number; quantity: number; unitPrice?: number; price?: number }>;
+  items: Array<{ productId: number; quantity: number; unitPrice: number }>;
 }): Promise<SalesOrder> => {
   const body = {
     customerId: payload.customerId,
     warehouseId: payload.warehouseId,
-    note: payload.note || payload.notes,
-    items: payload.items.map((it) => ({
-      productId: it.productId,
-      quantity: it.quantity,
-      price: it.price !== undefined ? it.price : (it.unitPrice || 0),
+    shippingAddress: payload.shippingAddress,
+    note: payload.note,
+    items: payload.items.map((i) => ({
+      productId: i.productId,
+      qty: i.quantity,
+      unitPrice: i.unitPrice,
     })),
   };
   return request<SalesOrder>('/api/sales-orders', {
@@ -285,4 +324,3 @@ export const apiGetDeliveryOrders = async (): Promise<DeliveryOrder[]> => {
 export const apiGetDeliveryOrderById = async (id: number): Promise<DeliveryOrder> => {
   return request<DeliveryOrder>(`/api/delivery-orders/${id}`);
 };
-

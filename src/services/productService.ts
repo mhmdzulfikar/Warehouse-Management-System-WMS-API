@@ -16,7 +16,9 @@ export const getAllProducts = async (query: { page?: number; limit?: number; sea
     if (query.search) {
         where.OR = [
             { name: { contains: query.search, mode: 'insensitive' } },
-            { sku: { contains: query.search, mode: 'insensitive' } }
+            { sku: { contains: query.search, mode: 'insensitive' } },
+            { barcode: { contains: query.search, mode: 'insensitive' } },
+            { category: { contains: query.search, mode: 'insensitive' } },
         ];
     }
 
@@ -64,7 +66,11 @@ export const createProduct = async (
     name: string,
     uom: string,
     basePrice: number,
-    minStock?: number
+    minStock?: number,
+    barcode?: string,
+    category?: string,
+    weightKg?: number,
+    storageTemp?: string
 ) => {
     const existingProduct = await prisma.product.findUnique({
         where: { sku: sku }
@@ -74,13 +80,26 @@ export const createProduct = async (
         throw new AppError(`SKU ${sku} is already in use by another product!`, 400);
     }
 
+    if (barcode) {
+        const existingBarcode = await prisma.product.findUnique({
+            where: { barcode: barcode }
+        });
+        if (existingBarcode) {
+            throw new AppError(`Barcode ${barcode} is already in use by another product!`, 400);
+        }
+    }
+
     return await prisma.product.create({
         data: {
             sku: sku,
             name: name,
             uom: uom,
             basePrice: basePrice,
-            minStock: minStock !== undefined ? Number(minStock) : 10
+            minStock: minStock !== undefined ? Number(minStock) : 10,
+            barcode: barcode || null,
+            category: category || null,
+            weightKg: weightKg !== undefined ? Number(weightKg) : null,
+            storageTemp: storageTemp || null,
         }
     });
 };
@@ -90,7 +109,16 @@ export const createProduct = async (
 // ==========================================
 export const updateProduct = async (
     id: number,
-    data: { name?: string; uom?: string; basePrice?: number; minStock?: number }
+    data: {
+        name?: string;
+        uom?: string;
+        basePrice?: number;
+        minStock?: number;
+        barcode?: string;
+        category?: string;
+        weightKg?: number;
+        storageTemp?: string;
+    }
 ) => {
     await getProductById(id);
 
@@ -100,7 +128,11 @@ export const updateProduct = async (
             name: data.name,
             uom: data.uom,
             basePrice: data.basePrice !== undefined ? Number(data.basePrice) : undefined,
-            minStock: data.minStock !== undefined ? Number(data.minStock) : undefined
+            minStock: data.minStock !== undefined ? Number(data.minStock) : undefined,
+            barcode: data.barcode,
+            category: data.category,
+            weightKg: data.weightKg !== undefined ? Number(data.weightKg) : undefined,
+            storageTemp: data.storageTemp,
         }
     });
 };

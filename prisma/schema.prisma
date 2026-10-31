@@ -15,11 +15,11 @@ datasource db {
 
 
 // -------------------------------------------------
-// 1. RBAC (Keamanan & Otorisasi)
+// 1. RBAC (Security & Multi-Persona Authorization)
 // -------------------------------------------------
 model Role {
   id    Int    @id @default(autoincrement())
-  name  String // "Admin", "Staff Gudang", "Purchasing", "Manager"
+  name  String // "Admin", "Manager", "Purchasing", "Staff Gudang"
   
   users User[]
 }
@@ -33,17 +33,17 @@ model User {
 
   role     Role   @relation(fields: [roleId], references: [id])
 
-  // Relasi khusus karena 1 User bisa bikin banyak PO, dan 1 Manager bisa approve banyak PO
-  createdPos  PurchaseOrder[] @relation("PoCreator")
-  approvedPos PurchaseOrder[] @relation("PoApprover")
-  createdSos  SalesOrder[]    @relation("SoCreator")
+  // Relations
+  createdPos    PurchaseOrder[] @relation("PoCreator")
+  approvedPos   PurchaseOrder[] @relation("PoApprover")
+  createdSos    SalesOrder[]    @relation("SoCreator")
   dispatchedDos DeliveryOrder[] @relation("DoDispatcher")
   
   transactions Transaction[]
 }
 
 // -------------------------------------------------
-// 2. Master Data
+// 2. Enterprise Master Data
 // -------------------------------------------------
 model Supplier {
   id           Int       @id @default(autoincrement())
@@ -57,7 +57,7 @@ model Supplier {
 
 model Customer {
   id          Int       @id @default(autoincrement())
-  code        String    @unique // e.g. CUST-001
+  code        String    @unique // e.g. CUST-GLB-001
   name        String
   contactInfo String?
   address     String?
@@ -68,11 +68,15 @@ model Customer {
 
 model Product {
   id          Int       @id @default(autoincrement())
-  sku         String    @unique
+  sku         String    @unique // e.g. SKU-ELEC-SRV-90
+  barcode     String?   @unique // Global Trade Item Number (GTIN / EAN-13 / UPC)
   name        String
-  uom         String    // pcs, kg, box
+  category    String?   // Enterprise Category e.g. "Computing & Infrastructure", "Industrial Automation"
+  uom         String    // unit, pcs, box, pallet, kit
   basePrice   Decimal   @db.Decimal(10, 2)
-  minStock    Int       @default(10) // Ambang batas minimum stok untuk alert
+  minStock    Int       @default(10) // Threshold for automated replenishment
+  weightKg    Decimal?  @db.Decimal(8, 2) // Weight per unit in kg
+  storageTemp String?   // "Ambient", "-20°C Cold-Chain", "Hazmat / Secure"
   deletedAt   DateTime? // Soft Delete
 
   inventories        Inventory[]
@@ -83,9 +87,11 @@ model Product {
 }
 
 model Warehouse {
-  id       Int    @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
+  code     String? @unique // Facility Code e.g. "GLOBAL-DC-01", "APAC-HUB-02"
   name     String
   location String
+  zoneType String? // e.g. "General High-Bay", "Air Logistics Gateway", "Cold-Chain & Pharma"
 
   inventories      Inventory[]
   salesOrders      SalesOrder[]
@@ -94,29 +100,32 @@ model Warehouse {
 }
 
 // -------------------------------------------------
-// 3. Core Inventory (Stok Saat Ini)
+// 3. Core Multi-Location Inventory Ledger
 // -------------------------------------------------
 model Inventory {
-  id          Int @id @default(autoincrement())
-  productId   Int
-  warehouseId Int
-  currentQty  Int @default(0) // Qty = Jumlah barang
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  warehouseId     Int
+  currentQty      Int       @default(0) // On-hand available quantity
+  storageLocation String?   // Granular Bin Location e.g. "BLK-A01-R02-B04", "PCK-B02-R01-B03"
+  batchNumber     String?   // Traceability Lot / Batch Code e.g. "LOT-2026-X88"
+  expiryDate      DateTime? // FEFO Expiration Date for cold-chain / consumables
 
   product   Product   @relation(fields: [productId], references: [id])
   warehouse Warehouse @relation(fields: [warehouseId], references: [id])
 
-  // Memastikan tidak ada duplikat data produk yang sama di gudang yang sama
+  // Prevent duplicate product records per warehouse facility
   @@unique([productId, warehouseId]) 
 }
 
 // -------------------------------------------------
-// 4. Procurement (Inbound Pembelian)
+// 4. Inbound Procurement & ASN Goods Receipt (PO)
 // -------------------------------------------------
 model PurchaseOrder {
   id               Int      @id @default(autoincrement())
   supplierId       Int
-  createdByUserId  Int      // Staff Purchasing
-  approvedByUserId Int?     // Manager (Bisa null kalau belum di-approve)
+  createdByUserId  Int      // Purchasing Specialist
+  approvedByUserId Int?     // Operations Director / Manager
   status           String   @default("Draft") // Draft, Pending, Approved, Rejected, Completed
   createdAt        DateTime @default(now())
 
@@ -131,8 +140,8 @@ model PoItem {
   id            Int     @id @default(autoincrement())
   poId          Int
   productId     Int
-  qty           Int     // Jumlah yang dipesan
-  receivedQty   Int     @default(0) // Jumlah yang sudah datang (Partial Fulfillment)
+  qty           Int     // Ordered Quantity
+  receivedQty   Int     @default(0) // Fulfilled / Received Quantity
   expectedPrice Decimal @db.Decimal(10, 2)
 
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
@@ -140,13 +149,13 @@ model PoItem {
 }
 
 // -------------------------------------------------
-// 5. Outbound (Sales Order & Fulfillment Pengiriman)
+// 5. Outbound Order Fulfillment (SO & Delivery Order)
 // -------------------------------------------------
 model SalesOrder {
   id               Int       @id @default(autoincrement())
   soNumber         String    @unique // e.g. SO-2026-0001
   customerId       Int
-  warehouseId      Int       // Gudang asal pengambilan barang
+  warehouseId      Int       // Origin Warehouse Facility
   createdByUserId  Int
   status           String    @default("PENDING") // PENDING, CONFIRMED, PICKING, PACKED, SHIPPED, CANCELLED
   orderDate        DateTime  @default(now())
@@ -168,10 +177,10 @@ model SoItem {
   id         Int     @id @default(autoincrement())
   soId       Int
   productId  Int
-  qty        Int     // Jumlah yang dipesan customer
-  pickedQty  Int     @default(0) // Jumlah yang sudah di-pick dari rak
-  packedQty  Int     @default(0) // Jumlah yang sudah dikemas
-  shippedQty Int     @default(0) // Jumlah yang sudah diberangkatkan
+  qty        Int     // Requested Quantity
+  pickedQty  Int     @default(0) // Wave-picked from storage bins
+  packedQty  Int     @default(0) // Verified & packed into containers
+  shippedQty Int     @default(0) // Loaded on dispatch vehicle
   unitPrice  Decimal @db.Decimal(10, 2)
 
   salesOrder SalesOrder @relation(fields: [soId], references: [id])
@@ -180,7 +189,7 @@ model SoItem {
 
 model DeliveryOrder {
   id             Int       @id @default(autoincrement())
-  doNumber       String    @unique // e.g. DO-2026-0001 (No. Surat Jalan)
+  doNumber       String    @unique // e.g. DO-2026-0001 (Bill of Lading / Dispatch Slip)
   salesOrderId   Int
   warehouseId    Int
   dispatchedById Int
@@ -202,20 +211,20 @@ model DeliveryOrderItem {
   id              Int @id @default(autoincrement())
   deliveryOrderId Int
   productId       Int
-  qty             Int // Jumlah barang yang keluar di surat jalan ini
+  qty             Int // Dispatched quantity on this delivery docket
 
   deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
   product       Product       @relation(fields: [productId], references: [id])
 }
 
 // -------------------------------------------------
-// 6. Audit Trail & Transaksi (The Ledger / Riwayat Mutasi)
+// 6. Enterprise Audit Trail & Movement Ledger
 // -------------------------------------------------
 model Transaction {
   id              Int      @id @default(autoincrement())
   type            String   // "IN", "OUT", "TRANSFER", "ADJUST"
   referenceType   String?  // "PO", "DELIVERY_ORDER", "TRANSFER", "OPNAME", "MANUAL"
-  referenceId     Int?     // ID dari tabel referensi (jika ada)
+  referenceId     Int?     // Reference ID
   createdByUserId Int
   timestamp       DateTime @default(now())
 
@@ -229,7 +238,7 @@ model TransactionItem {
   transactionId Int
   productId     Int
   warehouseId   Int
-  qtyChange     Int // Pakai plus (+) untuk IN, minus (-) untuk OUT
+  qtyChange     Int // (+) for IN/Positive adjustment, (-) for OUT/Negative adjustment
 
   transaction Transaction @relation(fields: [transactionId], references: [id])
   product     Product     @relation(fields: [productId], references: [id])
@@ -237,7 +246,7 @@ model TransactionItem {
 }
 
 // -------------------------------------------------
-// 7. Dual-Track Telemetry (UDP Log Aggregator)
+// 7. Dual-Track Telemetry (High-Speed UDP Aggregator)
 // -------------------------------------------------
 model TelemetryLog {
   id         Int      @id @default(autoincrement())
@@ -255,4 +264,4 @@ model TelemetryLog {
   @@index([createdAt])
   @@index([endpoint])
   @@index([seqId])
-}
+}

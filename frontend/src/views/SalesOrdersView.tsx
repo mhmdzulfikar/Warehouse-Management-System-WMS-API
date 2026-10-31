@@ -105,26 +105,26 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({ onShowToast })
     loadData();
   }, []);
 
-  // Format IDR Currency
+  // Format Enterprise Currency
   const formatRupiah = (val: number) => {
-    return 'Rp ' + (val || 0).toLocaleString('id-ID');
+    return '$' + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   // Status Badge Helper
   const getSoStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return <span className="badge badge-pending">PENDING (MENUNGGU)</span>;
+        return <span className="badge badge-pending">PENDING DRAFT</span>;
       case 'CONFIRMED':
-        return <span className="badge badge-approved">CONFIRMED (SIAP PICKING)</span>;
+        return <span className="badge badge-approved">CONFIRMED (READY FOR WAVE)</span>;
       case 'PICKING':
-        return <span className="badge badge-partial">PROSES PICKING</span>;
+        return <span className="badge badge-partial">WAVE PICKING</span>;
       case 'PACKED':
-        return <span className="badge badge-partial" style={{ background: '#f5f3ff', color: '#6d28d9', borderColor: '#ddd6fe' }}>PACKED (SIAP KIRIM)</span>;
+        return <span className="badge badge-partial" style={{ background: '#f5f3ff', color: '#6d28d9', borderColor: '#ddd6fe' }}>PACKED & VERIFIED</span>;
       case 'SHIPPED':
-        return <span className="badge badge-received">TERKIRIM (SHIPPED)</span>;
+        return <span className="badge badge-received">DISPATCHED (SHIPPED)</span>;
       case 'CANCELLED':
-        return <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}>DIBATALKAN</span>;
+        return <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}>CANCELLED</span>;
       default:
         return <span className="badge badge-pending">{status}</span>;
     }
@@ -188,11 +188,11 @@ export const SalesOrdersView: React.FC<SalesOrdersViewProps> = ({ onShowToast })
       await apiCreateSalesOrder({
         customerId: Number(customerId),
         warehouseId: Number(warehouseId),
-        notes: soNotes || undefined,
+        note: soNotes || undefined,
         items: validItems.map((it) => ({
           productId: it.productId,
           quantity: it.quantity,
-          price: it.unitPrice,
+          unitPrice: it.unitPrice,
         })),
       });
       onShowToast('Sales Order berhasil dibuat dengan status PENDING!', 'success');

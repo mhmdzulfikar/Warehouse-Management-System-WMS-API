@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { KeyRound, LogIn, ShieldCheck, X } from 'lucide-react';
+import { KeyRound, LogIn, ShieldCheck, X, UserCheck } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -25,32 +25,32 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier || !password) {
-      onShowToast('Mohon masukkan username/email dan password', 'error');
+      onShowToast('Please provide your Enterprise Username/Email and Password', 'error');
       return;
     }
 
     try {
       setLoading(true);
       await login(identifier, password);
-      onShowToast('Berhasil masuk ke sistem!', 'success');
+      onShowToast('Authentication successful. Welcome to WMS Nexus!', 'success');
       onSuccess();
       onClose();
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal masuk sistem', 'error');
+      onShowToast(err.message || 'Authentication failed. Check credentials.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuick = async (username: string) => {
+  const handleQuick = async (username: string, label: string) => {
     try {
       setLoading(true);
       await quickLogin(username);
-      onShowToast(`Berhasil masuk sebagai ${username}`, 'success');
+      onShowToast(`Authenticated as ${label} (${username})`, 'success');
       onSuccess();
       onClose();
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal masuk sistem', 'error');
+      onShowToast(err.message || 'Quick login failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -58,24 +58,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box">
+      <div className="modal-box" style={{ maxWidth: '440px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <KeyRound size={20} style={{ color: 'var(--accent-primary)' }} />
-            <h3 className="modal-title">Masuk ke Sistem WMS Logistics</h3>
+            <div style={{ background: '#0f172a', color: '#ffffff', padding: '6px', borderRadius: '6px' }}>
+              <KeyRound size={18} />
+            </div>
+            <div>
+              <h3 className="modal-title" style={{ fontSize: '1.05rem', margin: 0 }}>Enterprise Single Sign-On</h3>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>WMS Nexus Global Logistics Access</div>
+            </div>
           </div>
           <button className="modal-close" onClick={onClose}>
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ padding: '4px 0' }}>
           <div className="form-group">
-            <label className="form-label">Username atau Email</label>
+            <label className="form-label">Username or Corporate Email</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Contoh: bapak_manager atau manager@wms.com"
+              placeholder="e.g. marcus.director@wms-nexus.io"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
@@ -83,11 +88,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Kata Sandi (Password)</label>
+            <label className="form-label">Security Credentials (Password)</label>
             <input
               type="password"
               className="form-control"
-              placeholder="Masukkan password..."
+              placeholder="Enter credentials..."
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -97,47 +102,63 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <button
             type="submit"
             className="btn-primary"
-            style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}
+            style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '10px' }}
             disabled={loading}
           >
             <LogIn size={16} />
-            <span>{loading ? 'Memvalidasi...' : 'Masuk Sistem'}</span>
+            <span>{loading ? 'Authenticating...' : 'Sign In to WMS Nexus'}</span>
           </button>
         </form>
 
-        <div style={{ margin: '20px 0 10px 0', borderTop: '1px solid var(--border-default)', paddingTop: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            <ShieldCheck size={16} style={{ color: 'var(--accent-blue)' }} />
-            <span>Pilih Cepat Akun Demo (Default Password: password123):</span>
+        <div style={{ margin: '16px 0 6px 0', borderTop: '1px solid var(--border-default)', paddingTop: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            <ShieldCheck size={16} style={{ color: '#2563eb' }} />
+            <span>Instant Demo Switcher (Password: <code>password123</code>):</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <button
               type="button"
               className="btn-secondary"
-              style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '7px' }}
-              onClick={() => handleQuick('bapak_manager')}
+              style={{ fontSize: '0.76rem', justifyContent: 'flex-start', padding: '8px 10px' }}
+              onClick={() => handleQuick('ops_director', 'Operations Director')}
               disabled={loading}
             >
-              Manager
+              <UserCheck size={14} style={{ color: '#2563eb' }} />
+              <span>Operations Director</span>
             </button>
+
             <button
               type="button"
               className="btn-secondary"
-              style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '7px' }}
-              onClick={() => handleQuick('andi_purchasing')}
+              style={{ fontSize: '0.76rem', justifyContent: 'flex-start', padding: '8px 10px' }}
+              onClick={() => handleQuick('inv_supervisor', 'Inbound Lead')}
               disabled={loading}
             >
-              Purchasing
+              <UserCheck size={14} style={{ color: '#059669' }} />
+              <span>Inbound & PO Lead</span>
             </button>
+
             <button
               type="button"
               className="btn-secondary"
-              style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '7px' }}
-              onClick={() => handleQuick('joko_gudang')}
+              style={{ fontSize: '0.76rem', justifyContent: 'flex-start', padding: '8px 10px' }}
+              onClick={() => handleQuick('logistics_lead', 'Logistics Specialist')}
               disabled={loading}
             >
-              Staff Gudang
+              <UserCheck size={14} style={{ color: '#d97706' }} />
+              <span>Logistics Specialist</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ fontSize: '0.76rem', justifyContent: 'flex-start', padding: '8px 10px' }}
+              onClick={() => handleQuick('sysadmin', 'Super Administrator')}
+              disabled={loading}
+            >
+              <UserCheck size={14} style={{ color: '#475569' }} />
+              <span>System Admin</span>
             </button>
           </div>
         </div>

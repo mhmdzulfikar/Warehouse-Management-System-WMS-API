@@ -45,14 +45,18 @@ export const fetchProductById = async (req: Request, res: Response) => {
 // 3. CREATE NEW PRODUCT (CREATE)
 // ==========================================
 export const addProduct = async (req: Request, res: Response) => {
-    const { sku, name, uom, basePrice, minStock } = req.body;
+    const { sku, name, uom, basePrice, minStock, barcode, category, weightKg, storageTemp } = req.body;
 
     const newProduct = await createProduct(
         sku,
         name,
         uom,
         Number(basePrice),
-        minStock !== undefined ? Number(minStock) : undefined
+        minStock !== undefined ? Number(minStock) : undefined,
+        barcode,
+        category,
+        weightKg !== undefined ? Number(weightKg) : undefined,
+        storageTemp
     );
 
     return res.status(201).json({ 

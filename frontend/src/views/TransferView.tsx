@@ -14,7 +14,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
   const [fromWh, setFromWh] = useState<number | ''>('');
   const [toWh, setToWh] = useState<number | ''>('');
   const [items, setItems] = useState<Array<{ productId: number; quantity: number }>>([
-    { productId: 0, quantity: 5 },
+    { productId: 0, quantity: 10 },
   ]);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -23,17 +23,17 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
     const fetchDropdowns = async () => {
       try {
         const [whs, prods] = await Promise.all([apiGetWarehouses(), apiGetProducts()]);
-        setWarehouses(whs);
-        setProducts(prods);
+        setWarehouses(Array.isArray(whs) ? whs : []);
+        setProducts(Array.isArray(prods) ? prods : []);
       } catch (err: any) {
-        onShowToast(err.message || 'Gagal memuat daftar fasilitas gudang', 'error');
+        onShowToast(err.message || 'Failed to retrieve facility list', 'error');
       }
     };
     fetchDropdowns();
   }, []);
 
   const handleAddItem = () => {
-    setItems([...items, { productId: 0, quantity: 5 }]);
+    setItems([...items, { productId: 0, quantity: 10 }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -43,16 +43,16 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fromWh || !toWh) {
-      onShowToast('Silakan pilih gudang asal dan gudang tujuan', 'error');
+      onShowToast('Please select source and destination logistics facilities', 'error');
       return;
     }
     if (fromWh === toWh) {
-      onShowToast('Gudang asal dan tujuan tidak boleh sama', 'error');
+      onShowToast('Source and destination facilities must be distinct', 'error');
       return;
     }
     const validItems = items.filter((i) => i.productId > 0 && i.quantity > 0);
     if (validItems.length === 0) {
-      onShowToast('Tambahkan minimal satu jenis barang dengan jumlah valid', 'error');
+      onShowToast('Add at least one SKU line item with valid quantity', 'error');
       return;
     }
 
@@ -62,78 +62,79 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
         fromWarehouseId: Number(fromWh),
         toWarehouseId: Number(toWh),
         items: validItems,
-        note: note || 'Penyeimbangan stok antar fasilitas gudang',
+        note: note || 'Multi-facility stock rebalancing',
       });
-      onShowToast('Stok berhasil dipindahkan antar fasilitas gudang!', 'success');
+      onShowToast('Atomic stock transfer completed across facilities!', 'success');
       onNavigateTab('inventory');
     } catch (err: any) {
-      onShowToast(err.message || 'Gagal memproses pemindahan stok', 'error');
+      onShowToast(err.message || 'Failed to execute stock transfer', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-      <div className="glass-panel">
-        <div className="panel-header">
-          <div className="panel-title">
-            <ArrowRightLeft size={18} style={{ color: 'var(--accent-blue)' }} />
-            <span>Formulir Pemindahan Stok Antar Fasilitas Gudang</span>
+    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', borderBottom: '1px solid var(--border-default)', paddingBottom: '14px' }}>
+          <div style={{ background: '#0f172a', color: '#ffffff', padding: '8px', borderRadius: '8px' }}>
+            <ArrowRightLeft size={20} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Inter-Facility Inventory Movement</h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Execute atomic inventory relocation between logistics hubs with zero discrepancy risk.
+            </p>
           </div>
         </div>
 
-        <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-          Jalankan pemindahan fisik inventaris antar lokasi gudang secara atomik. Sistem secara otomatis mendebit stok pada gudang asal dan mengkredit gudang tujuan dalam satu transaksi ledger.
-        </p>
-
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
             <div className="form-group">
-              <label className="form-label">Gudang Asal (Pengirim)</label>
+              <label className="form-label">Origin Facility (Source) *</label>
               <select
                 className="form-control"
                 value={fromWh}
                 onChange={(e) => setFromWh(e.target.value ? Number(e.target.value) : '')}
                 required
               >
-                <option value="">Pilih Gudang Asal...</option>
+                <option value="">Select Source Hub...</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
-                    {w.name}
+                    {w.code ? `[${w.code}] ` : ''}{w.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Gudang Tujuan (Penerima)</label>
+              <label className="form-label">Destination Facility (Target) *</label>
               <select
                 className="form-control"
                 value={toWh}
                 onChange={(e) => setToWh(e.target.value ? Number(e.target.value) : '')}
                 required
               >
-                <option value="">Pilih Gudang Tujuan...</option>
+                <option value="">Select Target Hub...</option>
                 {warehouses.map((w) => (
                   <option key={w.id} value={w.id}>
-                    {w.name}
+                    {w.code ? `[${w.code}] ` : ''}{w.name}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span className="form-label" style={{ marginBottom: 0 }}>Daftar Barang yang Dipindahkan</span>
+          <div style={{ margin: '16px 0 10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="form-label" style={{ marginBottom: 0, fontWeight: 600 }}>Transfer Items & Line Quantities</span>
             <button
               type="button"
               className="btn-secondary"
-              style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
               onClick={handleAddItem}
             >
               <Plus size={13} />
-              <span>Tambah Barang</span>
+              <span>Add Line Item</span>
             </button>
           </div>
 
@@ -142,10 +143,10 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
               key={idx}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '2fr 1fr auto',
-                gap: '8px',
-                marginBottom: '8px',
+                gridTemplateColumns: '3fr 1fr auto',
+                gap: '10px',
                 alignItems: 'center',
+                marginBottom: '10px',
               }}
             >
               <select
@@ -158,7 +159,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
                 }}
                 required
               >
-                <option value={0}>Pilih Produk...</option>
+                <option value={0}>Select Product SKU...</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.sku})
@@ -169,7 +170,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
               <input
                 type="number"
                 className="form-control tabular-num"
-                placeholder="Jumlah (Qty)"
+                placeholder="Qty"
                 min={1}
                 value={it.quantity}
                 onChange={(e) => {
@@ -184,7 +185,7 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ padding: '7px', color: 'var(--status-rose-text)' }}
+                  style={{ padding: '8px', color: '#991b1b' }}
                   onClick={() => handleRemoveItem(idx)}
                 >
                   <X size={15} />
@@ -194,23 +195,28 @@ export const TransferView: React.FC<TransferViewProps> = ({ onShowToast, onNavig
           ))}
 
           <div className="form-group" style={{ marginTop: '16px' }}>
-            <label className="form-label">Keterangan / No. Surat Jalan</label>
+            <label className="form-label">Transfer Authorization Docket / Notes</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Contoh: Surat Jalan SJ/2026/04/001 - Penyeimbangan stok cabang"
+              placeholder="e.g. Replenishment transfer for APAC cross-dock surge demand"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
-            <button type="button" className="btn-secondary" onClick={() => onNavigateTab('inventory')}>
-              Batal
+          <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onNavigateTab('inventory')}
+              disabled={submitting}
+            >
+              Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={submitting}>
-              <Check size={15} />
-              <span>{submitting ? 'Memproses Transfer...' : 'Konfirmasi Pemindahan Stok'}</span>
+              <Check size={16} />
+              <span>{submitting ? 'Executing Transfer...' : 'Confirm Atomic Stock Transfer'}</span>
             </button>
           </div>
         </form>
