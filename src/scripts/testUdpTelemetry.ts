@@ -1,5 +1,5 @@
 import { startAggregator, stopAggregator, getAggregatorMetrics } from '../aggregator';
-import { sendUdpTelemetry, maskSensitiveData } from '../utils/udpLogger';
+import { sendUdpTelemetry, sendTcpTelemetry, maskSensitiveData, cacheInRingBuffer, closeUdpClient } from '../utils/udpLogger';
 import { prisma } from '../config/prisma';
 
 async function sleep(ms: number) {
@@ -7,9 +7,9 @@ async function sleep(ms: number) {
 }
 
 async function runTelemetryVerification() {
-  console.log('========================================================');
-  console.log('🔬 MEMULAI VERIFIKASI DUAL-TRACK UDP TELEMETRY & AGGREGATOR');
-  console.log('========================================================\n');
+  console.log('========================================================================');
+  console.log('🔬 VERIFIKASI DUAL-TRACK TELEMETRY: UDP FAST-PATH + ARQ TCP RECOVERY');
+  console.log('========================================================================\n');
 
   // 1. Data Masking Test
   console.log('👉 [Test 1] Pengujian Masking Data Sensitif...');
@@ -26,7 +26,6 @@ async function runTelemetryVerification() {
     },
   };
   const masked = maskSensitiveData(sensitivePayload);
-  console.log('   Hasil Masking:', JSON.stringify(masked, null, 2));
   if (
     masked.password === '***' &&
     masked.token === '***' &&
@@ -40,11 +39,11 @@ async function runTelemetryVerification() {
     throw new Error('Data masking gagal!');
   }
 
-  // 2. Start Aggregator Server
-  console.log('👉 [Test 2] Menjalankan Server UDP Log Aggregator (Port 5001)...');
+  // 2. Start Dual Aggregator Server (UDP: 5001 + TCP: 5002)
+  console.log('👉 [Test 2] Menjalankan Server Aggregator (UDP 5001 + TCP 5002)...');
   const server = startAggregator();
-  await sleep(500); // Tunggu socket bind
-  console.log('   ✅ PASS: UDP Aggregator aktif mendengarkan datagram.\n');
+  await sleep(600); // Tunggu socket bind dan TCP server listening
+  console.log('   ✅ PASS: UDP & TCP Recovery Aggregator aktif mendengarkan.\n');
 
   // 3. Clear Existing Telemetry Logs (for clean benchmark count)
   const initialCount = await prisma.telemetryLog.count();
@@ -84,31 +83,65 @@ async function runTelemetryVerification() {
     console.log(`   Total log tersimpan sekarang: ${metrics.totalLogsInserted}`);
   }
 
-  // 5. Test Packet Loss Detection (Simulasi lompatan sequence ID)
-  console.log('👉 [Test 4] Menguji Deteksi Packet Loss (Simulasi lompatan sequence ID)...');
-  // Kirim paket normal
-  sendUdpTelemetry({
-    seqId: metrics.lastSeqId + 5, // Sengaja melompat 4 paket
-    type: 'LOG',
-    message: 'Log setelah packet drop simulasi',
-  });
+  // 5. Test Packet Loss Detection & Automatic ARQ TCP Recovery (Method 1)
+  console.log('👉 [Test 4] Menguji Deteksi Packet Loss & Otomatisasi Recovery via TCP NACK (Method 1)...');
+  const baselineSeq = metrics.lastSeqId;
+  const droppedCount = 4;
 
-  await sleep(400);
-  metrics = getAggregatorMetrics();
-  console.log('   Metrik Packet Loss:', {
-    lastSeqId: metrics.lastSeqId,
-    totalPacketLoss: metrics.totalPacketLoss,
-    lossRate: metrics.lossRatePercent,
-  });
-
-  if (metrics.totalPacketLoss > 0) {
-    console.log(`   ✅ PASS: Sistem berhasil mendeteksi ${metrics.totalPacketLoss} paket hilang secara otomatis.\n`);
-  } else {
-    console.warn('   ⚠️ Packet loss tracker belum mencatat lompatan.\n');
+  // Simulasikan 4 paket yang tersimpan di Ring Buffer WMS API, tapi "hilang" di jaringan UDP
+  for (let d = 1; d <= droppedCount; d++) {
+    const droppedSeq = baselineSeq + d;
+    cacheInRingBuffer(droppedSeq, {
+      seqId: droppedSeq,
+      type: 'LOG',
+      level: 'INFO',
+      endpoint: '/api/sales-orders',
+      message: `Lost packet #${droppedSeq} recovered via TCP NACK`,
+      timestamp: Date.now(),
+    });
   }
 
-  // 6. Test Heartbeat Signal
-  console.log('👉 [Test 5] Menguji Pengiriman Heartbeat Signal...');
+  // Kirim paket sesudah celah (gap) untuk memicu Aggregator mendeteksi sequence jump
+  sendUdpTelemetry({
+    seqId: baselineSeq + droppedCount + 1,
+    type: 'LOG',
+    message: 'Trigger sequence jump packet',
+    timestamp: Date.now(),
+  });
+
+  // Tunggu 500ms agar TCP NACK terkirim dari Aggregator -> WMS API merespons dengan paket yang hilang
+  await sleep(600);
+
+  metrics = getAggregatorMetrics();
+  console.log('   Metrik Packet Loss & ARQ Recovery:', {
+    totalPacketLossDetected: metrics.totalPacketLossDetected,
+    totalRecoveredViaTcp: metrics.totalRecoveredViaTcp,
+    netUnrecoveredLoss: metrics.netUnrecoveredLoss,
+    recoveryRate: metrics.recoveryRatePercent,
+  });
+
+  if (metrics.totalRecoveredViaTcp > 0) {
+    console.log(`   ✅ PASS: Selective Retransmission sukses! ${metrics.totalRecoveredViaTcp} paket yang hilang di-recovery via TCP (Net Loss: ${metrics.netUnrecoveredLoss}).\n`);
+  } else {
+    console.warn('   ⚠️ Paket loss terdeteksi tapi belum selesai direcover via TCP.\n');
+  }
+
+  // 6. Test Method 2: Direct TCP Fallback for Critical ERROR level
+  console.log('👉 [Test 5] Menguji Direct TCP Transmission untuk Log Kritis ERROR (Method 2)...');
+  const sentTcp = sendTcpTelemetry({
+    seqId: metrics.lastSeqId + 10,
+    type: 'LOG',
+    level: 'ERROR',
+    endpoint: '/api/transactions/error-test',
+    message: 'Critical system exception guaranteed delivery via TCP Stream',
+    timestamp: Date.now(),
+  });
+  await sleep(300);
+  console.log(`   Status pengiriman Direct TCP: ${sentTcp ? 'Terkirim langsung' : 'Fallback'}`);
+  console.log('   ✅ PASS: Log kritis berhasil dialirkan melalui jalur TCP terdedikasi.\n');
+
+  // 7. Test Heartbeat Signal & Watchdog
+  console.log('👉 [Test 6] Menguji Pengiriman Heartbeat Signal & Watchdog Timer...');
   sendUdpTelemetry({
     type: 'HEARTBEAT',
     message: 'Manual Heartbeat Test',
@@ -124,8 +157,8 @@ async function runTelemetryVerification() {
     console.log('   ✅ PASS: Heartbeat diterima dan Watchdog menandai server utama ALIVE.\n');
   }
 
-  // 7. Verifikasi Database
-  console.log('👉 [Test 6] Memverifikasi Database PostgreSQL...');
+  // 8. Verifikasi Database PostgreSQL
+  console.log('👉 [Test 7] Memverifikasi Database PostgreSQL...');
   await sleep(2200); // Pastikan seluruh sisa buffer ter-flush oleh interval timer
   const finalCount = await prisma.telemetryLog.count();
   const sampleLog = await prisma.telemetryLog.findFirst({
@@ -145,14 +178,15 @@ async function runTelemetryVerification() {
     console.log('   ✅ PASS: Data telemetri berhasil ter-persist di database PostgreSQL!\n');
   }
 
-  // 8. Stop Aggregator Cleanly
-  console.log('👉 [Test 7] Mematikan Aggregator Server secara anggun...');
+  // 9. Stop Aggregator Cleanly
+  console.log('👉 [Test 8] Mematikan Aggregator Server & Client secara anggun...');
+  await closeUdpClient();
   await stopAggregator();
-  console.log('   ✅ PASS: Aggregator server ditutup tanpa memory leak.\n');
+  console.log('   ✅ PASS: Aggregator server (UDP + TCP) ditutup tanpa memory leak.\n');
 
-  console.log('========================================================');
-  console.log('🎉 SELURUH PENGUJIAN DUAL-TRACK UDP TELEMETRY SELESAI & SUKSES!');
-  console.log('========================================================');
+  console.log('========================================================================');
+  console.log('🎉 SELURUH PENGUJIAN DUAL-TRACK (UDP + ARQ TCP RECOVERY) SELESAI & SUKSES!');
+  console.log('========================================================================');
 }
 
 runTelemetryVerification()

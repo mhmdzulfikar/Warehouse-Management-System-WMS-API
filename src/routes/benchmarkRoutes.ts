@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { prisma } from '../config/prisma';
-import { sendUdpTelemetry } from '../utils/udpLogger';
+import { sendUdpTelemetry, cacheInRingBuffer, getRingBufferStats } from '../utils/udpLogger';
 import { getAggregatorMetrics } from '../aggregator';
 
 const router = Router();
@@ -80,6 +80,69 @@ router.get('/udp-log', (req: Request, res: Response) => {
     seqId,
     workloadLatencyMs: latencyMs,
     totalDurationMs: totalDuration,
+  });
+});
+
+/**
+ * Benchmark 3: Packet Loss & ARQ TCP Recovery Simulation
+ * Simulates dropping packets by caching in Ring Buffer while skipping UDP broadcast,
+ * then transmitting a subsequent packet to trigger the Aggregator's TCP NACK recovery.
+ */
+router.all('/simulate-loss', async (req: Request, res: Response) => {
+  const dropCount = Math.max(1, Math.min(50, Number(req.body?.dropCount || req.query?.dropCount || 5)));
+  const baseSeq = sendUdpTelemetry({
+    message: 'Pre-loss baseline packet',
+    level: 'INFO',
+    endpoint: '/api/benchmark/simulate-loss',
+  });
+
+  // Deliberately simulate dropped packets: stored in Ring Buffer, but NOT sent over UDP
+  const droppedIds: number[] = [];
+  for (let i = 1; i <= dropCount; i++) {
+    const droppedSeq = baseSeq + i;
+    droppedIds.push(droppedSeq);
+    cacheInRingBuffer(droppedSeq, {
+      seqId: droppedSeq,
+      type: 'LOG',
+      level: 'WARN',
+      message: `Simulated dropped packet #${droppedSeq} (Recovered via TCP NACK)`,
+      timestamp: Date.now(),
+      endpoint: '/api/benchmark/simulate-loss',
+    });
+  }
+
+  // Send packet after the gap to trigger the Aggregator's sequence gap detection
+  const triggerSeq = baseSeq + dropCount + 1;
+  sendUdpTelemetry({
+    seqId: triggerSeq,
+    type: 'LOG',
+    level: 'INFO',
+    message: `Trigger packet #${triggerSeq} to alert Aggregator of gap`,
+    timestamp: Date.now(),
+    endpoint: '/api/benchmark/simulate-loss',
+  });
+
+  // Brief pause to allow NACK over TCP to complete
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const metrics = getAggregatorMetrics();
+
+  res.json({
+    status: 'ok',
+    description: 'Packet drop simulated and ARQ TCP retransmission triggered',
+    simulatedDropCount: dropCount,
+    droppedSeqIds: droppedIds,
+    triggerSeqId: triggerSeq,
+    aggregatorMetrics: metrics,
+  });
+});
+
+/**
+ * Ring Buffer Status Inspection
+ */
+router.get('/ring-buffer', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    ringBuffer: getRingBufferStats(),
   });
 });
 

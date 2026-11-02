@@ -50,8 +50,10 @@ services:
       DATABASE_URL: "postgresql://postgres:admin1@postgres:5432/wms_db?schema=public"
       UDP_PORT: 5001
       UDP_HOST: "0.0.0.0"
+      TCP_RECOVERY_PORT: 5002
     ports:
       - "5001:5001/udp"
+      - "5002:5002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,6 +76,7 @@ services:
       DATABASE_URL: "postgresql://postgres:admin1@postgres:5432/wms_db?schema=public"
       UDP_HOST: udp-aggregator
       UDP_PORT: 5001
+      TCP_RECOVERY_PORT: 5002
       JWT_SECRET: "wms_jwt_secret_key_2026_super_secure_random_hash"
       JWT_EXPIRES_IN: "1d"
       AUTO_MIGRATE: "true"
