@@ -1,14 +1,14 @@
 import dgram from 'dgram';
-import net from 'net';
+import http from 'http';
 
-// Network Target Configuration
+// UDP & TCP Target Configuration
 const UDP_HOST = process.env.UDP_HOST || '127.0.0.1';
 const UDP_PORT = parseInt(process.env.UDP_PORT || '5001', 10);
-const TCP_RECOVERY_PORT = parseInt(process.env.TCP_RECOVERY_PORT || process.env.TCP_PORT || '5002', 10);
+const API_PORT = parseInt(process.env.PORT || '5000', 10);
 
 export interface TelemetryPayload {
   seqId?: number;
-  type?: 'LOG' | 'HEARTBEAT' | 'CHECKPOINT' | 'RETRANSMIT';
+  type?: 'LOG' | 'HEARTBEAT';
   level?: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | string;
   method?: string;
   endpoint?: string;
@@ -18,51 +18,76 @@ export interface TelemetryPayload {
   message?: string;
   metadata?: any;
   timestamp?: number | string;
+  // Method 3: Piggybacked history of previous sequence IDs for zero RTT recovery
+  piggyback?: Array<{ seqId: number; message?: string; level?: string; endpoint?: string; statusCode?: number }>;
+  // Method 2: Flag for critical logs requiring TCP guarantee
+  critical?: boolean;
 }
 
 // Global auto-increment sequence ID
 let currentSequenceId = 1;
 
-// ==============================================================================
-// 1. Sliding-Window Ring Buffer (In-Memory Packet Cache for ARQ Retransmission)
-// ==============================================================================
-const RING_BUFFER_CAPACITY = 2000;
+// UDP Client Socket Singleton
+let udpSocket: dgram.Socket | null = null;
+
+// ============================================================================
+// METHOD 1 INFRASTRUCTURE: In-Memory Sliding Window (Ring Buffer) for NACK ARQ
+// Stores the last 3,000 sent packets so that if any UDP datagram is lost,
+// the Aggregator can request selective retransmission via TCP.
+// ============================================================================
+const RING_BUFFER_MAX_SIZE = 3000;
 const ringBuffer = new Map<number, TelemetryPayload>();
+const ringBufferOrder: number[] = [];
 
-export function cacheInRingBuffer(seqId: number, packet: TelemetryPayload): void {
+export function storeInRingBuffer(seqId: number, packet: TelemetryPayload): void {
   ringBuffer.set(seqId, packet);
-  if (ringBuffer.size > RING_BUFFER_CAPACITY) {
-    // Evict oldest sequence entry
-    const oldestKey = ringBuffer.keys().next().value;
-    if (oldestKey !== undefined) {
-      ringBuffer.delete(oldestKey);
+  ringBufferOrder.push(seqId);
+
+  // Evict oldest entries when capacity threshold is reached (Sliding Window)
+  if (ringBufferOrder.length > RING_BUFFER_MAX_SIZE) {
+    const oldestSeq = ringBufferOrder.shift();
+    if (oldestSeq !== undefined) {
+      ringBuffer.delete(oldestSeq);
     }
   }
 }
 
-export function getPacketsFromRingBuffer(seqIds: number[]): TelemetryPayload[] {
-  const result: TelemetryPayload[] = [];
-  for (const id of seqIds) {
-    const pkt = ringBuffer.get(id);
-    if (pkt) {
-      result.push(pkt);
+/**
+ * Retrieves missing log packets requested by the Aggregator via NACK
+ */
+export function getLogsFromRingBuffer(seqIds: number[]): TelemetryPayload[] {
+  const foundLogs: TelemetryPayload[] = [];
+  for (const seq of seqIds) {
+    const log = ringBuffer.get(seq);
+    if (log) {
+      foundLogs.push(log);
     }
   }
-  return result;
+  return foundLogs;
 }
 
-export function getRingBufferStats() {
+/**
+ * Get current ring buffer statistics
+ */
+export function getRingBufferStats(): { bufferedCount: number; minSeq: number; maxSeq: number } {
   return {
-    cachedPacketsCount: ringBuffer.size,
-    capacity: RING_BUFFER_CAPACITY,
-    oldestSeqId: ringBuffer.size > 0 ? ringBuffer.keys().next().value : null,
-    latestSeqId: currentSequenceId - 1,
+    bufferedCount: ringBuffer.size,
+    minSeq: ringBufferOrder.length > 0 ? ringBufferOrder[0] : 0,
+    maxSeq: ringBufferOrder.length > 0 ? ringBufferOrder[ringBufferOrder.length - 1] : 0,
   };
 }
 
-// ==============================================================================
-// 2. Sensitive Data Masking Helper
-// ==============================================================================
+function getSocket(): dgram.Socket {
+  if (!udpSocket) {
+    udpSocket = dgram.createSocket('udp4');
+    udpSocket.on('error', (err) => {
+      console.warn('[UDP Client Socket Error]', err.message);
+    });
+  }
+  return udpSocket;
+}
+
+// Sensitive Field Names for Data Masking
 const SENSITIVE_KEYS = new Set([
   'password',
   'pass',
@@ -77,6 +102,9 @@ const SENSITIVE_KEYS = new Set([
   'bearer',
 ]);
 
+/**
+ * Recursively masks sensitive fields in objects/arrays (e.g., passwords, auth tokens)
+ */
 export function maskSensitiveData(data: any): any {
   if (!data || typeof data !== 'object') {
     return data;
@@ -100,147 +128,66 @@ export function maskSensitiveData(data: any): any {
   return masked;
 }
 
-// ==============================================================================
-// 3. UDP Client Socket (Primary Fast Path ~0.3ms)
-// ==============================================================================
-let udpSocket: dgram.Socket | null = null;
-
-function getUdpSocket(): dgram.Socket {
-  if (!udpSocket) {
-    udpSocket = dgram.createSocket('udp4');
-    udpSocket.on('error', (err) => {
-      console.warn('[UDP Client Socket Error]', err.message);
-    });
-  }
-  return udpSocket;
-}
-
-// ==============================================================================
-// 4. TCP Recovery & Control Client (ARQ Retransmission & Critical Fallback)
-// ==============================================================================
-let tcpClient: net.Socket | null = null;
-let tcpReconnectTimer: NodeJS.Timeout | null = null;
-let tcpIncomingBuffer = '';
-let isTcpConnecting = false;
-
-export function getTcpRecoveryClient(): net.Socket | null {
-  if (tcpClient && !tcpClient.destroyed) {
-    return tcpClient;
-  }
-
-  if (isTcpConnecting) return null;
-  isTcpConnecting = true;
-
-  try {
-    const client = new net.Socket();
-
-    client.connect(TCP_RECOVERY_PORT, UDP_HOST, () => {
-      isTcpConnecting = false;
-      tcpClient = client;
-      console.log(`🔗 [TCP Recovery Client] Terhubung ke Telemetry Aggregator TCP (Port ${TCP_RECOVERY_PORT})`);
-      
-      // Handshake identity
-      const handshake = JSON.stringify({ type: 'HANDSHAKE', client: 'wms-api-worker', timestamp: Date.now() }) + '\n';
-      client.write(handshake);
-    });
-
-    client.on('data', (data: Buffer) => {
-      tcpIncomingBuffer += data.toString('utf-8');
-      const lines = tcpIncomingBuffer.split('\n');
-      tcpIncomingBuffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const message = JSON.parse(line);
-          handleAggregatorTcpMessage(message, client);
-        } catch {
-          // Ignore parse errors on malformed chunks
+// ============================================================================
+// METHOD 2: Tiered Severity & Hybrid TCP Fallback Channel
+// For critical error logs (500 Server Error) or when UDP socket buffer overflows
+// ============================================================================
+export function dispatchTcpFallback(packet: TelemetryPayload): void {
+  // Asynchronously dispatch directly to Aggregator's TCP ingestion without blocking
+  setImmediate(async () => {
+    try {
+      const payloadString = JSON.stringify(packet);
+      const req = http.request(
+        {
+          hostname: UDP_HOST === '0.0.0.0' ? '127.0.0.1' : UDP_HOST,
+          port: API_PORT,
+          path: '/api/benchmark/telemetry-tcp-ingest',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payloadString),
+          },
+          timeout: 2000,
+        },
+        (res) => {
+          res.resume(); // Consume stream to free memory
         }
-      }
-    });
-
-    client.on('error', (err) => {
-      // Non-blocking log, avoid throwing unhandled exception
-      isTcpConnecting = false;
-    });
-
-    client.on('close', () => {
-      tcpClient = null;
-      isTcpConnecting = false;
-      // Schedule background reconnect attempt
-      if (!tcpReconnectTimer) {
-        tcpReconnectTimer = setTimeout(() => {
-          tcpReconnectTimer = null;
-          getTcpRecoveryClient();
-        }, 5000);
-        tcpReconnectTimer.unref();
-      }
-    });
-
-    return client;
-  } catch {
-    isTcpConnecting = false;
-    return null;
-  }
-}
-
-/**
- * Handles incoming control messages from Aggregator (e.g. NACK requests for missing sequences)
- */
-function handleAggregatorTcpMessage(msg: any, socket: net.Socket): void {
-  // Method 1: NACK Selective Retransmission Request
-  if (msg.type === 'NACK' && Array.isArray(msg.missingSeqIds)) {
-    const missingIds: number[] = msg.missingSeqIds;
-    const retransmitPackets = getPacketsFromRingBuffer(missingIds);
-
-    if (retransmitPackets.length > 0) {
-      console.log(
-        `🔁 [ARQ Retransmit] Aggregator melaporkan ${missingIds.length} paket hilang. Menemukan ${retransmitPackets.length} paket di Ring Buffer, mengirim ulang via TCP...`
       );
 
-      const response = JSON.stringify({
-        type: 'RETRANSMIT_PAYLOAD',
-        packets: retransmitPackets,
-        timestamp: Date.now(),
-      }) + '\n';
+      req.on('error', () => {
+        // Fallback is non-blocking to prevent cascading thread stalls
+      });
 
-      socket.write(response);
-    } else {
-      console.warn(
-        `⚠️ [ARQ Retransmit] Paket #${missingIds.join(', #')} diminta Aggregator tetapi sudah terhapus dari Sliding Window.`
-      );
+      req.write(payloadString);
+      req.end();
+    } catch {
+      // Non-blocking safety net
     }
-  }
+  });
 }
 
 /**
- * Sends a telemetry packet directly through TCP (Method 2: Tiered Reliability / Circuit Breaker)
+ * Sends a Telemetry log packet using the Reliable Dual-Track Tri-Method:
+ * 1. Fast-Path UDP Datagram (Zero-Wait ~0.3ms)
+ * 2. Stored in Ring Buffer for NACK Selective Retransmission
+ * 3. Piggybacks last 2 sequence signatures for immediate single-packet drop recovery
+ * 4. Dual-dispatched over TCP fallback if level is ERROR or critical
  */
-export function sendTcpTelemetry(payload: TelemetryPayload): boolean {
-  const client = getTcpRecoveryClient();
-  if (!client || client.destroyed) {
-    return false;
-  }
-
-  try {
-    const msg = JSON.stringify({
-      type: 'DIRECT_TCP',
-      packet: payload,
-    }) + '\n';
-    return client.write(msg);
-  } catch {
-    return false;
-  }
-}
-
-// ==============================================================================
-// 5. Dual-Track Telemetry Dispatcher (Zero-Wait Fire-and-Forget + ARQ Cache)
-// ==============================================================================
 export function sendUdpTelemetry(payload: TelemetryPayload): number {
   const seq = payload.seqId !== undefined ? payload.seqId : currentSequenceId++;
   if (payload.seqId !== undefined && payload.seqId >= currentSequenceId) {
     currentSequenceId = payload.seqId + 1;
+  }
+
+  // METHOD 3: Piggybacking last 2 packets from ring buffer for zero-RTT single-drop recovery
+  let piggybackList: any[] | undefined = undefined;
+  if (payload.type !== 'HEARTBEAT') {
+    const p1 = ringBuffer.get(seq - 1);
+    const p2 = ringBuffer.get(seq - 2);
+    piggybackList = [];
+    if (p2) piggybackList.push({ seqId: p2.seqId, level: p2.level, endpoint: p2.endpoint, statusCode: p2.statusCode, message: p2.message });
+    if (p1) piggybackList.push({ seqId: p1.seqId, level: p1.level, endpoint: p1.endpoint, statusCode: p1.statusCode, message: p1.message });
+    if (piggybackList.length === 0) piggybackList = undefined;
   }
 
   const packet: TelemetryPayload = {
@@ -249,40 +196,40 @@ export function sendUdpTelemetry(payload: TelemetryPayload): number {
     type: payload.type || 'LOG',
     timestamp: payload.timestamp || Date.now(),
     metadata: payload.metadata ? maskSensitiveData(payload.metadata) : undefined,
+    piggyback: piggybackList,
   };
 
-  // 1. Cache in Sliding Window Ring Buffer for possible ARQ Selective Retransmission
-  cacheInRingBuffer(seq, packet);
+  // 1. Store in Ring Buffer for Method 1 (NACK Retransmission)
+  if (packet.type !== 'HEARTBEAT') {
+    storeInRingBuffer(seq, packet);
+  }
 
-  // 2. Primary Fast-Path: Fire-and-Forget via UDP Socket (~0.3ms latency)
+  // 2. Check for Method 2: Tiered Severity (Errors & Critical Audit sent via TCP Fallback)
+  const isCritical = packet.level === 'ERROR' || (packet.statusCode && packet.statusCode >= 500) || packet.critical === true;
+  if (isCritical) {
+    dispatchTcpFallback(packet);
+  }
+
+  // 3. Fast-Path UDP Send (Zero-Wait)
   try {
     const buffer = Buffer.from(JSON.stringify(packet));
-    const socket = getUdpSocket();
+    const socket = getSocket();
 
     socket.send(buffer, 0, buffer.length, UDP_PORT, UDP_HOST, (err) => {
-      // Method 2 (Circuit Breaker Fallback): If UDP socket fails, fallback to TCP stream
       if (err) {
-        sendTcpTelemetry(packet);
+        // If UDP send failed (e.g. ENOBUFS), trigger TCP Fallback automatically
+        dispatchTcpFallback(packet);
       }
     });
   } catch {
-    // If UDP throws synchronously, fallback to TCP stream
-    sendTcpTelemetry(packet);
-  }
-
-  // Method 2 (Level-Based Tiering): If log level is ERROR or FATAL, guarantee delivery via TCP as well
-  if (packet.level === 'ERROR' || packet.level === 'FATAL') {
-    sendTcpTelemetry(packet);
+    dispatchTcpFallback(packet);
   }
 
   return seq;
 }
 
-// ==============================================================================
-// 6. Heartbeat & Periodic TCP Checkpoint Timers
-// ==============================================================================
+// Heartbeat Timer Management
 let heartbeatTimer: NodeJS.Timeout | null = null;
-let checkpointTimer: NodeJS.Timeout | null = null;
 
 /**
  * Starts automatic Heartbeat signal transmission every 5 seconds (5000 ms)
@@ -290,10 +237,6 @@ let checkpointTimer: NodeJS.Timeout | null = null;
 export function startHeartbeat(intervalMs = 5000): void {
   if (heartbeatTimer) return;
 
-  // Initialize TCP connection in background
-  getTcpRecoveryClient();
-
-  // Initial heartbeat
   sendUdpTelemetry({
     type: 'HEARTBEAT',
     level: 'INFO',
@@ -311,64 +254,23 @@ export function startHeartbeat(intervalMs = 5000): void {
   }, intervalMs);
 
   heartbeatTimer.unref();
-
-  // Method 3: Periodic TCP Checkpoint & State Reconciliation (Every 10 seconds)
-  startPeriodicCheckpoint(10000);
 }
 
 /**
- * Method 3: Sends Periodic State Checkpoints over TCP
- */
-export function startPeriodicCheckpoint(intervalMs = 10000): void {
-  if (checkpointTimer) return;
-
-  checkpointTimer = setInterval(() => {
-    const client = getTcpRecoveryClient();
-    if (client && !client.destroyed) {
-      const checkpointMsg = JSON.stringify({
-        type: 'CHECKPOINT',
-        client: 'wms-api',
-        lastEmittedSeqId: currentSequenceId - 1,
-        ringBufferSize: ringBuffer.size,
-        timestamp: Date.now(),
-      }) + '\n';
-      client.write(checkpointMsg);
-    }
-  }, intervalMs);
-
-  checkpointTimer.unref();
-}
-
-/**
- * Stops automatic Heartbeat and Checkpoint signals
+ * Stops automatic Heartbeat signal
  */
 export function stopHeartbeat(): void {
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
   }
-  if (checkpointTimer) {
-    clearInterval(checkpointTimer);
-    checkpointTimer = null;
-  }
 }
 
 /**
- * Closes all sockets cleanly (UDP and TCP)
+ * Closes the UDP client socket gracefully
  */
 export function closeUdpClient(): Promise<void> {
   stopHeartbeat();
-
-  if (tcpReconnectTimer) {
-    clearTimeout(tcpReconnectTimer);
-    tcpReconnectTimer = null;
-  }
-
-  if (tcpClient) {
-    tcpClient.destroy();
-    tcpClient = null;
-  }
-
   return new Promise((resolve) => {
     if (udpSocket) {
       udpSocket.close(() => {

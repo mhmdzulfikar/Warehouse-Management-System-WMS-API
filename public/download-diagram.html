@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Diagram Dual-Track WMS &amp; Telemetry</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0b1120;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+      max-width: 900px;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .btn-toolbar {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .btn-svg {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+    }
+    .btn-svg:hover {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      transform: translateY(-2px);
+    }
+    .btn-png {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white;
+    }
+    .btn-png:hover {
+      background: linear-gradient(135deg, #10b981, #059669);
+      transform: translateY(-2px);
+    }
+    .btn-print {
+      background: #334155;
+      color: #e2e8f0;
+    }
+    .btn-print:hover {
+      background: #475569;
+      transform: translateY(-2px);
+    }
+    .diagram-container {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 15px;
+      max-width: 1240px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      overflow-x: auto;
+    }
+    .diagram-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 8px;
+    }
+    footer {
+      margin-top: 35px;
+      color: #64748b;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Diagram Arsitektur Dual-Track &amp; Telemetri WMS</h1>
+    <p>Visualisasi pemisahan Jalur Transaksi (TCP/PostgreSQL) dan Jalur Status Log (UDP + 3 Metode Self-Healing Recovery). Anda dapat mengunduh diagram dalam format vektor SVG atau gambar PNG resolusi tinggi di bawah ini.</p>
+  </header>
+
+  <div class="btn-toolbar">
+    <!-- Download SVG Button -->
+    <a href="dual-track-flowchart.svg" download="WMS-DualTrack-Architecture-Diagram.svg" class="btn btn-svg">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+      Unduh Vektor SVG (Kualitas Terbaik)
+    </a>
+
+    <!-- Download PNG Button -->
+    <button onclick="downloadAsPng()" class="btn btn-png">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+      Unduh Gambar PNG (High Resolution)
+    </button>
+
+    <!-- Print / PDF Button -->
+    <button onclick="window.print()" class="btn btn-print">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+      Cetak / Simpan PDF
+    </button>
+  </div>
+
+  <div class="diagram-container">
+    <img id="diagramImg" src="dual-track-flowchart.svg" alt="WMS Dual Track Architecture Flowchart">
+  </div>
+
+  <footer>
+    Warehouse Management System &bull; Dual-Track Telemetry Engine &bull; Antigravity Engineering
+  </footer>
+
+  <script>
+    // Konversi SVG ke PNG Resolusi Tinggi (2400 x 2560 px)
+    function downloadAsPng() {
+      const img = document.getElementById('diagramImg');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // 2x Retina Scale untuk ketajaman maksimal
+      const scale = 2;
+      canvas.width = 1200 * scale;
+      canvas.height = 1280 * scale;
+
+      const imageObj = new Image();
+      imageObj.crossOrigin = 'anonymous';
+      imageObj.src = 'dual-track-flowchart.svg';
+
+      imageObj.onload = function() {
+        ctx.fillStyle = '#0b1120';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
+
+        const a = document.createElement('a');
+        a.download = 'WMS-DualTrack-Architecture-Diagram.png';
+        a.href = canvas.toDataURL('image/png');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+    }
+  </script>
+</body>
+</html>
+

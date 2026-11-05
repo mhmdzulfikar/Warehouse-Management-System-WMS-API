@@ -26,7 +26,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
 ENV UDP_PORT=5001
-ENV TCP_RECOVERY_PORT=5002
 
 # Add curl for container health check
 RUN apk add --no-cache curl
@@ -47,8 +46,8 @@ COPY public ./public
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expose HTTP API & Dashboard (5000/tcp), UDP Log Aggregator (5001/udp), and TCP Recovery Channel (5002/tcp)
-EXPOSE 5000 5001/udp 5002
+# Expose HTTP API & Dashboard (5000/tcp) and UDP Log Aggregator (5001/udp)
+EXPOSE 5000 5001/udp
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["npm", "run", "start"]

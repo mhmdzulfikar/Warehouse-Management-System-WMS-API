@@ -8,6 +8,22 @@ import { sendUdpTelemetry } from '../utils/udpLogger';
  * via UDP socket fire-and-forget without blocking the Event Loop or slowing client responses.
  */
 export const telemetryMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  const endpoint = req.originalUrl || req.url;
+
+  // Filter out noise: Don't log static files, health checks, or internal metrics polling
+  if (
+    req.method === 'OPTIONS' ||
+    endpoint.startsWith('/api/benchmark/metrics') ||
+    endpoint.startsWith('/api/benchmark/ring-buffer-stats') ||
+    endpoint.startsWith('/api/benchmark/telemetry-') ||
+    endpoint.startsWith('/api/health') ||
+    endpoint.startsWith('/api-docs') ||
+    endpoint.startsWith('/favicon') ||
+    /\.(css|js|svg|png|jpg|jpeg|ico|woff|woff2|ttf|map|html)$/i.test(endpoint)
+  ) {
+    return next();
+  }
+
   const startTime = performance.now();
 
   // Attach listener to response finish event (triggered when response headers/body are sent)
@@ -43,7 +59,6 @@ export const telemetryMiddleware = (req: Request, res: Response, next: NextFunct
         metadata.body = req.body;
       }
 
-      const endpoint = req.originalUrl || req.url;
       const message = `${req.method} ${endpoint} - ${res.statusCode} (${latencyMs}ms)`;
 
       // Dispatch packet over UDP Zero-Wait

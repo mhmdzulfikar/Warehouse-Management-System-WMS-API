@@ -2,15 +2,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import dgram from 'dgram';
-import net from 'net';
+import http from 'http';
 import { performance } from 'perf_hooks';
 import { prisma } from '../config/prisma';
 import type { TelemetryPayload } from '../utils/udpLogger';
 
-// Network Configuration
+// Configuration
 const UDP_PORT = parseInt(process.env.UDP_PORT || '5001', 10);
 const UDP_HOST = process.env.UDP_HOST || '0.0.0.0';
-const TCP_RECOVERY_PORT = parseInt(process.env.TCP_RECOVERY_PORT || process.env.TCP_PORT || '5002', 10);
 
 const BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 2000;
@@ -26,56 +25,128 @@ let isFlushing = false;
 export interface AggregatorMetrics {
   totalReceived: number;
   totalLogsInserted: number;
-  totalPacketLossDetected: number;
-  totalRecoveredViaTcp: number;
-  netUnrecoveredLoss: number;
+  totalPacketLoss: number;
+  totalRecovered: number;
+  nackRequestsSent: number;
   lossRatePercent: string;
-  recoveryRatePercent: string;
+  rawLossRatePercent: string;
+  effectiveLossRatePercent: string;
   lastSeqId: number;
   currentBufferSize: number;
   isMainServerAlive: boolean;
   lastHeartbeatTime: number | null;
   uptimeSeconds: number;
-  activeTcpClients: number;
+  activeReliabilityMethods: string[];
 }
 
 let totalReceivedCount = 0;
 let totalLogsInserted = 0;
 let totalPacketLossCount = 0;
 let totalRecoveredCount = 0;
+let nackRequestsCount = 0;
 let lastSequenceId = 0;
 let lastHeartbeatTimestamp: number | null = null;
 let isMainServerUnresponsive = false;
 const startTime = Date.now();
 
-// Active TCP Recovery Sockets
-const activeTcpClients = new Set<net.Socket>();
-
 export function getAggregatorMetrics(): AggregatorMetrics {
   const totalExpected = totalReceivedCount + totalPacketLossCount;
-  const netLoss = Math.max(0, totalPacketLossCount - totalRecoveredCount);
-  const lossRate = totalExpected > 0
+  const rawLossRate = totalExpected > 0
     ? ((totalPacketLossCount / totalExpected) * 100).toFixed(2)
     : '0.00';
-  const recoveryRate = totalPacketLossCount > 0
-    ? ((totalRecoveredCount / totalPacketLossCount) * 100).toFixed(2)
-    : '100.00';
+
+  const unrecovered = Math.max(0, totalPacketLossCount - totalRecoveredCount);
+  const effectiveLossRate = totalExpected > 0
+    ? ((unrecovered / totalExpected) * 100).toFixed(2)
+    : '0.00';
 
   return {
     totalReceived: totalReceivedCount,
     totalLogsInserted,
-    totalPacketLossDetected: totalPacketLossCount,
-    totalRecoveredViaTcp: totalRecoveredCount,
-    netUnrecoveredLoss: netLoss,
-    lossRatePercent: `${lossRate}%`,
-    recoveryRatePercent: `${recoveryRate}%`,
+    totalPacketLoss: totalPacketLossCount,
+    totalRecovered: totalRecoveredCount,
+    nackRequestsSent: nackRequestsCount,
+    lossRatePercent: `${effectiveLossRate}%`,
+    rawLossRatePercent: `${rawLossRate}%`,
+    effectiveLossRatePercent: `${effectiveLossRate}%`,
     lastSeqId: lastSequenceId,
     currentBufferSize: logBuffer.length,
     isMainServerAlive: !isMainServerUnresponsive && lastHeartbeatTimestamp !== null,
     lastHeartbeatTime: lastHeartbeatTimestamp,
     uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
-    activeTcpClients: activeTcpClients.size,
+    activeReliabilityMethods: [
+      'Method 1: NACK-Based Selective Retransmission (Ring Buffer + TCP Channel)',
+      'Method 2: Tiered Severity & Hybrid TCP Fallback (Circuit Breaker)',
+      'Method 3: Piggybacking / Redundant Sliding Window (Zero-RTT FEC Recovery)'
+    ],
   };
+}
+
+// -------------------------------------------------------------
+// Direct Log Ingestion (for Method 2: TCP Fallback)
+// -------------------------------------------------------------
+export function ingestDirectLog(packet: TelemetryPayload): void {
+  totalReceivedCount++;
+  logBuffer.push(packet);
+  if (logBuffer.length >= BATCH_SIZE) {
+    flushBuffer();
+  }
+}
+
+// -------------------------------------------------------------
+// METHOD 1 RECOVERY: NACK Selective Retransmission via TCP
+// When missing sequence IDs are detected, request retransmission
+// from the sender's sliding window ring buffer over TCP.
+// -------------------------------------------------------------
+function triggerNackRecovery(missingSeqs: number[]): void {
+  if (missingSeqs.length === 0) return;
+  nackRequestsCount++;
+
+  const mainApiHost = process.env.API_HOST || (UDP_HOST === '0.0.0.0' ? '127.0.0.1' : UDP_HOST);
+  const mainApiPort = parseInt(process.env.PORT || '5000', 10);
+
+  const payload = JSON.stringify({ seqIds: missingSeqs });
+  const req = http.request(
+    {
+      hostname: mainApiHost,
+      port: mainApiPort,
+      path: '/api/benchmark/telemetry-resend',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+      timeout: 3000,
+    },
+    (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.success && Array.isArray(json.recoveredLogs)) {
+            for (const log of json.recoveredLogs) {
+              logBuffer.push(log);
+              totalRecoveredCount++;
+            }
+            console.log(
+              `🔄 [NACK ARQ Recovery] Berhasil memulihkan ${json.recoveredLogs.length} paket log yang hilang via TCP!`
+            );
+          }
+        } catch {
+          // Parse error ignored
+        }
+      });
+    }
+  );
+
+  req.on('error', (err) => {
+    // Non-blocking recovery request
+    console.warn('[NACK Retransmission Channel Notice]', err.message);
+  });
+
+  req.write(payload);
+  req.end();
 }
 
 // -------------------------------------------------------------
@@ -105,7 +176,7 @@ export async function flushBuffer(): Promise<void> {
       createdAt: item.timestamp ? new Date(item.timestamp) : new Date(),
     }));
 
-    // Bulk-Insert via Prisma
+    // Bulk-Insert via Prisma with duplicate safety
     const result = await prisma.telemetryLog.createMany({
       data,
       skipDuplicates: true,
@@ -146,120 +217,12 @@ function startWatchdogTimer(): NodeJS.Timeout {
 }
 
 // -------------------------------------------------------------
-// 3. TCP Recovery Server (ARQ NACK Retransmission & Direct TCP)
-// -------------------------------------------------------------
-function broadcastNack(missingSeqIds: number[]): void {
-  if (activeTcpClients.size === 0) {
-    console.warn(
-      `⚠️ [NACK Notice] Tidak ada TCP recovery client yang terhubung untuk meminta retransmit paket #${missingSeqIds.join(', #')}.`
-    );
-    return;
-  }
-
-  const nackMessage = JSON.stringify({
-    type: 'NACK',
-    missingSeqIds,
-    timestamp: Date.now(),
-  }) + '\n';
-
-  for (const client of activeTcpClients) {
-    try {
-      client.write(nackMessage);
-    } catch {
-      // Ignore broken client sockets
-    }
-  }
-
-  console.log(
-    `📡 [NACK Sent] Meminta pengiriman ulang ${missingSeqIds.length} paket hilang (Seq #${missingSeqIds[0]} - #${missingSeqIds[missingSeqIds.length - 1]}) via TCP...`
-  );
-}
-
-export function createTcpRecoveryServer(): net.Server {
-  const server = net.createServer((socket: net.Socket) => {
-    activeTcpClients.add(socket);
-    console.log(`🔗 [TCP Recovery] Client terhubung dari ${socket.remoteAddress}:${socket.remotePort}`);
-
-    let chunkBuffer = '';
-
-    socket.on('data', (data: Buffer) => {
-      chunkBuffer += data.toString('utf-8');
-      const lines = chunkBuffer.split('\n');
-      chunkBuffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const msg = JSON.parse(line);
-
-          // Handle Method 1: ARQ Retransmit Payload
-          if (msg.type === 'RETRANSMIT_PAYLOAD' && Array.isArray(msg.packets)) {
-            const packets: TelemetryPayload[] = msg.packets;
-            for (const pkt of packets) {
-              logBuffer.push(pkt);
-            }
-            totalRecoveredCount += packets.length;
-            totalReceivedCount += packets.length;
-
-            console.log(
-              `✅ [ARQ Recovery Success] Berhasil merecovery ${packets.length} paket yang hilang via TCP! Net Unrecovered Loss: ${Math.max(
-                0,
-                totalPacketLossCount - totalRecoveredCount
-              )}`
-            );
-
-            if (logBuffer.length >= BATCH_SIZE) {
-              flushBuffer();
-            }
-          }
-
-          // Handle Method 2: Direct TCP Fallback (e.g. Critical Errors or Circuit Breaker)
-          if (msg.type === 'DIRECT_TCP' && msg.packet) {
-            logBuffer.push(msg.packet);
-            totalReceivedCount++;
-            if (logBuffer.length >= BATCH_SIZE) {
-              flushBuffer();
-            }
-          }
-
-          // Handle Method 3: Periodic Checkpoint Digest
-          if (msg.type === 'CHECKPOINT' && typeof msg.lastEmittedSeqId === 'number') {
-            const emittedSeq = msg.lastEmittedSeqId;
-            if (emittedSeq > lastSequenceId) {
-              const missing: number[] = [];
-              for (let s = lastSequenceId + 1; s <= emittedSeq; s++) {
-                missing.push(s);
-              }
-              totalPacketLossCount += missing.length;
-              lastSequenceId = emittedSeq;
-              broadcastNack(missing);
-            }
-          }
-        } catch {
-          // Ignore malformed JSON chunks
-        }
-      }
-    });
-
-    socket.on('error', () => {
-      activeTcpClients.delete(socket);
-    });
-
-    socket.on('close', () => {
-      activeTcpClients.delete(socket);
-    });
-  });
-
-  return server;
-}
-
-// -------------------------------------------------------------
-// 4. UDP Socket Server Setup (Primary High-Throughput Path)
+// 3. UDP Socket Server Setup with Self-Healing Logic
 // -------------------------------------------------------------
 export function createAggregatorServer(): dgram.Socket {
   const server = dgram.createSocket('udp4');
 
-  server.on('message', (msg: Buffer, rinfo: dgram.RemoteInfo) => {
+  server.on('message', (msg: Buffer, _rinfo: dgram.RemoteInfo) => {
     try {
       const packet: TelemetryPayload = JSON.parse(msg.toString('utf-8'));
       totalReceivedCount++;
@@ -267,21 +230,45 @@ export function createAggregatorServer(): dgram.Socket {
       // Packet Loss Tracking (Sequence ID Continuity Check)
       if (typeof packet.seqId === 'number') {
         const incomingSeq = packet.seqId;
-        if (lastSequenceId > 0 && incomingSeq > lastSequenceId + 1) {
-          const missingSeqIds: number[] = [];
-          for (let s = lastSequenceId + 1; s < incomingSeq; s++) {
-            missingSeqIds.push(s);
-          }
-          const dropped = missingSeqIds.length;
-          totalPacketLossCount += dropped;
 
+        if (lastSequenceId > 0 && incomingSeq > lastSequenceId + 1) {
+          const dropped = incomingSeq - (lastSequenceId + 1);
+          totalPacketLossCount += dropped;
           console.warn(
-            `⚠️ [Packet Loss Detected] Sequence loncat: Diharapkan #${lastSequenceId + 1}, Diterima #${incomingSeq} (${dropped} paket hilang). Total loss detected: ${totalPacketLossCount}`
+            `⚠️ [Packet Loss Detected] Sequence loncat: Diharapkan #${lastSequenceId + 1}, Diterima #${incomingSeq} (${dropped} paket hilang). Total loss: ${totalPacketLossCount}`
           );
 
-          // Method 1: Automatically trigger NACK retransmission request over TCP!
-          broadcastNack(missingSeqIds);
+          const missingSeqs: number[] = [];
+          for (let s = lastSequenceId + 1; s < incomingSeq; s++) {
+            missingSeqs.push(s);
+          }
+
+          // METHOD 3 RECOVERY: Check Piggyback payload first (Zero-RTT recovery)
+          const remainingMissingSeqs: number[] = [];
+          if (Array.isArray(packet.piggyback)) {
+            for (const mSeq of missingSeqs) {
+              const recoveredFromPiggyback = packet.piggyback.find((p) => p.seqId === mSeq);
+              if (recoveredFromPiggyback) {
+                logBuffer.push({
+                  ...recoveredFromPiggyback,
+                  timestamp: packet.timestamp,
+                });
+                totalRecoveredCount++;
+                console.log(`⚡ [Piggyback Zero-RTT Recovery] Pulih seq #${mSeq} langsung dari redundant datagram payload!`);
+              } else {
+                remainingMissingSeqs.push(mSeq);
+              }
+            }
+          } else {
+            remainingMissingSeqs.push(...missingSeqs);
+          }
+
+          // METHOD 1 RECOVERY: Request NACK Selective Retransmission via TCP for any unrecovered packets
+          if (remainingMissingSeqs.length > 0) {
+            triggerNackRecovery(remainingMissingSeqs);
+          }
         }
+
         lastSequenceId = Math.max(lastSequenceId, incomingSeq);
       }
 
@@ -322,13 +309,14 @@ export function createAggregatorServer(): dgram.Socket {
   server.on('listening', () => {
     const address = server.address();
     console.log(`=======================================================`);
-    console.log(`📡 DUAL-TRACK TELEMETRY AGGREGATOR RUNNING`);
-    console.log(`   UDP Fast-Path   : ${address.address}:${address.port}/udp (~0.3ms latency)`);
-    console.log(`   TCP Recovery    : Port ${TCP_RECOVERY_PORT}/tcp (ARQ NACK Retransmission)`);
-    console.log(`   Batch Size      : ${BATCH_SIZE} items`);
-    console.log(`   Flush Interval  : ${FLUSH_INTERVAL_MS} ms`);
-    console.log(`   Watchdog        : ${WATCHDOG_THRESHOLD_MS / 1000}s threshold`);
-    console.log(`   Database Target : PostgreSQL (Prisma telemetryLog)`);
+    console.log(`📡 RELIABLE UDP LOG AGGREGATOR SERVER AKTIF (SELF-HEALING)`);
+    console.log(`   Host        : ${address.address}`);
+    console.log(`   Port        : ${address.port}`);
+    console.log(`   Method 1    : NACK ARQ Selective Retransmission (Active)`);
+    console.log(`   Method 2    : Tiered Severity & Hybrid TCP Fallback (Active)`);
+    console.log(`   Method 3    : Piggybacking Zero-RTT Sliding Window (Active)`);
+    console.log(`   Batch Size  : ${BATCH_SIZE} items | Flush Interval: ${FLUSH_INTERVAL_MS}ms`);
+    console.log(`   Watchdog    : ${WATCHDOG_THRESHOLD_MS / 1000}s threshold`);
     console.log(`=======================================================`);
   });
 
@@ -336,63 +324,70 @@ export function createAggregatorServer(): dgram.Socket {
 }
 
 // -------------------------------------------------------------
-// 5. Execution Bootstrap (Start / Stop Lifecycle)
+// 4. Execution Bootstrap
 // -------------------------------------------------------------
-let runningUdpServer: dgram.Socket | null = null;
-let runningTcpServer: net.Server | null = null;
+let runningServer: dgram.Socket | null = null;
 let flushTimer: NodeJS.Timeout | null = null;
 let watchdogTimer: NodeJS.Timeout | null = null;
+let retentionTimer: NodeJS.Timeout | null = null;
 
-export function startAggregator(): { udp: dgram.Socket; tcp: net.Server } {
-  if (runningUdpServer && runningTcpServer) {
-    return { udp: runningUdpServer, tcp: runningTcpServer };
+/**
+ * Automatically prunes telemetry logs older than retention days (default: 7 days)
+ * to prevent database bloat and storage garbage accumulation.
+ */
+export async function pruneOldTelemetryLogs(retentionDays = 7): Promise<number> {
+  try {
+    const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    const deleteResult = await prisma.telemetryLog.deleteMany({
+      where: {
+        createdAt: {
+          lt: cutoffDate,
+        },
+      },
+    });
+    if (deleteResult.count > 0) {
+      console.log(`🧹 [Retention Policy] Berhasil membuang ${deleteResult.count} baris log usang (> ${retentionDays} hari).`);
+    }
+    return deleteResult.count;
+  } catch (err: any) {
+    console.warn('[Log Retention Error]', err.message);
+    return 0;
   }
+}
 
-  // 1. Start UDP Datagram Receiver (Port 5001)
-  runningUdpServer = createAggregatorServer();
-  runningUdpServer.bind(UDP_PORT, UDP_HOST);
+export function startAggregator(): dgram.Socket {
+  if (runningServer) return runningServer;
 
-  // 2. Start TCP Recovery & Control Server (Port 5002)
-  runningTcpServer = createTcpRecoveryServer();
-  runningTcpServer.listen(TCP_RECOVERY_PORT, () => {
-    console.log(`🔒 [TCP Recovery Server] Mendengarkan di port ${TCP_RECOVERY_PORT} untuk Selective Retransmission`);
-  });
+  runningServer = createAggregatorServer();
+  runningServer.bind(UDP_PORT, UDP_HOST);
 
-  // 3. Start Periodic Flush & Watchdog Timers
   flushTimer = setInterval(flushBuffer, FLUSH_INTERVAL_MS);
   watchdogTimer = startWatchdogTimer();
 
-  return { udp: runningUdpServer, tcp: runningTcpServer };
+  // Run retention cleanup on startup and every 6 hours
+  pruneOldTelemetryLogs(7);
+  retentionTimer = setInterval(() => pruneOldTelemetryLogs(7), 6 * 60 * 60 * 1000);
+
+  return runningServer;
 }
 
 export function stopAggregator(): Promise<void> {
   return new Promise((resolve) => {
     if (flushTimer) clearInterval(flushTimer);
     if (watchdogTimer) clearInterval(watchdogTimer);
+    if (retentionTimer) clearInterval(retentionTimer);
 
-    // Close TCP Clients & Server
-    for (const client of activeTcpClients) {
-      client.destroy();
-    }
-    activeTcpClients.clear();
-
-    if (runningTcpServer) {
-      runningTcpServer.close();
-      runningTcpServer = null;
-    }
-
-    // Flush remaining logs before closing UDP
-    flushBuffer().finally(() => {
-      if (runningUdpServer) {
-        runningUdpServer.close(() => {
-          runningUdpServer = null;
-          console.log('[Aggregator] All telemetry servers (UDP + TCP) stopped gracefully.');
+    if (runningServer) {
+      flushBuffer().finally(() => {
+        runningServer?.close(() => {
+          runningServer = null;
+          console.log('[Aggregator] Server stopped gracefully.');
           resolve();
         });
-      } else {
-        resolve();
-      }
-    });
+      });
+    } else {
+      resolve();
+    }
   });
 }
 

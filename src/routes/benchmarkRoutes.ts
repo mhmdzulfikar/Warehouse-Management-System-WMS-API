@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { performance } from 'perf_hooks';
 import { prisma } from '../config/prisma';
-import { sendUdpTelemetry, cacheInRingBuffer, getRingBufferStats } from '../utils/udpLogger';
-import { getAggregatorMetrics } from '../aggregator';
+import { sendUdpTelemetry, getLogsFromRingBuffer, getRingBufferStats } from '../utils/udpLogger';
+import { getAggregatorMetrics, ingestDirectLog } from '../aggregator';
 
 const router = Router();
 
@@ -69,8 +69,8 @@ router.get('/udp-log', (req: Request, res: Response) => {
     endpoint: '/api/benchmark/udp-log',
     statusCode: 200,
     latencyMs,
-    message: 'Zero-Wait fire-and-forget UDP telemetry log',
-    metadata: { mode: 'UDP_FIRE_AND_FORGET', ip: req.ip },
+    message: 'Zero-Wait fire-and-forget UDP telemetry log with ring-buffer & redundancy',
+    metadata: { mode: 'UDP_ZERO_WAIT', ip: req.ip },
   });
 
   const totalDuration = Math.round((performance.now() - startTime) * 100) / 100;
@@ -84,62 +84,44 @@ router.get('/udp-log', (req: Request, res: Response) => {
 });
 
 /**
- * Benchmark 3: Packet Loss & ARQ TCP Recovery Simulation
- * Simulates dropping packets by caching in Ring Buffer while skipping UDP broadcast,
- * then transmitting a subsequent packet to trigger the Aggregator's TCP NACK recovery.
+ * METHOD 1 ARQ ENDPOINT: NACK Selective Retransmission
+ * The Aggregator calls this endpoint over TCP when sequence gap is detected
+ * to retrieve missing packets from the sender's circular in-memory Ring Buffer.
  */
-router.all('/simulate-loss', async (req: Request, res: Response) => {
-  const dropCount = Math.max(1, Math.min(50, Number(req.body?.dropCount || req.query?.dropCount || 5)));
-  const baseSeq = sendUdpTelemetry({
-    message: 'Pre-loss baseline packet',
-    level: 'INFO',
-    endpoint: '/api/benchmark/simulate-loss',
-  });
-
-  // Deliberately simulate dropped packets: stored in Ring Buffer, but NOT sent over UDP
-  const droppedIds: number[] = [];
-  for (let i = 1; i <= dropCount; i++) {
-    const droppedSeq = baseSeq + i;
-    droppedIds.push(droppedSeq);
-    cacheInRingBuffer(droppedSeq, {
-      seqId: droppedSeq,
-      type: 'LOG',
-      level: 'WARN',
-      message: `Simulated dropped packet #${droppedSeq} (Recovered via TCP NACK)`,
-      timestamp: Date.now(),
-      endpoint: '/api/benchmark/simulate-loss',
-    });
+router.post('/telemetry-resend', (req: Request, res: Response) => {
+  const { seqIds } = req.body;
+  if (!Array.isArray(seqIds) || seqIds.length === 0) {
+    return res.status(400).json({ success: false, message: 'seqIds array is required' });
   }
 
-  // Send packet after the gap to trigger the Aggregator's sequence gap detection
-  const triggerSeq = baseSeq + dropCount + 1;
-  sendUdpTelemetry({
-    seqId: triggerSeq,
-    type: 'LOG',
-    level: 'INFO',
-    message: `Trigger packet #${triggerSeq} to alert Aggregator of gap`,
-    timestamp: Date.now(),
-    endpoint: '/api/benchmark/simulate-loss',
+  const recoveredLogs = getLogsFromRingBuffer(seqIds);
+  return res.json({
+    success: true,
+    requestedCount: seqIds.length,
+    recoveredCount: recoveredLogs.length,
+    recoveredLogs,
   });
+});
 
-  // Brief pause to allow NACK over TCP to complete
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const metrics = getAggregatorMetrics();
+/**
+ * METHOD 2 FALLBACK ENDPOINT: TCP Telemetry Ingestion
+ * For critical logs (e.g. 500 server error, critical inventory adjustments)
+ * or when the UDP client encounters buffer backpressure.
+ */
+router.post('/telemetry-tcp-ingest', (req: Request, res: Response) => {
+  const packet = req.body;
+  if (!packet || typeof packet !== 'object') {
+    return res.status(400).json({ success: false, message: 'Invalid payload' });
+  }
 
-  res.json({
-    status: 'ok',
-    description: 'Packet drop simulated and ARQ TCP retransmission triggered',
-    simulatedDropCount: dropCount,
-    droppedSeqIds: droppedIds,
-    triggerSeqId: triggerSeq,
-    aggregatorMetrics: metrics,
-  });
+  ingestDirectLog(packet);
+  return res.json({ success: true, mode: 'TCP_FALLBACK_INGESTED', seqId: packet.seqId });
 });
 
 /**
  * Ring Buffer Status Inspection
  */
-router.get('/ring-buffer', (req: Request, res: Response) => {
+router.get('/ring-buffer-stats', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     ringBuffer: getRingBufferStats(),
@@ -147,7 +129,24 @@ router.get('/ring-buffer', (req: Request, res: Response) => {
 });
 
 /**
- * Benchmark Metrics: Live Telemetry & System Statistics
+ * Purge / Clear All Accumulated Telemetry Logs from PostgreSQL Database
+ * Useful to wipe out benchmark stress-test logs so the DB stays clean.
+ */
+router.delete('/logs', async (_req: Request, res: Response) => {
+  try {
+    const result = await prisma.telemetryLog.deleteMany({});
+    res.json({
+      status: 'ok',
+      message: 'Semua log telemetri berhasil dibersihkan dari database.',
+      deletedCount: result.count,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Benchmark Metrics: Live Telemetry, Self-Healing Packet Loss & System Statistics
  */
 router.get('/metrics', async (req: Request, res: Response) => {
   try {
@@ -168,6 +167,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
       database: {
         totalPersistedLogs: totalLogsInDb,
       },
+      ringBuffer: getRingBufferStats(),
       aggregator,
     });
   } catch (err: any) {

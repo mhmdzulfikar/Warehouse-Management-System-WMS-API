@@ -4,30 +4,108 @@ Sistem Manajemen Pergudangan modern (*Enterprise Warehouse Management System*) t
 
 ---
 
-##  Arsitektur Sistem
+## 🏗️ Arsitektur Sistem Dual-Track
 
-Ekosistem WMS dirancang untuk throughput tinggi, efisiensi alur data (*data flow efficiency*), dan latensi ultra-rendah:
+Ekosistem WMS dirancang untuk throughput tinggi, efisiensi alur data (*data flow efficiency*), dan latensi ultra-rendah melalui pemisahan dua jalur utama:
+* **Jalur Utama (Data Bisnis & Transaksi - TCP/ACID)**: Menangani transaksi inventaris, inbound, outbound, dan pesanan penjualan dengan jaminan konsistensi data mutlak (ACID) dan respon cepat ke pengguna tanpa terhambat proses logging.
+* **Jalur Telemetri (Status Log & Metrik - Asinkron UDP + Self-Healing)**: Menembakkan log eksekusi secara non-blocking via UDP socket (~0.3ms), didukung oleh **3 Lapis Keandalan (Tri-Method Reliability)** untuk menjamin nol kehilangan data log (*Zero Packet Loss*).
 
-1. **`wms-api` (Port 5000/tcp)**:
-   - Backend Express.js & TypeScript dengan Prisma 7 ORM.
-   - Menyajikan REST API untuk Master Data (Products, Suppliers, Customers, Warehouses), Inbound PO, Mutasi/Transfer Stok, Opname, dan Outbound (Sales Order & Delivery Order).
-   - Menyajikan Frontend Dashboard React 19 (Anti-slop Clean Light Enterprise Theme) di `/dashboard`.
-   - Dokumentasi Swagger OpenAPI interaktif di `/api-docs`.
-   - Mengirim log telemetri asinkron via UDP datagram tanpa membebani request-response cycle HTTP (latensi ~0.3ms).
+### 📊 Diagram Alur Dual-Track & Tri-Method Reliability
 
-2. **`udp-aggregator` (Port 5001/udp)**:
-   - UDP Log Aggregator Server berbasis `dgram`.
-   - Pelacakan `seq_id` kontinu untuk mendeteksi *packet loss*.
-   - Proteksi OOM dengan batasan buffer RAM (10.000 entri) dan *Hybrid Flush* (batch 100 entri atau timeout 2.000ms).
-   - *Watchdog Timer* (15 detik) untuk deteksi otomatis gangguan pengiriman dari worker.
+```mermaid
+flowchart TD
+    Client["📱 Client / Frontend / Scanner"] -->|"1. HTTP Request (Inbound, Outbound, Stock)"| API["⚡ WMS Core API (Express.js :5000)"]
 
-3. **`postgres` (Port 5432/tcp)**:
-   - PostgreSQL 16 Alpine dengan kernel tuning throughput tinggi:
-     - `max_connections=500`
-     - `shared_buffers=256MB`
-     - `effective_cache_size=1GB`
-     - `synchronous_commit=off`
-     - `wal_buffers=16MB`
+    %% JALUR UTAMA
+    subgraph JALUR_UTAMA["JALUR UTAMA: DATA TRANSAKSI BISNIS (TCP)"]
+        API -->|"2. Proses Transaksi Bisnis (ACID)"| Prisma["Prisma ORM Client & Query Engine"]
+        Prisma -->|"3. TCP Handshake & Commit"| DB_Main[("🗄️ PostgreSQL Database (:5432)")]
+        DB_Main -->|"4. Konfirmasi Commit Sukses"| API
+        API -->|"5. Return 200 OK ke Client (Cepat: 5-15ms)"| Client
+    end
+
+    %% JALUR TELEMETRI
+    subgraph JALUR_TELEMETRI["JALUR TELEMETRI: LOG & MONITORING (UDP + TRI-METHOD)"]
+        API -.->|"6. Non-blocking Asinkron (sendUdpTelemetry)"| Logger["Telemetry Engine (API)"]
+        
+        Logger -->|"Simpan salinan 3.000 log terakhir"| RingBuf["Ring Buffer (Sliding Window RAM)"]
+        
+        %% Klasifikasi Severity
+        Logger --> CriticalCheck{"Cek Severity Log?"}
+        
+        %% METODE 2: Jalur Darurat Kritis
+        CriticalCheck -->|"Status 500 / ERROR / Buffer Penuh"| Method2["METODE 2: TCP Fallback Channel (POST /telemetry-tcp-ingest)"]
+        Method2 -->|"Direct TCP Ingest (Anti-Hilang)"| LogBuffer
+        
+        %% Jalur Normal UDP + Piggyback
+        CriticalCheck -->|"Normal (INFO / 200 OK)"| Method3["METODE 3: Pasang Redundansi Piggyback (2 seq sebelumnya)"]
+        Method3 -->|"Kirim Datagram Cepat (~0.3ms)"| UDPSocket["UDP Datagram (Port 5001)"]
+        
+        UDPSocket -->|"Terima Datagram di Port 5001"| Aggregator["📥 UDP Log Aggregator Server (:5001)"]
+        
+        %% Evaluasi di Aggregator
+        Aggregator --> CheckSeq{"Cek Urutan Nomor (seqId)?"}
+        
+        CheckSeq -->|"Urutan Rapi (Normal)"| LogBuffer["Aggregator Batch Buffer (RAM)"]
+        
+        CheckSeq -->|"Ada Gap (Packet Loss Terdeteksi)"| GapHandler["Evaluasi Paket Hilang"]
+        
+        %% Pemulihan Gap
+        GapHandler --> CheckPiggy{"Ada di Piggyback?"}
+        CheckPiggy -->|"YA (Hilang 1-2 paket acak)"| RecovPiggy["Pulihkan Seketika (Zero-RTT / 0ms)"]
+        RecovPiggy --> LogBuffer
+        
+        CheckPiggy -->|"TIDAK (Hilang > 2 paket beruntun)"| Method1["METODE 1: NACK TCP Retransmission (POST /telemetry-resend)"]
+        Method1 -->|"Minta data seqId yang hilang"| RingBuf
+        RingBuf -->|"Kirim ulang paket via TCP"| LogBuffer
+        
+        %% Batch Flush ke DB
+        LogBuffer -->|"Hybrid Flush: Tiap 100 items ATAU 2 Detik"| DB_Log[("🗄️ PostgreSQL Database (telemetry_logs)")]
+    end
+
+    %% Styling
+    classDef primary fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef mainTrack fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef recovery fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef db fill:#ede7f6,stroke:#512da8,stroke-width:2px;
+
+    class API,Client primary;
+    class Prisma,DB_Main mainTrack;
+    class RingBuf,Method1,Method2,Method3,GapHandler recovery;
+    class DB_Log db;
+```
+
+> [!TIP]
+> **Unduh Diagram Gambar:** Anda dapat mengunduh diagram arsitektur di atas dalam format **Vektor SVG** atau **High-Res PNG (2400x2560px)** melalui halaman browser:
+> [http://localhost:5000/download-diagram.html](http://localhost:5000/download-diagram.html) atau membuka file langsung di [public/dual-track-flowchart.svg](file:///c:/Users/User/Warehouse-Management-System-WMS-API/public/dual-track-flowchart.svg).
+
+---
+
+### 🛡️ Tiga Metode Keandalan Log Telemetri (Tri-Method Reliability)
+
+1. **Metode 1: NACK Selective Retransmission via In-Memory Ring Buffer (ARQ)**
+   * Server API menyimpan 3.000 log terakhir di RAM dalam bentuk *Sliding Window Ring Buffer*.
+   * Aggregator memantau kontinuitas nomor urut monoton (`seqId`). Jika nomor urut melompat (misal `#100` langsung ke `#104`), Aggregator mengirim request **NACK via TCP** ke endpoint `/api/benchmark/telemetry-resend` untuk meminta kirim ulang paket `#101 - #103`.
+
+2. **Metode 2: Tiered Severity & Hybrid TCP Fallback (Circuit Breaker)**
+   * Log berstatus fatal (`level: ERROR`, `statusCode >= 500`, atau saat socket UDP lokal mengalami *buffer backpressure* `ENOBUFS`) secara otomatis **dialihkan ke jalur TCP HTTP Fallback** (`POST /api/benchmark/telemetry-tcp-ingest`).
+   * Menjamin log audit penting tidak pernah hilang walau kondisi jaringan UDP terganggu total.
+
+3. **Metode 3: Redundant Sliding Window / Piggybacking (Zero-RTT FEC Recovery)**
+   * Setiap datagram UDP reguler menyematkan ringkasan 2 paket sebelumnya (`seqId - 1` dan `seqId - 2`) dalam field payload `piggyback`.
+   * Jika terjadi kehilangan 1-2 paket acak akibat fluktuasi jaringan, Aggregator memulihkannya **seketika (0 ms latency, tanpa round-trip network request)** dari paket berikutnya yang tiba.
+
+---
+
+### 🧹 Manajemen & Pembersihan Log Sampah (Log Hygiene & Retention)
+
+Untuk mencegah akumulasi data berlebih (*database bloat*) pada PostgreSQL:
+* **Noise Filtering Middleware**: Middleware telemetri secara otomatis menyaring dan mengabaikan request internal (`/api/health`, `/metrics`, preflight `OPTIONS`, dan static assets `.css/.js/.svg`). Hanya transaksi bisnis nyata yang dicatat.
+* **Auto-Prune Retention Policy**: Aggregator secara otomatis memangkas log yang telah berumur lebih dari **7 hari** setiap 6 jam sekali.
+* **Endpoint Pembersihan Instan**:
+  ```bash
+  curl -X DELETE http://localhost:5000/api/benchmark/logs
+  ```
 
 ---
 
