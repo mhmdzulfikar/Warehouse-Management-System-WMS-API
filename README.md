@@ -99,13 +99,32 @@ flowchart TD
 
 ### 🧹 Manajemen & Pembersihan Log Sampah (Log Hygiene & Retention)
 
-Untuk mencegah akumulasi data berlebih (*database bloat*) pada PostgreSQL:
-* **Noise Filtering Middleware**: Middleware telemetri secara otomatis menyaring dan mengabaikan request internal (`/api/health`, `/metrics`, preflight `OPTIONS`, dan static assets `.css/.js/.svg`). Hanya transaksi bisnis nyata yang dicatat.
-* **Auto-Prune Retention Policy**: Aggregator secara otomatis memangkas log yang telah berumur lebih dari **7 hari** setiap 6 jam sekali.
-* **Endpoint Pembersihan Instan**:
+Untuk mencegah akumulasi data berlebih (*database bloat*) pada database PostgreSQL:
+
+#### 1. Cara Mengecek Status Log (Masih Ada atau Sudah Bersih?)
+* **Cek Cepat via Terminal (Metrics API):**
   ```bash
-  curl -X DELETE http://localhost:5000/api/benchmark/logs
+  curl http://localhost:5000/api/benchmark/metrics
   ```
+  Perhatikan properti `"database": { "totalPersistedLogs": ... }`. Jika angkanya **`0`**, database log bersih. Jika masih ada angka (misal `25543`), berarti baris log masih tersimpan.
+* **Inspeksi Visual via Prisma Studio:**
+  ```bash
+  npx prisma studio
+  ```
+  Buka browser di [http://localhost:5555](http://localhost:5555) lalu pilih tabel **`TelemetryLog`**. Anda dapat melihat detail tiap baris log (tanggal `createdAt`, status, latency, endpoint) dan menghapusnya secara interaktif.
+
+#### 2. Kebijakan Retensi Otomatis (Auto-Prune 7 Hari)
+* **Mengapa log baru tidak langsung hilang?** Sistem retensi otomatis sengaja mempertahankan data selama **7 hari** agar riwayat aktivitas pergudangan seminggu terakhir tetap dapat diaudit.
+* Aggregator secara otomatis memangkas log yang telah berumur lebih dari 7 hari setiap 6 jam sekali.
+
+#### 3. Pembersihan Instan (Sapu Bersih Log Benchmark Jadi 0)
+Jika Anda baru saja menjalankan stress-test (Autocannon) dan ingin langsung mengosongkan tabel log tanpa menunggu 7 hari, jalankan:
+```bash
+curl -X DELETE http://localhost:5000/api/benchmark/logs
+```
+
+#### 4. Penyaringan Otomatis (Noise Filtering Middleware)
+Middleware telemetri secara otomatis menyaring dan mengabaikan request internal (`/api/health`, `/metrics`, preflight `OPTIONS`, dan static assets `.css/.js/.svg`). Hanya transaksi bisnis nyata yang dicatat.
 
 ---
 
