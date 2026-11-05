@@ -147,24 +147,34 @@ Semua akun default menggunakan password: `password123`
 
 ---
 
-##  Pengembangan Lokal (Tanpa Docker)
+## 💻 Pengembangan Lokal (Tanpa Docker)
+
+### 🚀 Cara Paling Praktis (Semua Server dalam 1 Terminal)
+Anda tidak perlu lagi membuka banyak tab terminal terpisah. Cukup gunakan salah satu perintah berikut:
 
 ```bash
-# 1. Install dependencies
-npm install
-npm --prefix frontend install
+# Opsi A: Jalankan Backend API (:5000) & UDP Aggregator (:5001) sekaligus di 1 terminal
+npm run dev:all
 
-# 2. Setup database schema & initial data
-npx prisma db push
-npm run seed
+# Opsi B: Jalankan Backend API (:5000), UDP Aggregator (:5001), dan Frontend Vite (:5173) sekaligus di 1 terminal
+npm run dev:full
+```
 
-# 3. Jalankan UDP Log Aggregator
+*(Output log dari tiap server akan otomatis diberi warna dan label pembeda `[API]`, `[AGG]`, dan `[FE]`).*
+
+---
+
+### Cara Manual (Terminal Terpisah)
+Jika Anda lebih suka menjalankan server satu per satu di tab terminal berbeda:
+
+```bash
+# 1. Jalankan UDP Log Aggregator (Terminal 1)
 npm run aggregator:dev
 
-# 4. Jalankan WMS Backend (Terminal Baru)
+# 2. Jalankan WMS Backend API (Terminal 2)
 npm run dev
 
-# 5. Jalankan Frontend Vite Dev (Terminal Baru)
+# 3. Jalankan Frontend Vite Dev (Terminal 3 - Opsional)
 npm run dev:fe
 ```
 
