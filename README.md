@@ -147,34 +147,54 @@ Semua akun default menggunakan password: `password123`
 
 ---
 
-## 💻 Pengembangan Lokal (Tanpa Docker)
+## 🚀 Cara Menjalankan Server dalam 1 Terminal
 
-### 🚀 Cara Paling Praktis (Semua Server dalam 1 Terminal)
-Anda tidak perlu lagi membuka banyak tab terminal terpisah. Cukup gunakan salah satu perintah berikut:
+Sistem WMS ini telah dilengkapi dengan tool **`concurrently`** sehingga Anda **tidak perlu lagi membuka banyak tab terminal** secara terpisah. Semua proses server berjalan bersamaan di satu layar dengan log berwarna dan label prefix yang rapi.
+
+### 1. Mode Standar: Backend API + UDP Aggregator (Rekomendasi)
+Menjalankan server WMS Express (Port 5000) dan server UDP Log Aggregator (Port 5001) secara bersamaan:
 
 ```bash
-# Opsi A: Jalankan Backend API (:5000) & UDP Aggregator (:5001) sekaligus di 1 terminal
 npm run dev:all
-
-# Opsi B: Jalankan Backend API (:5000), UDP Aggregator (:5001), dan Frontend Vite (:5173) sekaligus di 1 terminal
-npm run dev:full
 ```
-
-*(Output log dari tiap server akan otomatis diberi warna dan label pembeda `[API]`, `[AGG]`, dan `[FE]`).*
+* **Output Log di Terminal:**
+  * `[API]` (Warna Biru): Menampilkan aktivitas HTTP routing, query database, dan status response.
+  * `[AGG]` (Warna Hijau): Menampilkan aktivitas penerimaan datagram UDP, deteksi packet loss, dan batch flush database.
+* **Mematikan Server:** Tekan **`Ctrl + C` sekali**, maka kedua server akan ditutup secara aman (*graceful shutdown*).
 
 ---
 
-### Cara Manual (Terminal Terpisah)
-Jika Anda lebih suka menjalankan server satu per satu di tab terminal berbeda:
+### 2. Mode Full-Stack: Backend + UDP Aggregator + Frontend Vite
+Jika Anda sedang mengembangkan antarmuka web dan ingin mengaktifkan server Vite hot-reload (Port 5173) bersama backend:
 
 ```bash
-# 1. Jalankan UDP Log Aggregator (Terminal 1)
+npm run dev:full
+```
+* Menjalankan 3 proses sekaligus: `[API]` (Port 5000) + `[AGG]` (Port 5001) + `[FE]` (Port 5173).
+
+---
+
+### 3. Mode Docker Compose: Termasuk Database PostgreSQL
+Jika Anda tidak menginstall PostgreSQL di komputer lokal dan ingin menjalankan **seluruh ekosistem (Database + API + Aggregator)** dalam 1 terminal:
+
+```bash
+docker compose up
+```
+*(Atau tambahkan flag `-d` untuk berjalan di latar belakang: `docker compose up -d`).*
+
+---
+
+### 4. Mode Manual (Terminal Terpisah - Alternatif)
+Jika Anda tetap ingin menjalankan proses di terminal berbeda:
+
+```bash
+# Terminal 1: Jalankan UDP Log Aggregator
 npm run aggregator:dev
 
-# 2. Jalankan WMS Backend API (Terminal 2)
+# Terminal 2: Jalankan WMS Backend API
 npm run dev
 
-# 3. Jalankan Frontend Vite Dev (Terminal 3 - Opsional)
+# Terminal 3: Jalankan Frontend Vite (Opsional)
 npm run dev:fe
 ```
 
