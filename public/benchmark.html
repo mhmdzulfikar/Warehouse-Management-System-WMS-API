@@ -396,7 +396,14 @@
     .btn-action .meta-badge {
       font-family: var(--font-mono);
       font-size: 11px;
-      color: var(--text-dim);
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
     }
 
     .btn-action.primary {
@@ -407,6 +414,12 @@
     .btn-action.primary:hover {
       background: var(--accent-green-hover);
     }
+    .btn-action.primary .meta-badge {
+      background: rgba(0, 0, 0, 0.32);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      font-weight: 600;
+    }
 
     .btn-action.heavy {
       background: var(--accent-blue);
@@ -415,6 +428,12 @@
     }
     .btn-action.heavy:hover {
       background: var(--accent-blue-hover);
+    }
+    .btn-action.heavy .meta-badge {
+      background: rgba(0, 0, 0, 0.32);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      font-weight: 600;
     }
 
     .btn-action.warning {
@@ -425,6 +444,12 @@
       background: rgba(210, 153, 34, 0.15);
       border-color: var(--accent-amber);
     }
+    .btn-action.warning .meta-badge {
+      background: rgba(210, 153, 34, 0.14);
+      border-color: rgba(210, 153, 34, 0.35);
+      color: #ffd369;
+      font-weight: 600;
+    }
 
     .btn-action.danger {
       border-color: rgba(248, 81, 73, 0.4);
@@ -433,6 +458,12 @@
     .btn-action.danger:hover {
       background: rgba(218, 54, 51, 0.15);
       border-color: var(--accent-red);
+    }
+    .btn-action.danger .meta-badge {
+      background: rgba(218, 54, 51, 0.14);
+      border-color: rgba(248, 81, 73, 0.35);
+      color: #ffa198;
+      font-weight: 600;
     }
 
     /* Info Tooltip Icon */
