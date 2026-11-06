@@ -128,6 +128,14 @@ Middleware telemetri secara otomatis menyaring dan mengabaikan request internal 
 
 ---
 
+### 🛡️ Kebijakan Keamanan & Analisis Ancaman UDP (Security Policy)
+Penggunaan protokol UDP memiliki karakteristik tanpa koneksi (*connectionless*) yang membutuhkan proteksi khusus terhadap serangan jaringan (seperti *IP Spoofing, UDP Flood DoS, Cleartext Sniffing,* dan *Malformed Payload Injection*).
+
+Untuk analisis ancaman mendalam, matriks risiko (*threat modeling*), dan strategi *hardening* lingkungan produksi, silakan baca dokumentasi keamanan lengkap di:
+👉 [**SECURITY.md**](SECURITY.md)
+
+---
+
 ##  Menjalankan dengan Docker Compose
 
 ### 1. Prasyarat
