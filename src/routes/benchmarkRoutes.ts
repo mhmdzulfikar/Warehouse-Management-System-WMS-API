@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { performance } from 'perf_hooks';
+import autocannon from 'autocannon';
 import { prisma } from '../config/prisma';
 import { sendUdpTelemetry, getLogsFromRingBuffer, getRingBufferStats } from '../utils/udpLogger';
 import { getAggregatorMetrics, ingestDirectLog } from '../aggregator';
@@ -318,6 +319,61 @@ router.get('/metrics', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * AUTOCANNON LOAD TESTER: Programmatic HTTP Benchmark Runner
+ * Runs an official Autocannon load test directly on the server
+ * and streams the result back as both structured JSON metrics
+ * and a formatted ASCII terminal report table.
+ */
+let isAutocannonRunning = false;
+
+router.post('/autocannon', async (req: Request, res: Response) => {
+  if (isAutocannonRunning) {
+    return res.status(429).json({
+      error: 'Sesi pengujian beban Autocannon sedang berjalan. Harap tunggu hingga sesi sebelumnya selesai.',
+    });
+  }
+
+  const target = req.body.target === 'sync' ? 'sync' : 'udp';
+  const duration = Math.min(Math.max(parseInt(req.body.duration || '5', 10), 2), 30);
+  const connections = Math.min(Math.max(parseInt(req.body.connections || '50', 10), 1), 200);
+  const port = process.env.PORT || 5000;
+  const targetUrl = `http://127.0.0.1:${port}/api/benchmark/${target === 'sync' ? 'sync-log' : 'udp-log'}`;
+
+  isAutocannonRunning = true;
+  try {
+    const result = await autocannon({
+      url: targetUrl,
+      connections,
+      duration,
+      pipelining: 1,
+    });
+
+    const formattedTable = autocannon.printResult(result, { renderLatencyTable: true });
+
+    res.json({
+      status: 'ok',
+      mode: 'AUTOCANNON_BENCHMARK',
+      target,
+      targetUrl,
+      duration,
+      connections,
+      requestsTotal: result.requests.total,
+      requestsAverage: Math.round(result.requests.average * 100) / 100,
+      latencyAverageMs: Math.round(result.latency.average * 100) / 100,
+      latencyP99Ms: Math.round(result.latency.p99 * 100) / 100,
+      throughputAverageBytes: Math.round(result.throughput.average * 100) / 100,
+      errors: result.errors,
+      timeouts: result.timeouts,
+      formattedTable,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Gagal menjalankan Autocannon' });
+  } finally {
+    isAutocannonRunning = false;
   }
 });
 
