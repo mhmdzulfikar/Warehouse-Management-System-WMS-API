@@ -2,6 +2,10 @@
 
 Sistem Manajemen Pergudangan modern (*Enterprise Warehouse Management System*) terintegrasi dengan **Dual-Track Telemetry (UDP Log Aggregator)**, arsitektur microservices berbasis **Docker Compose**, dan antarmuka manajemen stok & outbound berbasis **React 19 + TypeScript**.
 
+> [!NOTE]
+> **Dokumentasi Riset & Panduan Teknis Lengkap:** Untuk analisis ilmiah mendalam, kamus pembacaan log terminal secara mendetail, arsitektur soket UDP, serta metodologi benchmark A/B testing Autocannon, silakan baca dokumentasi penelitian di:
+> 👉 [**RESEARCH_TELEMETRY.md**](RESEARCH_TELEMETRY.md)
+
 ---
 
 ## 🏗️ Arsitektur Sistem Dual-Track
