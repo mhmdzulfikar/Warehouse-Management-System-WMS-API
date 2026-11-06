@@ -256,11 +256,68 @@ npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/sync-log
 ```
 
 #### 3. Pantau Metrik Agregator Real-Time
-Melihat statistik paket UDP diterima, sequence ID terakhir, packet loss, dan ukuran buffer:
+Melihat statistik paket UDP diterima, sequence ID terakhir, packet loss, dan ukuran buffer dalam format JSON rapi:
 ```bash
 npm run benchmark:metrics
 ```
-*Atau:*
-```bash
-curl http://localhost:5000/api/benchmark/metrics
+*(Atau via cURL: `curl http://localhost:5000/api/benchmark/metrics`)*
+
+##### 📋 Contoh Output JSON Metrik:
+```json
+{
+  "status": "ok",
+  "system": {
+    "nodeVersion": "v20.19.0",
+    "memoryRssMb": "56.82",
+    "heapUsedMb": "18.80",
+    "cpuUserTicks": "1093",
+    "cpuSystemTicks": "1296"
+  },
+  "database": {
+    "totalPersistedLogs": 1
+  },
+  "ringBuffer": {
+    "bufferedCount": 0,
+    "minSeq": 0,
+    "maxSeq": 0
+  },
+  "aggregator": {
+    "totalReceived": 0,
+    "totalLogsInserted": 0,
+    "totalPacketLoss": 0,
+    "totalRecovered": 0,
+    "nackRequestsSent": 0,
+    "lossRatePercent": "0.00%",
+    "rawLossRatePercent": "0.00%",
+    "effectiveLossRatePercent": "0.00%",
+    "lastSeqId": 0,
+    "currentBufferSize": 0,
+    "isMainServerAlive": true,
+    "lastHeartbeatTime": 1730907200000,
+    "uptimeSeconds": 120,
+    "activeReliabilityMethods": [
+      "Method 1: NACK-Based Selective Retransmission (Ring Buffer + TCP Channel)",
+      "Method 2: Tiered Severity & Hybrid TCP Fallback (Circuit Breaker)",
+      "Method 3: Piggybacking / Redundant Sliding Window (Zero-RTT FEC Recovery)"
+    ]
+  }
+}
 ```
+
+##### 🔍 Panduan Membaca Field Metrik:
+
+| Bagian / Field | Keterangan & Makna Nilai |
+| :--- | :--- |
+| **`system.memoryRssMb`** | Total memori RAM fisik yang digunakan aplikasi (~50 MB tergolong sangat hemat dan aman dari *memory leak*). |
+| **`system.heapUsedMb`** | Memori RAM internal yang aktif menampung objek data JavaScript saat ini. |
+| **`database.totalPersistedLogs`** | Jumlah baris log riwayat yang saat ini tersimpan di tabel database PostgreSQL. |
+| **`ringBuffer.bufferedCount`** | Jumlah paket log cadangan yang standby di memori RAM API (kapasitas s.d 3.000 log) untuk melayani NACK retransmission. |
+| **`aggregator.totalReceived`** | Total paket UDP yang berhasil ditangkap oleh Aggregator sejak server menyala. |
+| **`aggregator.totalLogsInserted`** | Jumlah log yang sudah sukses di-insert ke database via teknik *Bulk-Insert*. |
+| **`aggregator.totalPacketLoss`** | Jumlah paket yang sempat hilang/terlewat di jaringan (terdeteksi dari lompatan nomor urut `seqId`). |
+| **`aggregator.totalRecovered`** | Jumlah paket hilang yang **berhasil diselamatkan kembali** oleh Metode 3 (Piggyback) dan Metode 1 (NACK TCP). |
+| **`aggregator.rawLossRatePercent`** | Persentase paket yang sempat hilang di lapisan jaringan mentah. |
+| **`aggregator.effectiveLossRatePercent`** | **Indikator Keberhasilan Utama:** Persentase log yang benar-benar hilang setelah pemulihan. Nilai **`0.00%`** menandakan garansi *Zero Packet Loss* tercapai. |
+| **`aggregator.currentBufferSize`** | Antrean log di RAM Aggregator yang sedang menunggu giliran flush berkala (100 item atau 2 detik). |
+| **`aggregator.isMainServerAlive`** | Status detak jantung (*Watchdog Heartbeat*). Bernilai `true` jika server API utama aktif terhubung. |
+| **`aggregator.activeReliabilityMethods`** | Daftar 3 lapis perlindungan keandalan UDP yang sedang aktif mengamankan sistem. |
