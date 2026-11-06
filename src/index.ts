@@ -25,6 +25,9 @@ import { errorHandler } from './middlewares/errorHandler';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable 2-space pretty-printed JSON responses
+app.set('json spaces', 2);
+
 // Middleware
 app.use(cors());
 app.use(express.json());

@@ -18,7 +18,7 @@
         "seed:prod": "node dist/src/scripts/seedInitialData.js",
         "benchmark:udp": "npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/udp-log",
         "benchmark:sync": "npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/sync-log",
-        "benchmark:metrics": "curl http://localhost:5000/api/benchmark/metrics"
+        "benchmark:metrics": "ts-node src/scripts/printMetrics.ts"
     },
     "dependencies": {
         "@prisma/adapter-pg": "^7.9.1",

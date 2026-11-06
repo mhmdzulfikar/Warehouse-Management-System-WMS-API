@@ -13,7 +13,7 @@ const UDP_HOST = process.env.UDP_HOST || '0.0.0.0';
 
 const BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 2000;
-const MAX_BUFFER_LIMIT = 50000; // Increased buffer limit for ultra-high load capacity
+const MAX_BUFFER_LIMIT = 50000; // Increased buffer limit for ultra-high throughput
 const WATCHDOG_THRESHOLD_MS = 15000; // 15 seconds threshold
 const WATCHDOG_CHECK_INTERVAL_MS = 3000;
 
