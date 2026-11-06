@@ -13,13 +13,14 @@ const UDP_HOST = process.env.UDP_HOST || '0.0.0.0';
 
 const BATCH_SIZE = 100;
 const FLUSH_INTERVAL_MS = 2000;
-const MAX_BUFFER_LIMIT = 10000;
+const MAX_BUFFER_LIMIT = 50000; // Increased buffer limit for ultra-high load capacity
 const WATCHDOG_THRESHOLD_MS = 15000; // 15 seconds threshold
 const WATCHDOG_CHECK_INTERVAL_MS = 3000;
 
 // State Variables
 let logBuffer: TelemetryPayload[] = [];
 let isFlushing = false;
+let lastOomWarningTime = 0;
 
 // Metrics & Packet Loss / Recovery Tracking
 export interface AggregatorMetrics {
@@ -282,10 +283,16 @@ export function createAggregatorServer(): dgram.Socket {
         return;
       }
 
-      // OOM Protection
+      // OOM Protection with log throttling (max 1 warning per 3 seconds)
       if (logBuffer.length >= MAX_BUFFER_LIMIT) {
-        console.warn(`⚠️ [OOM Protection] Buffer RAM mencapai batas ${MAX_BUFFER_LIMIT} items. Memicu flush darurat!`);
-        flushBuffer();
+        const now = Date.now();
+        if (now - lastOomWarningTime > 3000) {
+          console.warn(`⚠️ [OOM Protection] Buffer RAM mencapai batas ${MAX_BUFFER_LIMIT} items. Memicu flush darurat!`);
+          lastOomWarningTime = now;
+        }
+        if (!isFlushing) {
+          flushBuffer();
+        }
         return;
       }
 
