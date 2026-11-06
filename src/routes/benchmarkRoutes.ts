@@ -84,6 +84,152 @@ router.get('/udp-log', (req: Request, res: Response) => {
 });
 
 /**
+ * INTERACTIVE TESTBED 1: Burst UDP Dispatcher
+ * Fires 100, 1.000, or 5.000 UDP datagrams in a tight microsecond loop
+ */
+router.post('/burst-udp', (req: Request, res: Response) => {
+  const count = Math.min(Math.max(parseInt(req.body.count || '1000', 10), 1), 10000);
+  const start = performance.now();
+  let lastSeq = 0;
+
+  for (let i = 0; i < count; i++) {
+    lastSeq = sendUdpTelemetry({
+      type: 'LOG',
+      level: i % 20 === 0 ? 'WARN' : 'INFO',
+      method: 'POST',
+      endpoint: '/api/benchmark/burst-udp',
+      statusCode: 200,
+      latencyMs: Math.round((Math.random() * 5 + 1) * 100) / 100,
+      message: `Interactive Burst UDP Telemetry log #${i + 1}/${count}`,
+      metadata: { burstIndex: i, testMode: 'BURST_UDP' },
+    });
+  }
+
+  const durationMs = Math.round((performance.now() - start) * 100) / 100;
+  const throughput = Math.round((count / (Math.max(durationMs, 1) / 1000)));
+
+  res.json({
+    status: 'ok',
+    mode: 'BURST_UDP_DISPATCH',
+    count,
+    lastSeqId: lastSeq,
+    durationMs,
+    throughputPacketsPerSec: throughput,
+    message: `Berhasil menembakkan ${count} paket UDP dalam ${durationMs}ms (${throughput.toLocaleString()} paket/detik)!`,
+  });
+});
+
+/**
+ * INTERACTIVE TESTBED 2: Synchronous DB Burst (Baseline Comparison)
+ * Demonstrates slow blocking I/O when inserting logs directly to DB
+ */
+router.post('/burst-sync', async (req: Request, res: Response) => {
+  const count = Math.min(Math.max(parseInt(req.body.count || '50', 10), 1), 200);
+  const start = performance.now();
+
+  try {
+    for (let i = 0; i < count; i++) {
+      await prisma.telemetryLog.create({
+        data: {
+          seqId: 0,
+          level: 'INFO',
+          method: 'POST',
+          endpoint: '/api/benchmark/burst-sync',
+          statusCode: 200,
+          latencyMs: 15,
+          message: `Synchronous Blocking DB Log #${i + 1}/${count}`,
+          metadata: { mode: 'SYNC_BLOCKING_DB', iteration: i },
+        },
+      });
+    }
+
+    const durationMs = Math.round((performance.now() - start) * 100) / 100;
+    const avgLatency = Math.round((durationMs / count) * 100) / 100;
+
+    res.json({
+      status: 'ok',
+      mode: 'SYNC_BLOCKING_DB',
+      count,
+      durationMs,
+      avgLatencyMsPerLog: avgLatency,
+      message: `Selesai ${count} log sinkron DB dalam ${durationMs}ms (Rata-rata ${avgLatency}ms/log - lambat karena blocking I/O).`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * INTERACTIVE TESTBED 3: Simulated Packet Loss Injection
+ * Deliberately jumps sequence ID to trigger Piggyback & NACK TCP Self-Healing
+ */
+router.post('/simulate-loss', (req: Request, res: Response) => {
+  const jump = Math.min(Math.max(parseInt(req.body.jump || '5', 10), 2), 50);
+  const ringStats = getRingBufferStats();
+  const simulatedSeq = (ringStats.maxSeq || 100) + jump;
+
+  sendUdpTelemetry({
+    seqId: simulatedSeq,
+    type: 'LOG',
+    level: 'INFO',
+    method: 'POST',
+    endpoint: '/api/benchmark/simulate-loss',
+    statusCode: 200,
+    message: `Simulasi Paket Hilang: Sequence sengaja dilompati ${jump} paket ke #${simulatedSeq}!`,
+    metadata: { jumpSimulated: jump, targetSeq: simulatedSeq },
+  });
+
+  res.json({
+    status: 'ok',
+    mode: 'PACKET_LOSS_SIMULATION',
+    jumpCount: jump,
+    simulatedSeqId: simulatedSeq,
+    message: `Berhasil menembakkan paket dengan lompatan sequence +${jump}. Aggregator akan mendeteksi ${jump - 1} paket hilang dan mengaktifkan self-healing!`,
+  });
+});
+
+/**
+ * INTERACTIVE TESTBED 4: Critical Log Simulation (Method 2 TCP Fallback)
+ */
+router.post('/critical-fallback', (req: Request, res: Response) => {
+  const seqId = sendUdpTelemetry({
+    type: 'LOG',
+    level: 'ERROR',
+    statusCode: 500,
+    method: 'POST',
+    endpoint: '/api/benchmark/critical-fallback',
+    message: 'Simulasi Log Kritis: Status 500 Server Error memicu Metode 2 (TCP Fallback Ingest)!',
+    critical: true,
+    metadata: { testMode: 'TCP_FALLBACK_CIRCUIT_BREAKER' },
+  });
+
+  res.json({
+    status: 'ok',
+    mode: 'METHOD_2_TCP_FALLBACK',
+    seqId,
+    message: 'Log level ERROR berhasil dikirim. Sistem otomatis mem-bypass UDP dan mengirimkan via TCP Fallback HTTP Ingest (Jaminan Anti-Hilang 100%)!',
+  });
+});
+
+/**
+ * INTERACTIVE TESTBED 5: Manual Heartbeat Signal Dispatcher
+ */
+router.post('/heartbeat', (_req: Request, res: Response) => {
+  sendUdpTelemetry({
+    type: 'HEARTBEAT',
+    message: 'Manual Interactive Heartbeat Signal from Studio',
+    timestamp: Date.now(),
+  });
+
+  res.json({
+    status: 'ok',
+    mode: 'HEARTBEAT_PING',
+    timestamp: Date.now(),
+    message: 'Sinyal Heartbeat berhasil ditembakkan ke Watchdog Aggregator!',
+  });
+});
+
+/**
  * METHOD 1 ARQ ENDPOINT: NACK Selective Retransmission
  * The Aggregator calls this endpoint over TCP when sequence gap is detected
  * to retrieve missing packets from the sender's circular in-memory Ring Buffer.

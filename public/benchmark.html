@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMS Dual-Track Telemetry Studio &amp; Benchmark Control</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #131d33;
+      --card-border: #1e293b;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --terminal-bg: #070d19;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-live::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nav:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    /* Radar Cards Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card.highlight {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--card-bg) 100%);
+    }
+
+    .metric-card.warning-card {
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .metric-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .metric-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .badge-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-blue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    /* Control Deck */
+    .deck-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .deck-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 12px;
+    }
+
+    .deck-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .action-group {
+      background: rgba(11, 17, 32, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .group-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-test {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .btn-test:active { transform: scale(0.98); }
+
+    .btn-udp-primary {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+    }
+    .btn-udp-primary:hover { background: linear-gradient(135deg, #38bdf8, #0284c7); }
+
+    .btn-udp-heavy {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+    }
+    .btn-udp-heavy:hover { background: linear-gradient(135deg, #818cf8, #6366f1); }
+
+    .btn-loss-sim {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+    .btn-loss-sim:hover { background: rgba(245, 158, 11, 0.25); border-color: #f59e0b; }
+
+    .btn-critical-fallback {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .btn-critical-fallback:hover { background: rgba(239, 68, 68, 0.25); border-color: #ef4444; }
+
+    .btn-sync-slow {
+      background: rgba(148, 163, 184, 0.1);
+      border-color: rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+    }
+    .btn-sync-slow:hover { background: rgba(148, 163, 184, 0.2); }
+
+    .btn-purge {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+    .btn-purge:hover { background: #ef4444; color: #fff; }
+
+    .btn-heartbeat {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+    .btn-heartbeat:hover { background: rgba(16, 185, 129, 0.25); border-color: #10b981; }
+
+    /* Web Terminal Monitor */
+    .terminal-container {
+      background: var(--terminal-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .terminal-topbar {
+      background: #0f172a;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .terminal-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      font-family: monospace;
+    }
+
+    .terminal-body {
+      padding: 16px;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      max-height: 380px;
+      overflow-y: auto;
+      color: #cbd5e1;
+    }
+
+    .terminal-line { margin-bottom: 4px; word-break: break-all; }
+    .t-time { color: #64748b; }
+    .t-info { color: #38bdf8; }
+    .t-success { color: #34d399; }
+    .t-warn { color: #fbbf24; }
+    .t-error { color: #f87171; }
+    .t-accent { color: #c084fc; }
+
+    /* Status Banner */
+    .banner-methods {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-top: 16px;
+      font-size: 12px;
+    }
+    .method-item { display: flex; align-items: center; gap: 6px; color: #cbd5e1; }
+    .method-item svg { color: var(--success); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand-title">
+        <h1>⚡ WMS Dual-Track Telemetry Studio</h1>
+        <span class="badge-live" id="heartbeatStatus">Watchdog Live</span>
+      </div>
+      <div class="nav-actions">
+        <a href="/dashboard" class="btn-nav">📦 Dashboard WMS</a>
+        <a href="/download-diagram.html" class="btn-nav" target="_blank">📊 Lihat Flowchart</a>
+        <a href="/api-docs" class="btn-nav" target="_blank">📄 Swagger API</a>
+      </div>
+    </header>
+
+    <!-- Radar Metrics Grid -->
+    <div class="metrics-grid">
+      <!-- Card 1: Effective Loss Rate -->
+      <div class="metric-card highlight">
+        <div class="metric-title">Effective Loss Rate</div>
+        <div class="metric-value" id="effectiveLoss">0.00% <span class="badge-pill badge-green">Zero-Loss</span></div>
+        <div class="metric-subtitle" id="rawLossSubtitle">Raw Packet Loss: 0 | Recovered: 0</div>
+      </div>
+
+      <!-- Card 2: Self-Healing Counter -->
+      <div class="metric-card">
+        <div class="metric-title">Self-Healing Pemulihan</div>
+        <div class="metric-value" id="totalRecovered">0 <span class="badge-pill badge-blue">Paket</span></div>
+        <div class="metric-subtitle" id="nackRequestsCount">NACK Requests Sent: 0</div>
+      </div>
+
+      <!-- Card 3: Persisted Logs -->
+      <div class="metric-card">
+        <div class="metric-title">Total Log di Database</div>
+        <div class="metric-value" id="dbLogsCount">0 <span class="badge-pill badge-amber">Baris</span></div>
+        <div class="metric-subtitle" id="flushProgress">PostgreSQL Table: telemetry_logs</div>
+      </div>
+
+      <!-- Card 4: RAM Buffer Aktif -->
+      <div class="metric-card">
+        <div class="metric-title">Buffer RAM Aktif (Aggregator)</div>
+        <div class="metric-value" id="activeBuffer">0 <span class="badge-pill badge-blue">Antrean</span></div>
+        <div class="metric-subtitle">Threshold: 100 log / 2.000 ms</div>
+      </div>
+
+      <!-- Card 5: System Resource -->
+      <div class="metric-card">
+        <div class="metric-title">Penggunaan Memori RAM</div>
+        <div class="metric-value" id="memoryRss">0.00 <span style="font-size: 16px; font-weight: 500; color: #94a3b8;">MB</span></div>
+        <div class="metric-subtitle" id="uptimeText">Uptime: 0 detik</div>
+      </div>
+    </div>
+
+    <!-- Interactive Control Deck -->
+    <div class="deck-section">
+      <div class="deck-header">
+        <h2>🎮 Interactive Testbed Suite (Uji Beban &amp; Simulasi Mandiri)</h2>
+        <span style="font-size: 12px; color: var(--text-muted);">Klik tombol di bawah untuk mengeksekusi uji beban secara instan tanpa terminal</span>
+      </div>
+
+      <div class="action-groups-grid">
+        <!-- Group 1: UDP Throughput Testing -->
+        <div class="action-group">
+          <div class="group-title">⚡ 1. Uji Throughput UDP (Dual-Track)</div>
+          <div class="btn-action-stack">
+            <button class="btn-test btn-udp-primary" onclick="runUdpSingle()">
+              <span>Single UDP Log (1 Paket)</span>
+              <span>~0.3 ms</span>
+            </button>
+            <button class="btn-test btn-udp-primary" onclick="runUdpBurst(100)">
+              <span>Burst UDP (100 Paket)</span>
+              <span>Batch Trigger</span>
+            </button>
+            <button class="btn-test btn-udp-heavy" onclick="runUdpBurst(1000)">
+              <span>Stress Test (1.000 Paket)</span>
+              <span>Throughput Tinggi</span>
+            </button>
+            <button class="btn-test btn-udp-heavy" onclick="runUdpBurst(5000)">
+              <span>Ultra Blast (5.000 Paket)</span>
+              <span>Uji Buffer OS</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 2: Self-Healing & Fallback Testing -->
+        <div class="action-group">
+          <div class="group-title">🛡️ 2. Uji Inovasi Keandalan (Self-Healing)</div>
+          <div class="btn-action-stack">
+            <button class="btn-test btn-loss-sim" onclick="simulateLoss(3)">
+              <span>Simulasi Drop 2 Paket (Zero-RTT)</span>
+              <span>Metode 3</span>
+            </button>
+            <button class="btn-test btn-loss-sim" onclick="simulateLoss(10)">
+              <span>Simulasi Drop 9 Paket (NACK TCP)</span>
+              <span>Metode 1</span>
+            </button>
+            <button class="btn-test btn-critical-fallback" onclick="triggerCriticalFallback()">
+              <span>Kirim Log Error Kritis (Status 500)</span>
+              <span>Metode 2</span>
+            </button>
+            <button class="btn-test btn-heartbeat" onclick="sendHeartbeat()">
+              <span>Kirim Heartbeat Ping</span>
+              <span>Watchdog</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 3: Baseline Comparison & Maintenance -->
+        <div class="action-group">
+          <div class="group-title">🐢 3. Perbandingan DB &amp; Pembersihan</div>
+          <div class="btn-action-stack">
+            <button class="btn-test btn-sync-slow" onclick="runSyncBurst(10)">
+              <span>Uji DB Sinkron (10 Log)</span>
+              <span>~100 ms/log</span>
+            </button>
+            <button class="btn-test btn-sync-slow" onclick="runSyncBurst(50)">
+              <span>Uji DB Sinkron (50 Log)</span>
+              <span>Bandingkan Latensi</span>
+            </button>
+            <button class="btn-test btn-purge" onclick="purgeLogs()">
+              <span>🧹 Sapu Bersih Log Database</span>
+              <span>DELETE /logs</span>
+            </button>
+            <button class="btn-test btn-udp-primary" style="background: #334155;" onclick="fetchMetrics(true)">
+              <span>🔄 Segarkan Metrik Seketika</span>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner Active Methods -->
+      <div class="banner-methods">
+        <div class="method-item">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          Metode 1: NACK ARQ Retransmission via Ring Buffer (RAM)
+        </div>
+        <div class="method-item">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          Metode 2: Tiered Severity &amp; Circuit Breaker TCP Fallback
+        </div>
+        <div class="method-item">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+          Metode 3: Piggybacking Zero-RTT FEC Recovery (0ms)
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Terminal Web Console -->
+    <div class="terminal-container">
+      <div class="terminal-topbar">
+        <div class="terminal-dots">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <span class="terminal-title">LIVE TELEMETRY TESTBED CONSOLE</span>
+        <button style="background: transparent; border: 1px solid #334155; color: #94a3b8; font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer;" onclick="clearConsole()">Bersihkan Layar</button>
+      </div>
+      <div class="terminal-body" id="consoleBody">
+        <div class="terminal-line"><span class="t-time">[00:00:00]</span> <span class="t-info">🚀 Studio Telemetri Siap. Terhubung ke backend WMS API :5000 dan UDP :5001.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const consoleBody = document.getElementById('consoleBody');
+
+    function logTerminal(message, type = 'info') {
+      const now = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = 'terminal-line';
+      
+      let typeClass = 't-info';
+      if (type === 'success') typeClass = 't-success';
+      if (type === 'warn') typeClass = 't-warn';
+      if (type === 'error') typeClass = 't-error';
+      if (type === 'accent') typeClass = 't-accent';
+
+      div.innerHTML = `<span class="t-time">[${now}]</span> <span class="${typeClass}">${message}</span>`;
+      consoleBody.appendChild(div);
+      consoleBody.scrollTop = consoleBody.scrollHeight;
+    }
+
+    function clearConsole() {
+      consoleBody.innerHTML = '';
+      logTerminal('Layar konsol dibersihkan.', 'info');
+    }
+
+    // Auto-fetch metrics every 1.5 seconds
+    async function fetchMetrics(isManual = false) {
+      try {
+        const res = await fetch('/api/benchmark/metrics');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        // Update cards
+        document.getElementById('effectiveLoss').innerHTML = `${data.aggregator.effectiveLossRatePercent} <span class="badge-pill badge-green">Zero-Loss</span>`;
+        document.getElementById('rawLossSubtitle').innerText = `Raw Loss: ${data.aggregator.totalPacketLoss} (${data.aggregator.rawLossRatePercent}) | Recovered: ${data.aggregator.totalRecovered}`;
+        document.getElementById('totalRecovered').innerHTML = `${data.aggregator.totalRecovered.toLocaleString()} <span class="badge-pill badge-blue">Paket</span>`;
+        document.getElementById('nackRequestsCount').innerText = `NACK Requests: ${data.aggregator.nackRequestsSent} | Last Seq: #${data.aggregator.lastSeqId}`;
+        document.getElementById('dbLogsCount').innerHTML = `${data.database.totalPersistedLogs.toLocaleString()} <span class="badge-pill badge-amber">Baris</span>`;
+        document.getElementById('activeBuffer').innerHTML = `${data.aggregator.currentBufferSize.toLocaleString()} <span class="badge-pill badge-blue">Antrean</span>`;
+        document.getElementById('memoryRss').innerText = data.system.memoryRssMb;
+        document.getElementById('uptimeText').innerText = `Uptime: ${data.aggregator.uptimeSeconds}s | Ring Buffer: ${data.ringBuffer.bufferedCount}`;
+
+        // Watchdog Badge
+        const hbBadge = document.getElementById('heartbeatStatus');
+        if (data.aggregator.isMainServerAlive) {
+          hbBadge.className = 'badge-live';
+          hbBadge.innerText = 'Watchdog Live';
+        } else {
+          hbBadge.className = 'badge-live';
+          hbBadge.style.color = '#f87171';
+          hbBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+          hbBadge.innerText = 'Watchdog Alert';
+        }
+
+        if (isManual) {
+          logTerminal('📊 Metrik sistem berhasil disegarkan seketika.', 'success');
+        }
+      } catch (err) {
+        document.getElementById('heartbeatStatus').innerText = 'Server Offline';
+      }
+    }
+
+    // Action 1: Single UDP Log
+    async function runUdpSingle() {
+      logTerminal('⚡ Mengirim 1 paket UDP datagram (Zero-Wait)...', 'info');
+      try {
+        const res = await fetch('/api/benchmark/udp-log');
+        const d = await res.json();
+        logTerminal(`✅ Paket UDP #${d.seqId} terkirim dalam ${d.totalDurationMs}ms (Latensi beban: ${d.workloadLatencyMs}ms).`, 'success');
+        fetchMetrics();
+      } catch (err) {
+        logTerminal(`❌ Gagal mengirim UDP: ${err.message}`, 'error');
+      }
+    }
+
+    // Action 2: Burst UDP
+    async function runUdpBurst(count) {
+      logTerminal(`🚀 Meluncurkan Burst ${count.toLocaleString()} Paket UDP Datagram...`, 'accent');
+      try {
+        const res = await fetch('/api/benchmark/burst-udp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count })
+        });
+        const d = await res.json();
+        logTerminal(`🔥 ${d.message} [Last Seq #${d.lastSeqId}]`, 'success');
+        setTimeout(fetchMetrics, 300);
+      } catch (err) {
+        logTerminal(`❌ Gagal burst UDP: ${err.message}`, 'error');
+      }
+    }
+
+    // Action 3: Simulate Packet Loss
+    async function simulateLoss(jump) {
+      logTerminal(`🎯 Menguji Simulasi Lompatan Sequence (+${jump} paket)...`, 'warn');
+      try {
+        const res = await fetch('/api/benchmark/simulate-loss', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jump })
+        });
+        const d = await res.json();
+        logTerminal(`⚠️ ${d.message}`, 'warn');
+        if (jump <= 3) {
+          logTerminal(`⚡ [Metode 3 Piggyback] Paket langsung dipulihkan seketika (Zero-RTT / 0ms)!`, 'success');
+        } else {
+          logTerminal(`🔄 [Metode 1 NACK TCP] Gap > 2 paket memicu request retransmisi ke Ring Buffer API!`, 'accent');
+        }
+        setTimeout(fetchMetrics, 400);
+      } catch (err) {
+        logTerminal(`❌ Gagal simulasi: ${err.message}`, 'error');
+      }
+    }
+
+    // Action 4: Critical Fallback (Method 2)
+    async function triggerCriticalFallback() {
+      logTerminal(`🚨 Memicu Log Error Kritis 500 (Uji Metode 2 Circuit Breaker)...`, 'warn');
+      try {
+        const res = await fetch('/api/benchmark/critical-fallback', { method: 'POST' });
+        const d = await res.json();
+        logTerminal(`🛡️ ${d.message} [Seq #${d.seqId}]`, 'success');
+        setTimeout(fetchMetrics, 300);
+      } catch (err) {
+        logTerminal(`❌ Gagal fallback: ${err.message}`, 'error');
+      }
+    }
+
+    // Action 5: Heartbeat
+    async function sendHeartbeat() {
+      logTerminal(`💓 Menembakkan Sinyal Heartbeat manual ke Aggregator...`, 'info');
+      try {
+        const res = await fetch('/api/benchmark/heartbeat', { method: 'POST' });
+        const d = await res.json();
+        logTerminal(`✅ ${d.message}`, 'success');
+        setTimeout(fetchMetrics, 200);
+      } catch (err) {
+        logTerminal(`❌ Gagal heartbeat: ${err.message}`, 'error');
+      }
+    }
+
+    // Action 6: Sync DB Burst
+    async function runSyncBurst(count) {
+      logTerminal(`🐢 Menjalankan ${count} Log Sinkron Langsung ke Database (Blocking I/O)...`, 'warn');
+      try {
+        const res = await fetch('/api/benchmark/burst-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count })
+        });
+        const d = await res.json();
+        logTerminal(`⏱️ ${d.message}`, 'info');
+        setTimeout(fetchMetrics, 200);
+      } catch (err) {
+        logTerminal(`❌ Gagal sync DB: ${err.message}`, 'error');
+      }
+    }
+
+    // Action 7: Purge Logs
+    async function purgeLogs() {
+      if (!confirm('Apakah Anda yakin ingin menyapu bersih semua log telemetri dari database?')) return;
+      logTerminal(`🧹 Mengosongkan tabel telemetry_logs database...`, 'warn');
+      try {
+        const res = await fetch('/api/benchmark/logs', { method: 'DELETE' });
+        const d = await res.json();
+        logTerminal(`✨ ${d.message} (Total dihapus: ${d.deletedCount.toLocaleString()} baris).`, 'success');
+        fetchMetrics();
+      } catch (err) {
+        logTerminal(`❌ Gagal membersihkan log: ${err.message}`, 'error');
+      }
+    }
+
+    // Init & Polling
+    fetchMetrics();
+    setInterval(fetchMetrics, 1500);
+  </script>
+</body>
+</html>
+

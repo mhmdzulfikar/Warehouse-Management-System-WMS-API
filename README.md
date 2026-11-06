@@ -159,6 +159,7 @@ Docker Compose akan otomatis:
 
 ### 3. Akses Layanan
 - **Web Dashboard**: [http://localhost:5000/dashboard](http://localhost:5000/dashboard) (atau [http://localhost:5000](http://localhost:5000))
+- **Telemetry Studio & Testbed**: [http://localhost:5000/benchmark](http://localhost:5000/benchmark) *(Interactive Web Testbed & Control Panel)*
 - **Swagger API Docs**: [http://localhost:5000/api-docs](http://localhost:5000/api-docs)
 - **Health Check**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
 - **Telemetry Metrics**: [http://localhost:5000/api/benchmark/metrics](http://localhost:5000/api/benchmark/metrics)

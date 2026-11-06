@@ -192,3 +192,4 @@ Berdasarkan implementasi dan pengujian empiris, penelitian ini membuktikan:
    * **Metode 2 (Tiered Fallback):** Memberikan garansi keandalan mutlak untuk log audit fatal.
 3. **Kesimpulan Akhir:**
    Arsitektur Dual-Track UDP berhasil memadukan dua keunggulan yang sebelumnya dianggap kontradiktif: **Kecepatan ekstrim milik UDP** dan **Integritas keandalan data milik TCP (Zero Data Loss)**.
+

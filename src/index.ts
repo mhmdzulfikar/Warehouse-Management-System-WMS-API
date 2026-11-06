@@ -40,6 +40,14 @@ app.use(telemetryMiddleware);
 app.use(express.static(path.resolve(process.cwd(), 'public')));
 app.use('/dashboard', express.static(path.resolve(process.cwd(), 'public')));
 
+// Dedicated Interactive Telemetry Studio & Benchmark Control Center
+app.get('/benchmark', (_req: Request, res: Response) => {
+    res.sendFile(path.resolve(process.cwd(), 'public/benchmark.html'));
+});
+app.get('/telemetry-studio', (_req: Request, res: Response) => {
+    res.sendFile(path.resolve(process.cwd(), 'public/benchmark.html'));
+});
+
 // Swagger Interactive Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
