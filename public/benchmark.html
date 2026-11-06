@@ -7,11 +7,11 @@
   <style>
     /* =========================================================================
        ANTI-SLOP DESIGN SYSTEM (GitHub / Linear / Stripe CLI Inspired)
-       - No generic blue-purple gradients
-       - No floating blur orbs / glow
-       - No excessive glassmorphism
-       - Crisp 6px-8px border radius
-       - High information density with technical monospace metrics
+       - Solid, grounded surfaces (#0d1117, #161b22)
+       - Crisp 1px borders (#30363d)
+       - Crisp 6px border radius
+       - Monospace technical metrics
+       - Interactive tooltips & integrated cheat sheet guide
        ========================================================================= */
     :root {
       --bg: #0d1117;
@@ -50,7 +50,7 @@
     }
 
     .container {
-      max-width: 1280px;
+      max-width: 1320px;
       margin: 0 auto;
     }
 
@@ -206,7 +206,6 @@
       border-radius: 3px;
     }
     .tag-green { background: #238636; color: #fff; }
-    .tag-blue { background: #1f6feb; color: #fff; }
 
     /* Control Workspace */
     .workspace-panel {
@@ -224,6 +223,8 @@
       margin-bottom: 16px;
       border-bottom: 1px solid var(--border-muted);
       padding-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .workspace-header h2 {
@@ -232,9 +233,103 @@
       color: var(--text-main);
     }
 
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-guide-toggle {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #79c0ff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-guide-toggle:hover {
+      background: #30363d;
+      border-color: #79c0ff;
+    }
+
+    /* Expandable Cheat Sheet Guide */
+    .guide-drawer {
+      display: none;
+      background: #090d16;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .guide-drawer.open {
+      display: block;
+    }
+
+    .guide-drawer-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #79c0ff;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
+    .guide-item {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .guide-item-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .guide-item-desc {
+      font-size: 12px;
+      color: #8b949e;
+      line-height: 1.5;
+    }
+
+    .guide-item-expect {
+      font-size: 11px;
+      color: #3fb950;
+      font-family: var(--font-mono);
+      margin-top: 6px;
+    }
+
+    /* Suite Layout */
     .suite-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
     }
 
@@ -263,12 +358,19 @@
       gap: 8px;
     }
 
-    /* Anti-Slop Buttons: Solid, crisp, flat with 1px border */
+    /* Anti-Slop Button Container with Tooltip Info */
+    .btn-item-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
     .btn-action {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      width: 100%;
+      flex: 1;
       padding: 8px 12px;
       border-radius: 6px;
       font-size: 12px;
@@ -297,7 +399,6 @@
       color: var(--text-dim);
     }
 
-    /* Distinct semantic styles */
     .btn-action.primary {
       background: var(--accent-green);
       border-color: rgba(240, 246, 252, 0.1);
@@ -332,6 +433,77 @@
     .btn-action.danger:hover {
       background: rgba(218, 54, 51, 0.15);
       border-color: var(--accent-red);
+    }
+
+    /* Info Tooltip Icon */
+    .btn-info-icon {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #21262d;
+      color: #8b949e;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .btn-info-icon:hover {
+      background: #30363d;
+      color: #58a6ff;
+      border-color: #58a6ff;
+    }
+
+    /* Tooltip Bubble */
+    .tooltip-box {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 0;
+      width: 290px;
+      background: #1c2128;
+      border: 1px solid #444c56;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #c9d1d9;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: translateY(4px);
+    }
+
+    .btn-info-icon:hover .tooltip-box,
+    .btn-info-icon:focus .tooltip-box {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tt-title {
+      font-weight: 700;
+      color: #58a6ff;
+      margin-bottom: 4px;
+      font-family: var(--font-sans);
+    }
+
+    .tt-meta {
+      font-family: var(--font-mono);
+      color: #8b949e;
+      margin-top: 4px;
+      border-top: 1px solid #30363d;
+      padding-top: 4px;
+      font-size: 10px;
     }
 
     /* Terminal Console */
@@ -497,7 +669,72 @@
     <div class="workspace-panel">
       <div class="workspace-header">
         <h2>Interactive Testbed Suite</h2>
-        <span style="font-size: 11px; color: var(--text-dim); font-family: var(--font-mono);">Automated Multi-Action Dispatcher</span>
+        <div class="header-actions">
+          <button class="btn-guide-toggle" onclick="toggleGuide()">
+            <span>ⓘ Panduan Lengkap Semua Tombol</span>
+          </button>
+          <span style="font-size: 11px; color: var(--text-dim); font-family: var(--font-mono);">Hover ikon ⓘ untuk info instan</span>
+        </div>
+      </div>
+
+      <!-- Expandable Interactive Guide Drawer (Cheat Sheet) -->
+      <div class="guide-drawer" id="guideDrawer">
+        <div class="guide-drawer-title">
+          <span>📖 Panduan Fungsi &amp; Ekspektasi Pengujian Tombol</span>
+          <button class="btn-tiny" onclick="toggleGuide()">Tutup</button>
+        </div>
+        <div class="guide-grid">
+          <div class="guide-item">
+            <div class="guide-item-btn">⚡ Single UDP Datagram (1 Log)</div>
+            <div class="guide-item-desc">Mengirim 1 paket log secara asinkron via soket UDP ke port 5001. Membuktikan latensi ultra-rendah tanpa menunggu database.</div>
+            <div class="guide-item-expect">Ekspektasi: Total durasi &lt; 5ms, log masuk antrean buffer RAM.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🚀 Batch Trigger (100 Logs)</div>
+            <div class="guide-item-desc">Menembakkan 100 paket berturut-turut untuk menguji batas ambang (*batch threshold*) Aggregator.</div>
+            <div class="guide-item-expect">Ekspektasi: Memicu Bulk-Insert SQL sekaligus ke PostgreSQL begitu paket ke-100 tiba.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🔥 High Load Burst (1,000 Logs)</div>
+            <div class="guide-item-desc">Menembakkan 1.000 paket dalam microsecond loop server untuk menguji throughput tinggi (&gt;50.000 paket/detik).</div>
+            <div class="guide-item-expect">Ekspektasi: Antrean buffer melonjak lalu dikosongkan secara bertahap dalam ~100ms.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">💥 Stress Blast (5,000 Logs)</div>
+            <div class="guide-item-desc">Membanjiri soket dengan 5.000 paket sekaligus untuk menguji batas buffer soket OS dan ketahanan memori RAM.</div>
+            <div class="guide-item-expect">Ekspektasi: Dapat memicu packet loss di OS, menguji self-healing bekerja di bawah tekanan berat.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🎯 Simulate Drop 2 Packets (Zero-RTT)</div>
+            <div class="guide-item-desc">Sengaja melompati sequence ID (+3) untuk membuktikan Metode 3 Piggybacking.</div>
+            <div class="guide-item-expect">Ekspektasi: Paket hilang langsung dipulihkan seketika dari payload cadangan paket berikutnya (0ms RTT).</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🔄 Simulate Drop 9 Packets (TCP NACK)</div>
+            <div class="guide-item-desc">Sengaja melompati sequence ID (+10) untuk menguji Metode 1 NACK Selective Retransmission.</div>
+            <div class="guide-item-expect">Ekspektasi: Aggregator membuat request TCP ke Ring Buffer RAM API untuk menarik ulang 9 paket hilang.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🚨 Simulate Error 500 (TCP Fallback)</div>
+            <div class="guide-item-desc">Mengirim log error status 500 untuk menguji Metode 2 Circuit Breaker.</div>
+            <div class="guide-item-expect">Ekspektasi: Otomatis mem-bypass soket UDP dan dikirim via TCP HTTP Ingestion (Jaminan anti-hilang 100%).</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">💓 Manual Heartbeat Ping</div>
+            <div class="guide-item-desc">Menembakkan sinyal detak jantung (*HEARTBEAT*) ke port 5001.</div>
+            <div class="guide-item-expect">Ekspektasi: Mereset timer Watchdog (15s) dan memastikan badge Watchdog tetap hijau (OK).</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🐢 Sync DB Logging (10 / 50 Logs)</div>
+            <div class="guide-item-desc">Menulis log secara sinkron langsung ke database satu per satu (arsitektur monolitik konvensional).</div>
+            <div class="guide-item-expect">Ekspektasi: Latensi lambat (~10-20ms per log), menunjukkan mengapa arsitektur UDP jauh lebih unggul.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🧹 Purge All Persisted Logs</div>
+            <div class="guide-item-desc">Mengeksekusi endpoint DELETE /logs untuk mengosongkan tabel telemetry_logs.</div>
+            <div class="guide-item-expect">Ekspektasi: Mengembalikan total log di database menjadi 0 baris seketika.</div>
+          </div>
+        </div>
       </div>
 
       <div class="suite-grid">
@@ -505,22 +742,65 @@
         <div class="suite-card">
           <div class="suite-title">1. UDP Throughput Testing</div>
           <div class="actions-list">
-            <button class="btn-action primary" onclick="dispatchUdpSingle()">
-              <span>Single UDP Datagram (1 Log)</span>
-              <span class="meta-badge">~0.3 ms</span>
-            </button>
-            <button class="btn-action primary" onclick="dispatchUdpBurst(100)">
-              <span>Batch Trigger (100 Logs)</span>
-              <span class="meta-badge">Auto Flush</span>
-            </button>
-            <button class="btn-action heavy" onclick="dispatchUdpBurst(1000)">
-              <span>High Load Burst (1,000 Logs)</span>
-              <span class="meta-badge">Microsecond Loop</span>
-            </button>
-            <button class="btn-action heavy" onclick="dispatchUdpBurst(5000)">
-              <span>Stress Blast (5,000 Logs)</span>
-              <span class="meta-badge">OS Buffer Saturation</span>
-            </button>
+            <!-- Button 1 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action primary" onclick="dispatchUdpSingle()">
+                <span>Single UDP Datagram (1 Log)</span>
+                <span class="meta-badge">~0.3 ms</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Single UDP Datagram</div>
+                  Mengirim 1 paket log telemetri via soket UDP (:5001). Membuktikan latensi ultra-rendah tanpa menunggu database.
+                  <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Fire-and-forget</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 2 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action primary" onclick="dispatchUdpBurst(100)">
+                <span>Batch Trigger (100 Logs)</span>
+                <span class="meta-badge">Auto Flush</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Batch Trigger (100 Logs)</div>
+                  Menembakkan 100 paket berturut-turut untuk memicu ambang batas (*threshold 100*) Bulk-Insert Aggregator ke database.
+                  <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 100</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 3 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action heavy" onclick="dispatchUdpBurst(1000)">
+                <span>High Load Burst (1,000 Logs)</span>
+                <span class="meta-badge">Microsecond Loop</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">High Load Burst (1,000 Logs)</div>
+                  Menembakkan 1.000 paket dalam hitungan milidetik langsung dari server. Menguji throughput tinggi (&gt;50k pkt/detik).
+                  <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 1,000</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 4 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action heavy" onclick="dispatchUdpBurst(5000)">
+                <span>Stress Blast (5,000 Logs)</span>
+                <span class="meta-badge">OS Buffer Saturation</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Stress Blast (5,000 Logs)</div>
+                  Membanjiri soket dengan 5.000 paket sekaligus. Menguji kapasitas buffer OS dan melihat mekanisme pemulihan aktif.
+                  <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 5,000</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -528,22 +808,65 @@
         <div class="suite-card">
           <div class="suite-title">2. Reliability &amp; Fault Injection</div>
           <div class="actions-list">
-            <button class="btn-action warning" onclick="injectLoss(3)">
-              <span>Simulate Drop 2 Packets (Zero-RTT)</span>
-              <span class="meta-badge">Method 3 Piggyback</span>
-            </button>
-            <button class="btn-action warning" onclick="injectLoss(10)">
-              <span>Simulate Drop 9 Packets (TCP NACK)</span>
-              <span class="meta-badge">Method 1 ARQ</span>
-            </button>
-            <button class="btn-action danger" onclick="dispatchCriticalFallback()">
-              <span>Simulate Error 500 (TCP Fallback)</span>
-              <span class="meta-badge">Method 2 Circuit</span>
-            </button>
-            <button class="btn-action" onclick="dispatchHeartbeat()">
-              <span>Manual Heartbeat Ping</span>
-              <span class="meta-badge">Watchdog Trigger</span>
-            </button>
+            <!-- Button 5 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action warning" onclick="injectLoss(3)">
+                <span>Simulate Drop 2 Packets (Zero-RTT)</span>
+                <span class="meta-badge">Method 3 Piggyback</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Simulate Drop 2 Packets (Zero-RTT)</div>
+                  Sengaja melompati urutan sequence +3. Membuktikan Metode 3 Piggybacking memulihkan paket secara instan (0ms delay).
+                  <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +3</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 6 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action warning" onclick="injectLoss(10)">
+                <span>Simulate Drop 9 Packets (TCP NACK)</span>
+                <span class="meta-badge">Method 1 ARQ</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Simulate Drop 9 Packets (NACK ARQ)</div>
+                  Sengaja melompati urutan sequence +10. Membuktikan Metode 1 NACK TCP menarik ulang 9 paket dari Ring Buffer RAM API.
+                  <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +10</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 7 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action danger" onclick="dispatchCriticalFallback()">
+                <span>Simulate Error 500 (TCP Fallback)</span>
+                <span class="meta-badge">Method 2 Circuit</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Simulate Error 500 (TCP Fallback)</div>
+                  Mengirim log berstatus ERROR 500. Membuktikan Metode 2 otomatis mem-bypass UDP dan dikirim via TCP HTTP (Zero-Loss).
+                  <div class="tt-meta">Target: /api/benchmark/critical-fallback &bull; Status: 500</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 8 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action" onclick="dispatchHeartbeat()">
+                <span>Manual Heartbeat Ping</span>
+                <span class="meta-badge">Watchdog Trigger</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Manual Heartbeat Ping</div>
+                  Mengirim sinyal detak jantung (*HEARTBEAT*) ke Aggregator untuk mereset timer Watchdog (15s) agar status tetap hijau.
+                  <div class="tt-meta">Target: /api/benchmark/heartbeat &bull; Type: HEARTBEAT</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -551,22 +874,65 @@
         <div class="suite-card">
           <div class="suite-title">3. Baseline &amp; Database Maintenance</div>
           <div class="actions-list">
-            <button class="btn-action" onclick="dispatchSyncBurst(10)">
-              <span>Sync DB Logging (10 Logs)</span>
-              <span class="meta-badge">~100 ms / log</span>
-            </button>
-            <button class="btn-action" onclick="dispatchSyncBurst(50)">
-              <span>Sync DB Logging (50 Logs)</span>
-              <span class="meta-badge">Lock Contention</span>
-            </button>
-            <button class="btn-action danger" onclick="purgeDatabaseLogs()">
-              <span>Purge All Persisted Logs</span>
-              <span class="meta-badge">DELETE /logs</span>
-            </button>
-            <button class="btn-action" onclick="fetchMetrics(true)">
-              <span>Force Refresh Metrics</span>
-              <span class="meta-badge">Sync State</span>
-            </button>
+            <!-- Button 9 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action" onclick="dispatchSyncBurst(10)">
+                <span>Sync DB Logging (10 Logs)</span>
+                <span class="meta-badge">~100 ms / log</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Sync DB Logging (10 Logs)</div>
+                  Menulis 10 log sinkron langsung ke database SQL satu per satu. Memperlihatkan lambatnya sistem tradisional (~100ms total).
+                  <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 10</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 10 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action" onclick="dispatchSyncBurst(50)">
+                <span>Sync DB Logging (50 Logs)</span>
+                <span class="meta-badge">Lock Contention</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Sync DB Logging (50 Logs)</div>
+                  Menulis 50 log sinkron ke database. Menunjukkan efek *lock contention* dan latensi tinggi (~500ms s.d 1.000ms).
+                  <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 50</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 11 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action danger" onclick="purgeDatabaseLogs()">
+                <span>Purge All Persisted Logs</span>
+                <span class="meta-badge">DELETE /logs</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Purge All Persisted Logs</div>
+                  Mengeksekusi endpoint DELETE /logs untuk mengosongkan tabel telemetry_logs dan mereset database kembali menjadi 0 baris.
+                  <div class="tt-meta">Target: /api/benchmark/logs &bull; Method: DELETE</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Button 12 -->
+            <div class="btn-item-wrap">
+              <button class="btn-action" onclick="fetchMetrics(true)">
+                <span>Force Refresh Metrics</span>
+                <span class="meta-badge">Sync State</span>
+              </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Force Refresh Metrics</div>
+                  Memaksa browser meminta data metrik terbaru dari server seketika tanpa menunggu interval auto-polling (1.5 detik).
+                  <div class="tt-meta">Target: /api/benchmark/metrics &bull; Method: GET</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -582,7 +948,7 @@
         </div>
       </div>
       <div class="terminal-content" id="terminalLog">
-        <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-info">[INIT]</span> Studio connected to WMS API (:5000) and UDP Aggregator (:5001). Ready for test runs.</div>
+        <div class="log-row"><span class="log-ts">[00:00:00]</span> <span class="log-info">[INIT]</span> Studio connected to WMS API (:5000) and UDP Aggregator (:5001). Hover or click ⓘ icons for detailed button guides.</div>
       </div>
     </div>
 
@@ -599,6 +965,11 @@
 
   <script>
     const term = document.getElementById('terminalLog');
+
+    function toggleGuide() {
+      const drawer = document.getElementById('guideDrawer');
+      drawer.classList.toggle('open');
+    }
 
     function appendLog(level, message) {
       const now = new Date().toTimeString().split(' ')[0];
