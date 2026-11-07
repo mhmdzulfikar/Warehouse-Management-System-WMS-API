@@ -127,3 +127,4 @@ class StudioStore {
 }
 
 window.StudioStore = new StudioStore();
+

@@ -80,8 +80,8 @@
 
   // 2. Scenario Presets
   async function runPreset(type) {
-    if (type === 'demo') {
-      window.ApiModule.showToast('Memulai Skenario: Demo untuk Dosen & Penguji...', 'info');
+    if (type === 'demo' || type === 'verify') {
+      window.ApiModule.showToast('Memulai Skenario: Alur Verifikasi Penuh (End-to-End)...', 'info');
       window.StudioApp.switchTab('telemetry');
 
       // Step 1: Single UDP
@@ -102,7 +102,7 @@
 
       // Step 5: Quick Blitz Autocannon
       await window.TelemetryModule.actions.runAutocannon('udp', 3, 25);
-      window.ApiModule.showToast('Skenario Demo Dosen selesai! Semua arsitektur terbukti andal.', 'success');
+      window.ApiModule.showToast('Alur Verifikasi Penuh selesai! Seluruh arsitektur terbukti andal.', 'success');
     } else if (type === 'stress') {
       window.ApiModule.showToast('Memulai Uji Ketahanan Penuh...', 'info');
       await window.TelemetryModule.actions.burstUdp(1000);
@@ -211,3 +211,4 @@
     closeTour
   };
 })();
+

@@ -85,7 +85,7 @@ const translations = {
     exportJson: "Ekspor JSON",
 
     // Presets
-    presetDemo: "Demo untuk Dosen",
+    presetDemo: "Alur Verifikasi Penuh",
     presetStress: "Uji Ketahanan Penuh",
     presetSmoke: "Smoke Test Cepat",
 
@@ -179,7 +179,7 @@ const translations = {
     exportJson: "Export JSON",
 
     // Presets
-    presetDemo: "Demo for Examiners",
+    presetDemo: "Full Verification Flow",
     presetStress: "Full Stress Test",
     presetSmoke: "Quick Smoke Test",
 
@@ -230,3 +230,4 @@ function applyTranslations() {
 }
 
 window.I18N = { t, setLanguage, applyTranslations, getLang: () => currentLang };
+

@@ -134,9 +134,17 @@
     }
   }
 
+  function toggleGuide() {
+    const drawer = document.getElementById('guideDrawer');
+    if (drawer) drawer.classList.toggle('open');
+  }
+
   document.addEventListener('DOMContentLoaded', initApp);
 
+  window.toggleGuide = toggleGuide;
   window.StudioApp = {
-    switchTab
+    switchTab,
+    toggleGuide
   };
 })();
+

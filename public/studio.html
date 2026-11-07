@@ -66,7 +66,7 @@
     <div class="preset-bar">
       <span class="preset-title">⚡ Skenario Cepat Satu-Klik:</span>
       <div class="preset-buttons">
-        <button class="btn-preset" onclick="window.PaletteModule.runPreset('demo')" data-i18n="presetDemo">🎓 Demo untuk Dosen</button>
+        <button class="btn-preset" onclick="window.PaletteModule.runPreset('verify')" data-i18n="presetDemo">⚡ Alur Verifikasi Penuh</button>
         <button class="btn-preset" onclick="window.PaletteModule.runPreset('stress')" data-i18n="presetStress">🔥 Uji Ketahanan Penuh</button>
         <button class="btn-preset" onclick="window.PaletteModule.runPreset('smoke')" data-i18n="presetSmoke">💨 Smoke Test Cepat</button>
       </div>
@@ -124,6 +124,102 @@
         </div>
       </div>
 
+      <!-- Testbed Workspace Header & Expandable Cheat Sheet -->
+      <div class="testbed-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h2 style="font-size: 14px; font-weight: 700; color: var(--text-main);">Interactive Testbed Suite</h2>
+          <span style="font-size: 11px; color: var(--text-dim); font-family: var(--font-mono);">Hover ikon ⓘ untuk info instan</span>
+        </div>
+        <button class="btn-guide-toggle" onclick="toggleGuide()">
+          <span>ⓘ Panduan Lengkap Semua Tombol</span>
+        </button>
+      </div>
+
+      <!-- Expandable Cheat Sheet Drawer -->
+      <div class="guide-drawer" id="guideDrawer">
+        <div class="guide-drawer-title">
+          <span>📖 Panduan Lengkap &amp; Ekspektasi Pengujian 16 Tombol</span>
+          <button class="btn-tiny" onclick="toggleGuide()">Tutup</button>
+        </div>
+        <div class="guide-grid">
+          <div class="guide-item">
+            <div class="guide-item-btn">⚡ Single UDP Datagram (1 Log)</div>
+            <div class="guide-item-desc">Mengirim 1 paket log secara asinkron via soket UDP ke port 5001. Membuktikan latensi ultra-rendah tanpa menunggu database.</div>
+            <div class="guide-item-expect">Ekspektasi: Total durasi &lt; 5ms, log masuk antrean buffer RAM.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🚀 Batch Trigger (100 Logs)</div>
+            <div class="guide-item-desc">Menembakkan 100 paket berturut-turut untuk menguji batas ambang (*batch threshold*) Aggregator.</div>
+            <div class="guide-item-expect">Ekspektasi: Memicu Bulk-Insert SQL sekaligus ke PostgreSQL begitu paket ke-100 tiba.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🔥 High Load Burst (1.000 Logs)</div>
+            <div class="guide-item-desc">Menembakkan 1.000 paket dalam microsecond loop server untuk menguji throughput tinggi (&gt;50.000 paket/detik).</div>
+            <div class="guide-item-expect">Ekspektasi: Antrean buffer melonjak lalu dikosongkan secara bertahap dalam ~100ms.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">💥 Stress Blast (5,000 Logs)</div>
+            <div class="guide-item-desc">Membanjiri soket dengan 5.000 paket sekaligus untuk menguji batas buffer soket OS dan ketahanan memori RAM.</div>
+            <div class="guide-item-expect">Ekspektasi: Dapat memicu packet loss di OS, menguji self-healing bekerja di bawah tekanan berat.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🎯 Simulate Drop 2 Packets (Zero-RTT)</div>
+            <div class="guide-item-desc">Sengaja melompati sequence ID (+3) untuk membuktikan Metode 3 Piggybacking.</div>
+            <div class="guide-item-expect">Ekspektasi: Paket hilang langsung dipulihkan seketika dari payload cadangan paket berikutnya (0ms RTT).</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🔄 Simulate Drop 9 Packets (TCP NACK)</div>
+            <div class="guide-item-desc">Sengaja melompati sequence ID (+10) untuk menguji Metode 1 NACK Selective Retransmission.</div>
+            <div class="guide-item-expect">Ekspektasi: Aggregator membuat request TCP ke Ring Buffer RAM API untuk menarik ulang 9 paket hilang.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🚨 Simulate Error 500 (TCP Fallback)</div>
+            <div class="guide-item-desc">Mengirim log error status 500 untuk menguji Metode 2 Circuit Breaker.</div>
+            <div class="guide-item-expect">Ekspektasi: Otomatis mem-bypass soket UDP dan dikirim via TCP HTTP Ingestion (Jaminan anti-hilang 100%).</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">💓 Manual Heartbeat Ping</div>
+            <div class="guide-item-desc">Menembakkan sinyal detak jantung (*HEARTBEAT*) ke port 5001.</div>
+            <div class="guide-item-expect">Ekspektasi: Mereset timer Watchdog (15s) dan memastikan badge Watchdog tetap hijau (OK).</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🚀 Autocannon UDP Route (10s, 100 Conn)</div>
+            <div class="guide-item-desc">Menjalankan uji beban HTTP resmi Autocannon (100 koneksi bersamaan selama 10 detik) ke rute /api/benchmark/udp-log.</div>
+            <div class="guide-item-expect">Ekspektasi: Throughput tinggi (>1.500 req/dtk), latensi p99 rendah (&lt;15ms), tanpa I/O blocking.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🐢 Autocannon Sync DB Route (5s, 50 Conn)</div>
+            <div class="guide-item-desc">Menjalankan uji beban Autocannon ke rute /api/benchmark/sync-log (koneksi sinkron ke database PostgreSQL).</div>
+            <div class="guide-item-expect">Ekspektasi: Penurunan throughput drastis dan latensi membengkak tinggi akibat lock contention database.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">⚡ Quick Autocannon Blitz (3s, 25 Conn)</div>
+            <div class="guide-item-desc">Uji beban cepat 3 detik untuk memverifikasi respons server dan throughput seketika tanpa menunggu 10 detik.</div>
+            <div class="guide-item-expect">Ekspektasi: Menyajikan tabel ringkasan performa ASCII langsung di terminal log.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">📋 Copy Terminal CLI Command</div>
+            <div class="guide-item-desc">Menyalin sintaks perintah resmi Autocannon untuk dieksekusi manual di terminal CMD / PowerShell.</div>
+            <div class="guide-item-expect">Ekspektasi: Command tersalin ke clipboard sistem secara instan.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🐢 Sync DB Logging (10 / 50 Logs)</div>
+            <div class="guide-item-desc">Menulis log secara sinkron langsung ke database satu per satu (arsitektur monolitik konvensional).</div>
+            <div class="guide-item-expect">Ekspektasi: Latensi lambat (~10-20ms per log), menunjukkan mengapa arsitektur UDP jauh lebih unggul.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🧹 Purge All Persisted Logs</div>
+            <div class="guide-item-desc">Mengeksekusi endpoint DELETE /logs untuk mengosongkan tabel telemetry_logs.</div>
+            <div class="guide-item-expect">Ekspektasi: Mengembalikan total log di database menjadi 0 baris seketika.</div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-item-btn">🔄 Force Refresh Metrics</div>
+            <div class="guide-item-desc">Memaksa browser meminta data metrik terbaru dari server seketika tanpa menunggu interval polling.</div>
+            <div class="guide-item-expect">Ekspektasi: Radar ter-update dalam &lt;10ms.</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Testbed Suite (16 Actions across 3 Suites) -->
       <div class="testbed-grid" id="testbedSuite">
         
@@ -131,29 +227,64 @@
         <div class="suite-card">
           <div class="suite-header" data-i18n="suite1Title">1. Uji Throughput UDP (Non-blocking)</div>
           <div class="suite-actions">
+            <!-- Button 1 -->
             <div class="btn-action-row">
               <button class="btn-action primary" onclick="window.TelemetryModule.actions.singleUdp()">
                 <span data-i18n="btnSingleUdp">Single UDP Datagram (1 Log)</span>
                 <span class="meta-badge">~0.2 ms</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Single UDP Datagram</div>
+                  Mengirim 1 paket log telemetri via soket UDP (:5001). Membuktikan latensi ultra-rendah tanpa menunggu database.
+                  <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Fire-and-forget</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 2 -->
             <div class="btn-action-row">
               <button class="btn-action primary" onclick="window.TelemetryModule.actions.burstUdp(100)">
                 <span data-i18n="btnBatchUdp">Batch Trigger (100 Logs)</span>
                 <span class="meta-badge">Auto Flush</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Batch Trigger (100 Logs)</div>
+                  Menembakkan 100 paket berturut-turut untuk memicu ambang batas (*threshold 100*) Bulk-Insert Aggregator ke database.
+                  <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 100</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 3 -->
             <div class="btn-action-row">
               <button class="btn-action heavy" onclick="window.TelemetryModule.actions.burstUdp(1000)">
                 <span data-i18n="btnBurst1k">High Load Burst (1,000 Logs)</span>
                 <span class="meta-badge">Microsecond</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">High Load Burst (1,000 Logs)</div>
+                  Menembakkan 1.000 paket dalam hitungan milidetik langsung dari server. Menguji throughput tinggi (&gt;50k pkt/detik).
+                  <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 1,000</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 4 -->
             <div class="btn-action-row">
               <button class="btn-action heavy" onclick="window.TelemetryModule.actions.burstUdp(5000)">
                 <span data-i18n="btnStress5k">Stress Blast (5,000 Logs)</span>
                 <span class="meta-badge">OS Saturation</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Stress Blast (5,000 Logs)</div>
+                  Membanjiri soket dengan 5.000 paket sekaligus. Menguji kapasitas buffer OS dan melihat mekanisme pemulihan aktif.
+                  <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 5,000</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -162,29 +293,64 @@
         <div class="suite-card">
           <div class="suite-header" data-i18n="suite2Title">2. Keandalan &amp; Injeksi Kesalahan</div>
           <div class="suite-actions">
+            <!-- Button 5 -->
             <div class="btn-action-row">
               <button class="btn-action warning" onclick="window.TelemetryModule.actions.injectLoss(3)">
                 <span data-i18n="btnDrop2">Simulasi Hilang 2 Paket (Zero-RTT)</span>
                 <span class="meta-badge">Method 3 Piggyback</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Simulate Drop 2 Packets (Zero-RTT)</div>
+                  Sengaja melompati urutan sequence +3. Membuktikan Metode 3 Piggybacking memulihkan paket secara instan (0ms delay).
+                  <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +3</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 6 -->
             <div class="btn-action-row">
               <button class="btn-action warning" onclick="window.TelemetryModule.actions.injectLoss(10)">
                 <span data-i18n="btnDrop9">Simulasi Hilang 9 Paket (TCP NACK)</span>
                 <span class="meta-badge">Method 1 ARQ</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Simulate Drop 9 Packets (TCP NACK)</div>
+                  Melompati sequence +10. Memicu Aggregator mengirim NACK TCP request ke Ring Buffer API untuk menarik 9 paket hilang.
+                  <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +10</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 7 -->
             <div class="btn-action-row">
               <button class="btn-action danger" onclick="window.TelemetryModule.actions.criticalFallback()">
                 <span data-i18n="btnError500">Simulasi Error 500 (TCP Fallback)</span>
                 <span class="meta-badge">Method 2 Circuit</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Simulate Error 500 (TCP Fallback)</div>
+                  Mengirim log berstatus HTTP 500. Membuktikan sistem otomatis beralih ke TCP Fallback Ingestion (Jaminan anti-hilang 100%).
+                  <div class="tt-meta">Target: /api/benchmark/critical-fallback &bull; Mode: Fallback</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 8 -->
             <div class="btn-action-row">
               <button class="btn-action" onclick="window.TelemetryModule.actions.heartbeat()">
                 <span data-i18n="btnHeartbeat">Manual Heartbeat Ping</span>
                 <span class="meta-badge">Watchdog Reset</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Manual Heartbeat Ping</div>
+                  Menembakkan sinyal HEARTBEAT langsung ke port 5001 untuk mereset timer Watchdog 15 detik Aggregator.
+                  <div class="tt-meta">Target: /api/benchmark/heartbeat &bull; Type: HEARTBEAT</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -193,53 +359,124 @@
         <div class="suite-card">
           <div class="suite-header" data-i18n="suite3Title">3. Uji Beban Autocannon &amp; Baseline DB</div>
           <div class="suite-actions">
+            <!-- Button 9 -->
             <div class="btn-action-row">
               <button class="btn-action primary" id="btnAutoUdp" onclick="window.TelemetryModule.actions.runAutocannon('udp', 10, 100)">
                 <span data-i18n="btnAutoUdp">Autocannon UDP Route (10s)</span>
                 <span class="meta-badge">100 Conn • 10s</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Autocannon UDP Route (100 Conn, 10s)</div>
+                  Menjalankan benchmark HTTP resmi dengan Autocannon (100 concurrent connections selama 10 detik) ke endpoint UDP asinkron.
+                  <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Tool: autocannon</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 10 -->
             <div class="btn-action-row">
               <button class="btn-action warning" id="btnAutoSync" onclick="window.TelemetryModule.actions.runAutocannon('sync', 5, 50)">
                 <span data-i18n="btnAutoSync">Autocannon Sync DB (5s)</span>
                 <span class="meta-badge">50 Conn • 5s</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Autocannon Sync DB (50 Conn, 5s)</div>
+                  Menjalankan benchmark Autocannon ke endpoint blocking database. Menguji penurunan throughput akibat penumpukan query INSERT.
+                  <div class="tt-meta">Target: /api/benchmark/sync-log &bull; Tool: autocannon</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 11 -->
             <div class="btn-action-row">
               <button class="btn-action heavy" onclick="window.TelemetryModule.actions.runAutocannon('udp', 3, 25)">
                 <span data-i18n="btnAutoBlitz">Quick Autocannon Blitz (3s)</span>
                 <span class="meta-badge">Rapid Blitz</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Quick Autocannon Blitz (25 Conn, 3s)</div>
+                  Pengujian kilat 3 detik untuk mengecek latensi rata-rata dan responsivitas tanpa perlu menunggu 10 detik penuh.
+                  <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Rapid Blitz</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 12 -->
             <div class="btn-action-row">
               <button class="btn-action" onclick="window.TelemetryModule.actions.copyCli()">
                 <span data-i18n="btnCopyCli">Salin Perintah CLI</span>
                 <span class="meta-badge">npx autocannon</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Salin Perintah CLI Terminal</div>
+                  Menyalin perintah `npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/udp-log` ke clipboard untuk dijalankan manual di terminal OS.
+                  <div class="tt-meta">Command: npm run benchmark:udp</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 13 -->
             <div class="btn-action-row">
               <button class="btn-action" onclick="window.TelemetryModule.actions.syncBurst(10)">
                 <span data-i18n="btnSync10">Sync DB Logging (10 Logs)</span>
                 <span class="meta-badge">~100 ms</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Sync DB Logging (10 Logs)</div>
+                  Menulis 10 log sinkron ke database secara berurutan. Menunjukkan latensi database blocking (~10-20ms per log).
+                  <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 10</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 14 -->
             <div class="btn-action-row">
               <button class="btn-action" onclick="window.TelemetryModule.actions.syncBurst(50)">
                 <span data-i18n="btnSync50">Sync DB Logging (50 Logs)</span>
                 <span class="meta-badge">Contention</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Sync DB Logging (50 Logs)</div>
+                  Menulis 50 log sinkron ke database. Menunjukkan efek *lock contention* dan latensi tinggi (~500ms s.d 1.000ms).
+                  <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 50</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 15 -->
             <div class="btn-action-row">
               <button class="btn-action danger" onclick="window.TelemetryModule.actions.purgeDb()">
                 <span data-i18n="btnPurgeDb">Bersihkan Semua Log DB</span>
                 <span class="meta-badge">DELETE /logs</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Purge All Persisted Logs</div>
+                  Mengeksekusi endpoint DELETE /logs untuk mengosongkan tabel telemetry_logs dan mereset database kembali menjadi 0 baris.
+                  <div class="tt-meta">Target: /api/benchmark/logs &bull; Method: DELETE</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Button 16 -->
             <div class="btn-action-row">
               <button class="btn-action" onclick="window.TelemetryModule.fetchMetrics(true)">
                 <span data-i18n="btnRefresh">Paksa Sinkronkan Metrik</span>
                 <span class="meta-badge">Sync State</span>
               </button>
+              <div class="btn-info-icon" tabindex="0">ⓘ
+                <div class="tooltip-box">
+                  <div class="tt-title">Force Refresh Metrics</div>
+                  Memaksa browser meminta data metrik terbaru dari server seketika tanpa menunggu interval auto-polling (1.5 detik).
+                  <div class="tt-meta">Target: /api/benchmark/metrics &bull; Method: GET</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -447,3 +684,4 @@
   <script src="/js/studio.js"></script>
 </body>
 </html>
+
