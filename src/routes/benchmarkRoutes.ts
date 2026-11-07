@@ -2,8 +2,8 @@ import { Router, Request, Response } from 'express';
 import { performance } from 'perf_hooks';
 import autocannon from 'autocannon';
 import { prisma } from '../config/prisma';
-import { sendUdpTelemetry, getLogsFromRingBuffer, getRingBufferStats, storeInRingBuffer } from '../utils/udpLogger';
-import { getAggregatorMetrics, ingestDirectLog } from '../aggregator';
+import { sendUdpTelemetry, getLogsFromRingBuffer, getRingBufferStats, storeInRingBuffer, resetRingBuffer } from '../utils/udpLogger';
+import { getAggregatorMetrics, ingestDirectLog, resetAggregatorMetrics } from '../aggregator';
 
 const router = Router();
 
@@ -177,11 +177,14 @@ router.post('/burst-sync', async (req: Request, res: Response) => {
  */
 router.post('/simulate-loss', (req: Request, res: Response) => {
   const jump = Math.min(Math.max(parseInt(req.body.jump || '5', 10), 2), 50);
+  const aggregatorMetrics = getAggregatorMetrics();
   const ringStats = getRingBufferStats();
-  const previousSeq = ringStats.maxSeq || 100;
+
+  // Dynamically synchronize baseline sequence with Aggregator's latest acknowledged sequence
+  const previousSeq = Math.max(aggregatorMetrics.lastSeqId, ringStats.maxSeq, 1);
 
   // Ensure baseline sequence datagram was received by Aggregator so sequence tracking is calibrated
-  if (ringStats.bufferedCount === 0) {
+  if (aggregatorMetrics.lastSeqId === 0) {
     sendUdpTelemetry({
       seqId: previousSeq,
       type: 'LOG',
@@ -372,9 +375,11 @@ router.get('/logs', async (req: Request, res: Response) => {
 router.delete('/logs', async (_req: Request, res: Response) => {
   try {
     const result = await prisma.telemetryLog.deleteMany({});
+    resetAggregatorMetrics();
+    resetRingBuffer();
     res.json({
       status: 'ok',
-      message: 'Semua log telemetri berhasil dibersihkan dari database.',
+      message: 'Semua log telemetri dan metrik benchmark berhasil dibersihkan dari database.',
       deletedCount: result.count,
     });
   } catch (err: any) {

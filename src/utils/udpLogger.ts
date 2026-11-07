@@ -77,6 +77,12 @@ export function getRingBufferStats(): { bufferedCount: number; minSeq: number; m
   };
 }
 
+export function resetRingBuffer(): void {
+  ringBuffer.clear();
+  ringBufferOrder.length = 0;
+  currentSequenceId = 1;
+}
+
 function getSocket(): dgram.Socket {
   if (!udpSocket) {
     udpSocket = dgram.createSocket('udp4');

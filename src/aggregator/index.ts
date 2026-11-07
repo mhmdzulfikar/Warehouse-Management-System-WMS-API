@@ -83,6 +83,16 @@ export function getAggregatorMetrics(): AggregatorMetrics {
   };
 }
 
+export function resetAggregatorMetrics(): void {
+  totalReceivedCount = 0;
+  totalLogsInserted = 0;
+  totalPacketLossCount = 0;
+  totalRecoveredCount = 0;
+  nackRequestsCount = 0;
+  lastSequenceId = 0;
+  logBuffer = [];
+}
+
 // -------------------------------------------------------------
 // Direct Log Ingestion (for Method 2: TCP Fallback)
 // -------------------------------------------------------------
