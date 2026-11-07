@@ -649,6 +649,20 @@ export const swaggerDocument = {
             }
         },
         '/api/benchmark/logs': {
+            get: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Query persisted telemetry logs from PostgreSQL database',
+                security: [],
+                parameters: [
+                    { name: 'limit', in: 'query', schema: { type: 'integer', default: 50 }, description: 'Number of logs to retrieve (max 200)' },
+                    { name: 'offset', in: 'query', schema: { type: 'integer', default: 0 }, description: 'Offset for pagination' },
+                    { name: 'level', in: 'query', schema: { type: 'string', enum: ['ALL', 'INFO', 'WARN', 'ERROR', 'SUCCESS', 'RECOVERY'] }, description: 'Filter by log level' },
+                    { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Search keywords in message, endpoint, or method' }
+                ],
+                responses: {
+                    200: { description: 'Paginated telemetry logs from PostgreSQL' }
+                }
+            },
             delete: {
                 tags: ['Telemetry & Benchmarking'],
                 summary: 'Purge all persisted telemetry logs from PostgreSQL database',

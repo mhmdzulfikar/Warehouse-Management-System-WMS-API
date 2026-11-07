@@ -82,19 +82,21 @@
         <div class="radar-cell">
           <div class="radar-top">
             <span class="radar-label" data-i18n="effectiveLossRate">Effective Loss Rate</span>
-            <div id="sparklineLoss"></div>
+            <div class="sparkline-wrapper" id="sparklineLoss"></div>
           </div>
           <div class="radar-num" id="effectiveLoss">0.00% <span class="tag-badge tag-green">Zero-Loss</span></div>
           <div class="radar-sub" id="rawLossText">Raw Drop: 0 (0.00%) • Terpulihkan: 0</div>
+          <button class="radar-quick-btn" onclick="window.TelemetryModule.switchDeckView('sequence')">📡 Lacak Urutan Paket</button>
         </div>
 
         <div class="radar-cell">
           <div class="radar-top">
             <span class="radar-label" data-i18n="totalRecovered">Total Recovered</span>
-            <div id="sparklineRecovered"></div>
+            <div class="sparkline-wrapper" id="sparklineRecovered"></div>
           </div>
           <div class="radar-num" id="totalRecovered">0 <span class="unit">pkts</span></div>
           <div class="radar-sub" id="nackRequestsText">NACK: 0 • Seq Terakhir: #0</div>
+          <button class="radar-quick-btn" onclick="window.TelemetryModule.switchDeckView('sequence')">🔄 Cek Pemulihan</button>
         </div>
 
         <div class="radar-cell">
@@ -103,12 +105,13 @@
           </div>
           <div class="radar-num" id="dbLogsCount">0 <span class="unit">rows</span></div>
           <div class="radar-sub" data-i18n="tableTarget">Table: telemetry_logs</div>
+          <button class="radar-quick-btn" onclick="window.TelemetryModule.switchDeckView('db')">📋 Lihat Log Database</button>
         </div>
 
         <div class="radar-cell">
           <div class="radar-top">
             <span class="radar-label" data-i18n="aggregatorBuffer">RAM Buffer Queue</span>
-            <div id="sparklineBuffer"></div>
+            <div class="sparkline-wrapper" id="sparklineBuffer"></div>
           </div>
           <div class="radar-num" id="activeBuffer">0 <span class="unit">items</span></div>
           <div class="radar-sub" data-i18n="flushRule">Flush Threshold: 100 logs / 2,000 ms</div>
@@ -117,7 +120,7 @@
         <div class="radar-cell">
           <div class="radar-top">
             <span class="radar-label" data-i18n="processMemory">Memory RSS</span>
-            <div id="sparklineMemory"></div>
+            <div class="sparkline-wrapper" id="sparklineMemory"></div>
           </div>
           <div class="radar-num" id="memoryRss">0.00 <span class="unit">MB</span></div>
           <div class="radar-sub" id="uptimeText">Uptime: 0s • Ring Buffer: 0</div>
@@ -483,26 +486,123 @@
 
       </div>
 
-      <!-- Live Technical Console -->
-      <div class="terminal-card" id="terminalBox">
-        <div class="terminal-header">
-          <span class="terminal-title" data-i18n="terminalTitle">telemetry-studio-audit.log</span>
-          <div class="terminal-toolbar">
-            <select class="terminal-select" id="selectFilterLevel">
-              <option value="ALL">Filter: Semua Level</option>
-              <option value="SUCCESS">SUCCESS</option>
-              <option value="RECOVERY">RECOVERY</option>
-              <option value="WARN">WARN</option>
-              <option value="ERROR">ERROR</option>
-              <option value="INFO">INFO</option>
-            </select>
-            <input type="text" class="terminal-input" id="inputSearchLogs" placeholder="Cari log..." />
-            <button class="btn-tiny" id="btnTerminalPause" data-i18n="pause">Jeda</button>
-            <button class="btn-tiny" id="btnTerminalCopy" data-i18n="copyLogs">Salin</button>
-            <button class="btn-tiny" id="btnTerminalClear" data-i18n="clear">Bersihkan</button>
+      <!-- Unified Log & Inspection Deck (Sequence Tracker, Live DB Logs, Terminal) -->
+      <div class="deck-card" id="deckContainer">
+        <!-- Deck Header & View Switcher -->
+        <div class="deck-header">
+          <div class="deck-tabs">
+            <button class="deck-tab active" id="tabBtnSeq" onclick="window.TelemetryModule.switchDeckView('sequence')">
+              <span class="deck-tab-icon">📡</span>
+              <span>Visual Packet Sequence</span>
+              <span class="deck-badge" id="badgeSeqCount">0 pkts</span>
+            </button>
+            <button class="deck-tab" id="tabBtnDb" onclick="window.TelemetryModule.switchDeckView('db')">
+              <span class="deck-tab-icon">📋</span>
+              <span>PostgreSQL Live Logs</span>
+              <span class="deck-badge" id="badgeDbCount">0 rows</span>
+            </button>
+            <button class="deck-tab" id="tabBtnTerminal" onclick="window.TelemetryModule.switchDeckView('terminal')">
+              <span class="deck-tab-icon">📺</span>
+              <span>Audit Terminal Console</span>
+            </button>
+          </div>
+
+          <!-- Common / View-Specific Toolbar -->
+          <div class="deck-toolbar">
+            <!-- Toolbar for Packet Sequence -->
+            <div id="toolbarSeq" class="deck-tool-group">
+              <button class="btn-tiny" onclick="window.TelemetryModule.clearSequenceTracker()">Bersihkan Alur</button>
+              <span class="legend-chip legend-ok">● OK</span>
+              <span class="legend-chip legend-drop">● Drop</span>
+              <span class="legend-chip legend-rec">● Recovered</span>
+            </div>
+
+            <!-- Toolbar for DB Logs -->
+            <div id="toolbarDb" class="deck-tool-group" style="display: none;">
+              <select class="terminal-select" id="selectDbLevel" onchange="window.TelemetryModule.fetchDbLogs()">
+                <option value="ALL">Semua Level</option>
+                <option value="INFO">INFO</option>
+                <option value="SUCCESS">SUCCESS</option>
+                <option value="WARN">WARN</option>
+                <option value="ERROR">ERROR</option>
+                <option value="RECOVERY">RECOVERY</option>
+              </select>
+              <input type="text" class="terminal-input" id="inputSearchDb" placeholder="Cari DB..." onkeydown="if(event.key==='Enter') window.TelemetryModule.fetchDbLogs()" />
+              <button class="btn-tiny" onclick="window.TelemetryModule.fetchDbLogs()">🔄 Muat Ulang DB</button>
+            </div>
+
+            <!-- Toolbar for Terminal -->
+            <div id="toolbarTerminal" class="deck-tool-group" style="display: none;">
+              <select class="terminal-select" id="selectFilterLevel">
+                <option value="ALL">Semua Level</option>
+                <option value="SUCCESS">SUCCESS</option>
+                <option value="RECOVERY">RECOVERY</option>
+                <option value="WARN">WARN</option>
+                <option value="ERROR">ERROR</option>
+                <option value="INFO">INFO</option>
+              </select>
+              <input type="text" class="terminal-input" id="inputSearchLogs" placeholder="Cari log..." />
+              <button class="btn-tiny" id="btnTerminalPause" data-i18n="pause">Jeda</button>
+              <button class="btn-tiny" id="btnTerminalCopy" data-i18n="copyLogs">Salin</button>
+              <button class="btn-tiny" id="btnTerminalClear" data-i18n="clear">Bersihkan</button>
+            </div>
           </div>
         </div>
-        <div class="terminal-logs" id="terminalLog"></div>
+
+        <!-- View 1: Visual Packet Sequence Inspector -->
+        <div class="deck-view active" id="viewSequence">
+          <div class="sequence-inspector-container">
+            <div class="sequence-stream-wrapper">
+              <div class="sequence-stream-info">
+                <span>Pelacak Urutan Paket UDP (Visual Sequence Chain)</span>
+                <span style="color: var(--text-dim); font-size: 11px;">Klik salah satu chip paket untuk melihat bukti &amp; metadata payload</span>
+              </div>
+              <div class="sequence-track" id="sequenceTrack">
+                <div class="detail-empty" id="sequenceEmptyMsg" style="padding: 24px; width: 100%;">
+                  Menunggu pengujian... Tekan tombol aksi seperti <strong>Single UDP</strong> atau <strong>Simulasi Hilang Paket</strong> di atas untuk melihat alur nomor sequence secara live!
+                </div>
+              </div>
+            </div>
+            <!-- Detail Card on Click -->
+            <div class="sequence-detail-card" id="sequenceDetailCard">
+              <div class="detail-header">
+                <span id="detailSeqTitle">Inspeksi Paket</span>
+                <span style="font-size: 10px; color: var(--text-dim);">Detail</span>
+              </div>
+              <div class="detail-body" id="detailSeqBody">
+                <div class="detail-empty">Pilih salah satu chip paket di sebelah kiri untuk melihat metadata, latensi, dan status pemulihan.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: PostgreSQL Live Logs Table -->
+        <div class="deck-view" id="viewDb">
+          <div class="db-logs-wrapper">
+            <table class="db-table" id="dbLogsTable">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">ID</th>
+                  <th style="width: 80px;">Seq #</th>
+                  <th style="width: 85px;">Level</th>
+                  <th>Method &amp; Endpoint</th>
+                  <th style="width: 70px;">Status</th>
+                  <th style="width: 85px;">Latency</th>
+                  <th style="width: 170px;">Waktu Dibuat</th>
+                  <th style="width: 80px; text-align: center;">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="dbLogsTbody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 24px;">Memuat log dari database PostgreSQL...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- View 3: Technical Audit Terminal -->
+        <div class="deck-view" id="viewTerminal">
+          <div class="terminal-logs" id="terminalLog"></div>
+        </div>
       </div>
 
     </section>

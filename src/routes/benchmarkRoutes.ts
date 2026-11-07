@@ -178,7 +178,12 @@ router.post('/burst-sync', async (req: Request, res: Response) => {
 router.post('/simulate-loss', (req: Request, res: Response) => {
   const jump = Math.min(Math.max(parseInt(req.body.jump || '5', 10), 2), 50);
   const ringStats = getRingBufferStats();
-  const simulatedSeq = (ringStats.maxSeq || 100) + jump;
+  const previousSeq = ringStats.maxSeq || 100;
+  const simulatedSeq = previousSeq + jump;
+  const missingSeqs: number[] = [];
+  for (let s = previousSeq + 1; s < simulatedSeq; s++) {
+    missingSeqs.push(s);
+  }
 
   sendUdpTelemetry({
     seqId: simulatedSeq,
@@ -188,15 +193,18 @@ router.post('/simulate-loss', (req: Request, res: Response) => {
     endpoint: '/api/benchmark/simulate-loss',
     statusCode: 200,
     message: `Simulasi Paket Hilang: Sequence sengaja dilompati ${jump} paket ke #${simulatedSeq}!`,
-    metadata: { jumpSimulated: jump, targetSeq: simulatedSeq },
+    metadata: { jumpSimulated: jump, previousSeq, targetSeq: simulatedSeq, missingSeqs },
   });
 
   res.json({
     status: 'ok',
     mode: 'PACKET_LOSS_SIMULATION',
     jumpCount: jump,
+    previousSeqId: previousSeq,
     simulatedSeqId: simulatedSeq,
-    message: `Berhasil menembakkan paket dengan lompatan sequence +${jump}. Aggregator akan mendeteksi ${jump - 1} paket hilang dan mengaktifkan self-healing!`,
+    missingSeqs,
+    recoveryMethod: jump <= 3 ? 'METHOD_3_PIGGYBACK' : 'METHOD_1_NACK_ARQ',
+    message: `Berhasil menembakkan paket #${simulatedSeq} (lompat +${jump}). ${missingSeqs.length} paket [${missingSeqs.join(', ')}] dinyatakan hilang dan otomatis dipulihkan!`,
   });
 });
 
@@ -284,6 +292,51 @@ router.get('/ring-buffer-stats', (_req: Request, res: Response) => {
     status: 'ok',
     ringBuffer: getRingBufferStats(),
   });
+});
+
+/**
+ * Query Persisted Telemetry Logs directly from PostgreSQL database
+ * Enables UI data inspection with pagination, level filtering, and search.
+ */
+router.get('/logs', async (req: Request, res: Response) => {
+  try {
+    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || '50', 10), 1), 200);
+    const offset = Math.max(parseInt((req.query.offset as string) || '0', 10), 0);
+    const level = req.query.level ? String(req.query.level).trim() : undefined;
+    const search = req.query.search ? String(req.query.search).trim() : undefined;
+
+    const where: any = {};
+    if (level && level !== 'ALL') {
+      where.level = level;
+    }
+    if (search) {
+      where.OR = [
+        { message: { contains: search, mode: 'insensitive' } },
+        { endpoint: { contains: search, mode: 'insensitive' } },
+        { method: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.telemetryLog.findMany({
+        where,
+        take: limit,
+        skip: offset,
+        orderBy: { id: 'desc' },
+      }),
+      prisma.telemetryLog.count({ where }),
+    ]);
+
+    res.json({
+      status: 'ok',
+      total,
+      limit,
+      offset,
+      logs,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
