@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { performance } from 'perf_hooks';
 import autocannon from 'autocannon';
 import { prisma } from '../config/prisma';
-import { sendUdpTelemetry, getLogsFromRingBuffer, getRingBufferStats } from '../utils/udpLogger';
+import { sendUdpTelemetry, getLogsFromRingBuffer, getRingBufferStats, storeInRingBuffer } from '../utils/udpLogger';
 import { getAggregatorMetrics, ingestDirectLog } from '../aggregator';
 
 const router = Router();
@@ -179,10 +179,36 @@ router.post('/simulate-loss', (req: Request, res: Response) => {
   const jump = Math.min(Math.max(parseInt(req.body.jump || '5', 10), 2), 50);
   const ringStats = getRingBufferStats();
   const previousSeq = ringStats.maxSeq || 100;
+
+  // Ensure baseline sequence datagram was received by Aggregator so sequence tracking is calibrated
+  if (ringStats.bufferedCount === 0) {
+    sendUdpTelemetry({
+      seqId: previousSeq,
+      type: 'LOG',
+      level: 'INFO',
+      method: 'POST',
+      endpoint: '/api/benchmark/simulate-loss-baseline',
+      statusCode: 200,
+      message: `Simulasi Baseline Sequence #${previousSeq}`,
+    });
+  }
+
   const simulatedSeq = previousSeq + jump;
   const missingSeqs: number[] = [];
+
+  // Register the missing packets in sender's Ring Buffer so they can be retrieved by
+  // Piggybacking (Method 3) or NACK TCP Retransmission (Method 1)
   for (let s = previousSeq + 1; s < simulatedSeq; s++) {
     missingSeqs.push(s);
+    storeInRingBuffer(s, {
+      seqId: s,
+      level: 'INFO',
+      method: 'POST',
+      endpoint: '/api/benchmark/simulate-loss',
+      statusCode: 200,
+      message: `Simulated Packet #${s} (dropped on wire, recovered from Ring Buffer)`,
+      timestamp: Date.now(),
+    });
   }
 
   sendUdpTelemetry({

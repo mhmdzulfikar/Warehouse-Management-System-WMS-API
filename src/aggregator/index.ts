@@ -308,7 +308,11 @@ export function createAggregatorServer(): dgram.Socket {
     }
   });
 
-  server.on('error', (err: Error) => {
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Aggregator] Port ${UDP_PORT} already in use. Assuming standalone Aggregator process is active.`);
+      return;
+    }
     console.error('[Aggregator Server Error]', err);
     server.close();
   });

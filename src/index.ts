@@ -20,6 +20,7 @@ import deliveryOrderRoutes from './routes/deliveryOrderRoutes';
 import benchmarkRoutes from './routes/benchmarkRoutes';
 import { telemetryMiddleware } from './middlewares/telemetryMiddleware';
 import { startHeartbeat } from './utils/udpLogger';
+import { startAggregator } from './aggregator';
 import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
@@ -95,8 +96,13 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Global Error Handler (MUST BE LAST MIDDLEWARE)
 app.use(errorHandler);
 
-// Run Server & Start UDP Heartbeat
+// Run Server & Start UDP Heartbeat & Embedded Aggregator Daemon
 app.listen(PORT, () => {
     console.log(`Backend server is active at http://localhost:${PORT}`);
+    try {
+        startAggregator();
+    } catch (e: any) {
+        console.warn('[Aggregator] Could not start embedded UDP server (might run as separate process):', e.message);
+    }
     startHeartbeat(5000);
 });
