@@ -18,11 +18,17 @@ export const telemetryMiddleware = (req: Request, res: Response, next: NextFunct
     endpoint.startsWith('/api/benchmark/telemetry-') ||
     endpoint.startsWith('/api/health') ||
     endpoint.startsWith('/api-docs') ||
+    endpoint.startsWith('/studio') ||
+    endpoint.startsWith('/swagger-dist') ||
     endpoint.startsWith('/favicon') ||
     /\.(css|js|svg|png|jpg|jpeg|ico|woff|woff2|ttf|map|html)$/i.test(endpoint)
   ) {
     return next();
   }
+
+  // Correlation ID tracking for Cause & Effect Linking
+  const correlationId = (req.headers['x-request-id'] || req.headers['x-correlation-id'] || `req_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`) as string;
+  res.setHeader('X-Request-Id', correlationId);
 
   const startTime = performance.now();
 
@@ -46,6 +52,7 @@ export const telemetryMiddleware = (req: Request, res: Response, next: NextFunct
 
       // Metadata with safe parameters
       const metadata: Record<string, any> = {
+        correlationId,
         ip: req.ip || req.socket.remoteAddress,
         userAgent: req.get('user-agent'),
       };
@@ -54,9 +61,12 @@ export const telemetryMiddleware = (req: Request, res: Response, next: NextFunct
         metadata.query = req.query;
       }
 
-      // Record request body for POST/PUT/PATCH (will be masked automatically)
+      // Record request body for POST/PUT/PATCH with sensitive fields masked
       if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
-        metadata.body = req.body;
+        const safeBody = { ...req.body };
+        if (safeBody.password) safeBody.password = '***[MASKED]***';
+        if (safeBody.token) safeBody.token = '***[MASKED]***';
+        metadata.body = safeBody;
       }
 
       const message = `${req.method} ${endpoint} - ${res.statusCode} (${latencyMs}ms)`;

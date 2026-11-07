@@ -3,7 +3,7 @@ export const swaggerDocument = {
     info: {
         title: 'WMS Nexus Enterprise • Global Warehouse Management & Telemetry API',
         version: '2.0.0',
-        description: 'Production-grade RESTful specification for Multi-Facility WMS, High-Velocity Inbound Goods Receipt (GRN), Outbound Order Fulfillment & Waybill Dispatch, Granular Location Bins, Barcode Tracking, and Dual-Track UDP Telemetry.'
+        description: 'Production-grade RESTful specification for Multi-Facility WMS, High-Velocity Inbound Goods Receipt (GRN), Outbound Order Fulfillment & Waybill Dispatch, Granular Location Bins, Barcode Tracking, and Dual-Track UDP Telemetry.\n\n⚡ Interactive Developer Studio: Looking for live throughput benchmarking, packet loss simulation, and Autocannon stress testing? Switch to the Telemetry Lab (/studio#telemetry).'
     },
     servers: [
         {
@@ -507,6 +507,155 @@ export const swaggerDocument = {
                     }
                 },
                 responses: { 201: { description: 'Transfer executed and stock updated across warehouses' } }
+            }
+        },
+        '/api/benchmark/metrics': {
+            get: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Get live system health, RSS memory, buffer queue, and packet recovery rates',
+                security: [],
+                responses: {
+                    200: {
+                        description: 'System telemetry metrics retrieved successfully'
+                    }
+                }
+            }
+        },
+        '/api/benchmark/udp-log': {
+            get: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Dispatch single fire-and-forget UDP telemetry datagram packet',
+                security: [],
+                responses: {
+                    200: {
+                        description: 'UDP datagram dispatched in microsecond time'
+                    }
+                }
+            }
+        },
+        '/api/benchmark/sync-log': {
+            get: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Synchronous blocking PostgreSQL database write (Baseline comparison)',
+                security: [],
+                responses: {
+                    200: {
+                        description: 'Synchronous write completed'
+                    }
+                }
+            }
+        },
+        '/api/benchmark/burst-udp': {
+            post: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Fire high-speed burst batch of UDP datagrams in a microsecond server loop',
+                security: [],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    count: { type: 'integer', example: 100, description: 'Number of UDP logs to burst (1 - 10000)' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Burst dispatch completed' }
+                }
+            }
+        },
+        '/api/benchmark/simulate-loss': {
+            post: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Inject artificial sequence jump to trigger Piggyback or TCP NACK self-healing',
+                security: [],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    jump: { type: 'integer', example: 3, description: 'Sequence jump count (e.g. 3 for 2 lost pkts, 10 for 9 pkts)' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Simulated loss dispatched and self-healing activated' }
+                }
+            }
+        },
+        '/api/benchmark/critical-fallback': {
+            post: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Trigger HTTP 500 error log to test Method 2 TCP Fallback Circuit Breaker',
+                security: [],
+                responses: {
+                    200: { description: 'Critical log ingested via TCP Fallback' }
+                }
+            }
+        },
+        '/api/benchmark/heartbeat': {
+            post: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Send manual Heartbeat signal to reset Watchdog 15s timer',
+                security: [],
+                responses: {
+                    200: { description: 'Heartbeat signal registered' }
+                }
+            }
+        },
+        '/api/benchmark/autocannon': {
+            post: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Run programmatic Autocannon HTTP load testing against local server',
+                security: [],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    target: { type: 'string', enum: ['udp', 'sync'], example: 'udp' },
+                                    duration: { type: 'integer', example: 5, description: 'Duration in seconds (2 - 30)' },
+                                    connections: { type: 'integer', example: 50, description: 'Concurrent connections (1 - 200)' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Autocannon benchmark completed with ASCII report table' },
+                    403: { description: 'Disabled by policy' },
+                    429: { description: 'Another benchmark test is already in progress' }
+                }
+            }
+        },
+        '/api/benchmark/ring-buffer-stats': {
+            get: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Inspect sender-side circular in-memory Ring Buffer status',
+                security: [],
+                responses: {
+                    200: { description: 'Ring buffer capacity and stats returned' }
+                }
+            }
+        },
+        '/api/benchmark/logs': {
+            delete: {
+                tags: ['Telemetry & Benchmarking'],
+                summary: 'Purge all persisted telemetry logs from PostgreSQL database',
+                security: [],
+                responses: {
+                    200: { description: 'Logs wiped clean from database' }
+                }
             }
         }
     }

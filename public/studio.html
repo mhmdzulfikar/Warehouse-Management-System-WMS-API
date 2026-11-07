@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WMS Nexus • Unified Developer &amp; Testing Hub</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='M21 16.5C21 16.88 20.79 17.21 20.47 17.38L12.57 21.82C12.41 21.91 12.23 21.97 12.05 21.97C11.87 21.97 11.69 21.91 11.53 21.82L3.63 17.38C3.31 17.21 3.1 16.88 3.1 16.5V7.5C3.1 7.12 3.31 6.79 3.63 6.62L11.53 2.18C11.84 2.01 12.26 2.01 12.57 2.18L20.47 6.62C20.79 6.79 21 7.12 21 7.5V16.5Z'/></svg>" />
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/swagger-dist/swagger-ui.css" />
+  <link rel="stylesheet" href="/css/studio.css" />
+</head>
+<body>
+
+  <!-- Sticky Global Header -->
+  <header class="global-header">
+    <div class="header-inner">
+      <div class="brand-section">
+        <div class="brand-logo">⚡</div>
+        <div class="brand-meta">
+          <h1 data-i18n="brandTitle">WMS Nexus</h1>
+          <span data-i18n="brandSubtitle">Unified Developer &amp; Testing Hub</span>
+        </div>
+      </div>
+
+      <!-- Segmented Tab Switcher -->
+      <nav class="tab-switcher" id="headerNavTabs" role="tablist">
+        <button class="tab-btn active" data-tab-target="telemetry" role="tab" aria-selected="true">
+          <span>⚡</span> <span data-i18n="tabTelemetry">Telemetry &amp; Stress Lab</span>
+        </button>
+        <button class="tab-btn" data-tab-target="api" role="tab" aria-selected="false">
+          <span>📖</span> <span data-i18n="tabApi">WMS REST API</span>
+        </button>
+        <button class="tab-btn" data-tab-target="architecture" role="tab" aria-selected="false">
+          <span>🔬</span> <span data-i18n="tabArchitecture">Architecture &amp; Metrics</span>
+        </button>
+      </nav>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <span class="status-pill status-ok" id="headerWatchdog">Watchdog: OK</span>
+        <span class="header-uptime" id="headerUptime">Uptime: 0s</span>
+        
+        <button class="btn-icon" id="btnOpenPalette" title="Command Palette (Ctrl+K)">
+          <span>⌘K</span>
+        </button>
+
+        <button class="btn-icon" id="btnThemeToggle" title="Toggle Theme">
+          <span>🌓</span>
+        </button>
+
+        <button class="btn-icon" id="btnLangToggle" title="Toggle Language">
+          EN
+        </button>
+
+        <button class="btn-icon" id="btnStartTour" title="Guided Tour">
+          <span>ⓘ</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="studio-container">
+
+    <!-- Scenario Presets Bar -->
+    <div class="preset-bar">
+      <span class="preset-title">⚡ Skenario Cepat Satu-Klik:</span>
+      <div class="preset-buttons">
+        <button class="btn-preset" onclick="window.PaletteModule.runPreset('demo')" data-i18n="presetDemo">🎓 Demo untuk Dosen</button>
+        <button class="btn-preset" onclick="window.PaletteModule.runPreset('stress')" data-i18n="presetStress">🔥 Uji Ketahanan Penuh</button>
+        <button class="btn-preset" onclick="window.PaletteModule.runPreset('smoke')" data-i18n="presetSmoke">💨 Smoke Test Cepat</button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: TELEMETRY & STRESS LAB             -->
+    <!-- ========================================== -->
+    <section class="tab-pane active" id="tab-telemetry" role="tabpanel">
+
+      <!-- Radar Strip (Live Metrics) -->
+      <div class="radar-strip" id="radarStrip">
+        <div class="radar-cell">
+          <div class="radar-top">
+            <span class="radar-label" data-i18n="effectiveLossRate">Effective Loss Rate</span>
+            <div id="sparklineLoss"></div>
+          </div>
+          <div class="radar-num" id="effectiveLoss">0.00% <span class="tag-badge tag-green">Zero-Loss</span></div>
+          <div class="radar-sub" id="rawLossText">Raw Drop: 0 (0.00%) • Terpulihkan: 0</div>
+        </div>
+
+        <div class="radar-cell">
+          <div class="radar-top">
+            <span class="radar-label" data-i18n="totalRecovered">Total Recovered</span>
+            <div id="sparklineRecovered"></div>
+          </div>
+          <div class="radar-num" id="totalRecovered">0 <span class="unit">pkts</span></div>
+          <div class="radar-sub" id="nackRequestsText">NACK: 0 • Seq Terakhir: #0</div>
+        </div>
+
+        <div class="radar-cell">
+          <div class="radar-top">
+            <span class="radar-label" data-i18n="dbPersisted">PostgreSQL Persisted</span>
+          </div>
+          <div class="radar-num" id="dbLogsCount">0 <span class="unit">rows</span></div>
+          <div class="radar-sub" data-i18n="tableTarget">Table: telemetry_logs</div>
+        </div>
+
+        <div class="radar-cell">
+          <div class="radar-top">
+            <span class="radar-label" data-i18n="aggregatorBuffer">RAM Buffer Queue</span>
+            <div id="sparklineBuffer"></div>
+          </div>
+          <div class="radar-num" id="activeBuffer">0 <span class="unit">items</span></div>
+          <div class="radar-sub" data-i18n="flushRule">Flush Threshold: 100 logs / 2,000 ms</div>
+        </div>
+
+        <div class="radar-cell">
+          <div class="radar-top">
+            <span class="radar-label" data-i18n="processMemory">Memory RSS</span>
+            <div id="sparklineMemory"></div>
+          </div>
+          <div class="radar-num" id="memoryRss">0.00 <span class="unit">MB</span></div>
+          <div class="radar-sub" id="uptimeText">Uptime: 0s • Ring Buffer: 0</div>
+        </div>
+      </div>
+
+      <!-- Testbed Suite (16 Actions across 3 Suites) -->
+      <div class="testbed-grid" id="testbedSuite">
+        
+        <!-- Suite 1: UDP Fast-Path -->
+        <div class="suite-card">
+          <div class="suite-header" data-i18n="suite1Title">1. Uji Throughput UDP (Non-blocking)</div>
+          <div class="suite-actions">
+            <div class="btn-action-row">
+              <button class="btn-action primary" onclick="window.TelemetryModule.actions.singleUdp()">
+                <span data-i18n="btnSingleUdp">Single UDP Datagram (1 Log)</span>
+                <span class="meta-badge">~0.2 ms</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action primary" onclick="window.TelemetryModule.actions.burstUdp(100)">
+                <span data-i18n="btnBatchUdp">Batch Trigger (100 Logs)</span>
+                <span class="meta-badge">Auto Flush</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action heavy" onclick="window.TelemetryModule.actions.burstUdp(1000)">
+                <span data-i18n="btnBurst1k">High Load Burst (1,000 Logs)</span>
+                <span class="meta-badge">Microsecond</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action heavy" onclick="window.TelemetryModule.actions.burstUdp(5000)">
+                <span data-i18n="btnStress5k">Stress Blast (5,000 Logs)</span>
+                <span class="meta-badge">OS Saturation</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suite 2: Reliability & Fault Injection -->
+        <div class="suite-card">
+          <div class="suite-header" data-i18n="suite2Title">2. Keandalan &amp; Injeksi Kesalahan</div>
+          <div class="suite-actions">
+            <div class="btn-action-row">
+              <button class="btn-action warning" onclick="window.TelemetryModule.actions.injectLoss(3)">
+                <span data-i18n="btnDrop2">Simulasi Hilang 2 Paket (Zero-RTT)</span>
+                <span class="meta-badge">Method 3 Piggyback</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action warning" onclick="window.TelemetryModule.actions.injectLoss(10)">
+                <span data-i18n="btnDrop9">Simulasi Hilang 9 Paket (TCP NACK)</span>
+                <span class="meta-badge">Method 1 ARQ</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action danger" onclick="window.TelemetryModule.actions.criticalFallback()">
+                <span data-i18n="btnError500">Simulasi Error 500 (TCP Fallback)</span>
+                <span class="meta-badge">Method 2 Circuit</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action" onclick="window.TelemetryModule.actions.heartbeat()">
+                <span data-i18n="btnHeartbeat">Manual Heartbeat Ping</span>
+                <span class="meta-badge">Watchdog Reset</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suite 3: Autocannon & Baseline DB -->
+        <div class="suite-card">
+          <div class="suite-header" data-i18n="suite3Title">3. Uji Beban Autocannon &amp; Baseline DB</div>
+          <div class="suite-actions">
+            <div class="btn-action-row">
+              <button class="btn-action primary" id="btnAutoUdp" onclick="window.TelemetryModule.actions.runAutocannon('udp', 10, 100)">
+                <span data-i18n="btnAutoUdp">Autocannon UDP Route (10s)</span>
+                <span class="meta-badge">100 Conn • 10s</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action warning" id="btnAutoSync" onclick="window.TelemetryModule.actions.runAutocannon('sync', 5, 50)">
+                <span data-i18n="btnAutoSync">Autocannon Sync DB (5s)</span>
+                <span class="meta-badge">50 Conn • 5s</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action heavy" onclick="window.TelemetryModule.actions.runAutocannon('udp', 3, 25)">
+                <span data-i18n="btnAutoBlitz">Quick Autocannon Blitz (3s)</span>
+                <span class="meta-badge">Rapid Blitz</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action" onclick="window.TelemetryModule.actions.copyCli()">
+                <span data-i18n="btnCopyCli">Salin Perintah CLI</span>
+                <span class="meta-badge">npx autocannon</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action" onclick="window.TelemetryModule.actions.syncBurst(10)">
+                <span data-i18n="btnSync10">Sync DB Logging (10 Logs)</span>
+                <span class="meta-badge">~100 ms</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action" onclick="window.TelemetryModule.actions.syncBurst(50)">
+                <span data-i18n="btnSync50">Sync DB Logging (50 Logs)</span>
+                <span class="meta-badge">Contention</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action danger" onclick="window.TelemetryModule.actions.purgeDb()">
+                <span data-i18n="btnPurgeDb">Bersihkan Semua Log DB</span>
+                <span class="meta-badge">DELETE /logs</span>
+              </button>
+            </div>
+            <div class="btn-action-row">
+              <button class="btn-action" onclick="window.TelemetryModule.fetchMetrics(true)">
+                <span data-i18n="btnRefresh">Paksa Sinkronkan Metrik</span>
+                <span class="meta-badge">Sync State</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Live Technical Console -->
+      <div class="terminal-card" id="terminalBox">
+        <div class="terminal-header">
+          <span class="terminal-title" data-i18n="terminalTitle">telemetry-studio-audit.log</span>
+          <div class="terminal-toolbar">
+            <select class="terminal-select" id="selectFilterLevel">
+              <option value="ALL">Filter: Semua Level</option>
+              <option value="SUCCESS">SUCCESS</option>
+              <option value="RECOVERY">RECOVERY</option>
+              <option value="WARN">WARN</option>
+              <option value="ERROR">ERROR</option>
+              <option value="INFO">INFO</option>
+            </select>
+            <input type="text" class="terminal-input" id="inputSearchLogs" placeholder="Cari log..." />
+            <button class="btn-tiny" id="btnTerminalPause" data-i18n="pause">Jeda</button>
+            <button class="btn-tiny" id="btnTerminalCopy" data-i18n="copyLogs">Salin</button>
+            <button class="btn-tiny" id="btnTerminalClear" data-i18n="clear">Bersihkan</button>
+          </div>
+        </div>
+        <div class="terminal-logs" id="terminalLog"></div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: WMS REST API (SWAGGER)             -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-api" role="tabpanel">
+
+      <!-- Quickstart 3-Step Banner -->
+      <div class="quickstart-banner">
+        <div class="quickstart-header">
+          <strong style="font-size: 13px;" data-i18n="quickstartTitle">Quick Start: Uji Alur WMS dalam 3 Langkah</strong>
+          <span class="status-pill status-alert" id="quickstartAuthStatus">Belum Login</span>
+        </div>
+        <div class="quickstart-steps">
+          <div class="quickstart-card">
+            <h4 data-i18n="quickstartStep1">1. Login Akun Demo</h4>
+            <p>Login sebagai Manager Gudang untuk mendapatkan token JWT akses penuh.</p>
+            <button class="btn-tiny btn-accent" id="btnQuickLogin" onclick="window.ApiModule.autoLoginDemo()" data-i18n="btnAutoLogin">
+              ⚡ Isi Otomatis Akun Demo
+            </button>
+          </div>
+          <div class="quickstart-card">
+            <h4 data-i18n="quickstartStep2">2. Kunci Akses Otomatis Aktif</h4>
+            <p>Token otomatis terpasang ke Swagger UI. Anda tidak perlu menyalin token manual.</p>
+            <span class="badge-code">sessionStorage (Aman)</span>
+          </div>
+          <div class="quickstart-card">
+            <h4 data-i18n="quickstartStep3">3. Uji Transaksi &amp; Lihat Efeknya</h4>
+            <p>Kirim transaksi PO. Sistem menyisipkan Correlation ID untuk dilacak di Tab Telemetry.</p>
+            <button class="btn-tiny btn-accent" id="btnQuickPo" onclick="window.ApiModule.triggerSamplePo()" data-i18n="btnTriggerPo">
+              📦 Buat Sample Purchase Order
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Embedded Swagger UI Container -->
+      <div id="swagger-ui-container">
+        <div style="text-align: center; padding: 40px; color: var(--text-dim);">
+          Memuat spesifikasi WMS REST API...
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: ARCHITECTURE & METRICS             -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-architecture" role="tabpanel">
+
+      <!-- Interactive SVG Architecture Diagram -->
+      <div class="arch-card">
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 4px;" data-i18n="archTitle">
+          Arsitektur Telemetri Dual-Track &amp; Tri-Method Reliability
+        </h3>
+        <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;" data-i18n="archDesc">
+          Aliran data dari Event Loop Express menuju soket UDP lokal (:5001) dan proses Aggregator asinkron.
+        </p>
+
+        <div class="svg-diagram-wrap">
+          <svg width="780" height="200" viewBox="0 0 780 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Node 1: Express App -->
+            <g class="diagram-node" onclick="window.ArchitectureModule.explainNode('nodeExpress')">
+              <rect x="20" y="60" width="160" height="70" rx="8" fill="#161b22" stroke="#6366f1" stroke-width="2"/>
+              <text x="100" y="95" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="12" font-weight="700" text-anchor="middle">Express API (:5000)</text>
+              <text x="100" y="112" fill="#8b949e" font-family="Inter, sans-serif" font-size="10" text-anchor="middle">telemetryMiddleware</text>
+            </g>
+
+            <!-- Arrow 1: Express -> UDP -->
+            <path d="M180 95 L250 95" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 4"/>
+            <text x="215" y="85" fill="#6366f1" font-family="monospace" font-size="9" text-anchor="middle">UDP ~0.2ms</text>
+
+            <!-- Node 2: UDP Socket -->
+            <g class="diagram-node" onclick="window.ArchitectureModule.explainNode('nodeUdp')">
+              <circle cx="280" cy="95" r="28" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+              <text x="280" y="99" fill="#3fb950" font-family="monospace" font-size="10" font-weight="700" text-anchor="middle">:5001</text>
+            </g>
+
+            <!-- Arrow 2: UDP -> Aggregator -->
+            <path d="M308 95 L370 95" stroke="#3fb950" stroke-width="2"/>
+
+            <!-- Node 3: Aggregator Daemon -->
+            <g class="diagram-node" onclick="window.ArchitectureModule.explainNode('nodeAggregator')">
+              <rect x="370" y="55" width="170" height="80" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+              <text x="455" y="88" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="12" font-weight="700" text-anchor="middle">Aggregator Worker</text>
+              <text x="455" y="105" fill="#8b949e" font-family="Inter, sans-serif" font-size="10" text-anchor="middle">Buffer Queue &amp; Flush</text>
+              <text x="455" y="120" fill="#3fb950" font-family="monospace" font-size="9" text-anchor="middle">Watchdog (15s)</text>
+            </g>
+
+            <!-- Arrow 3: Aggregator -> PostgreSQL -->
+            <path d="M540 95 L610 95" stroke="#58a6ff" stroke-width="2"/>
+            <text x="575" y="85" fill="#58a6ff" font-family="monospace" font-size="9" text-anchor="middle">Bulk-Insert</text>
+
+            <!-- Node 4: PostgreSQL -->
+            <g class="diagram-node" onclick="window.ArchitectureModule.explainNode('nodePostgres')">
+              <rect x="610" y="60" width="150" height="70" rx="8" fill="#161b22" stroke="#d29922" stroke-width="2"/>
+              <text x="685" y="95" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="12" font-weight="700" text-anchor="middle">PostgreSQL</text>
+              <text x="685" y="112" fill="#8b949e" font-family="Inter, sans-serif" font-size="10" text-anchor="middle">telemetry_logs</text>
+            </g>
+
+            <!-- Self-Healing Arc (NACK ARQ Ring Buffer) -->
+            <path d="M455 55 Q 360 10 100 60" fill="none" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <text x="270" y="30" fill="#bc8cff" font-family="monospace" font-size="9" text-anchor="middle">Method 1 NACK TCP Retrieval (Ring Buffer RAM)</text>
+          </svg>
+        </div>
+
+        <div class="diagram-explainer" id="diagramExplainer">
+          <div class="explainer-title">Komponen Interaktif Arsitektur</div>
+          <div class="explainer-desc">Klik salah satu node kotak di atas untuk melihat detail perannya dalam sistem telemetri.</div>
+        </div>
+      </div>
+
+      <!-- Test Run History & Export -->
+      <div class="arch-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="font-size: 14px; font-weight: 700;" data-i18n="historyTitle">Riwayat Sesi Uji &amp; Ekspor Laporan</h3>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-tiny" onclick="window.ArchitectureModule.exportMarkdown()" data-i18n="exportMd">Ekspor Markdown (.md)</button>
+            <button class="btn-tiny" onclick="window.ArchitectureModule.exportCsv()" data-i18n="exportCsv">Ekspor CSV</button>
+            <button class="btn-tiny" onclick="window.ArchitectureModule.exportJson()" data-i18n="exportJson">Ekspor JSON</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nama Pengujian</th>
+                <th>Mode</th>
+                <th>Durasi</th>
+                <th>Throughput</th>
+                <th>Latensi p99</th>
+                <th>Status / Hasil</th>
+              </tr>
+            </thead>
+            <tbody id="testHistoryBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">
+                  Belum ada sesi pengujian yang tercatat. Jalankan pengujian di Tab 1 untuk melihat riwayat.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Command Palette Modal (Ctrl+K) -->
+  <div class="palette-modal" id="paletteModal">
+    <div class="palette-box">
+      <div class="palette-input-wrap">
+        <input type="text" class="palette-input" id="paletteInput" placeholder="Ketik perintah atau cari uji... (Esc untuk menutup)" />
+      </div>
+      <div class="palette-results" id="paletteResults"></div>
+    </div>
+  </div>
+
+  <!-- Guided Tour Popover -->
+  <div class="tour-popover" id="tourPopover"></div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JavaScript Scripts (Modular ES6) -->
+  <script src="/swagger-dist/swagger-ui-bundle.js"></script>
+  <script src="/swagger-dist/swagger-ui-standalone-preset.js"></script>
+  <script src="/js/studio-i18n.js"></script>
+  <script src="/js/studio-state.js"></script>
+  <script src="/js/studio-telemetry.js"></script>
+  <script src="/js/studio-api.js"></script>
+  <script src="/js/studio-architecture.js"></script>
+  <script src="/js/studio-palette.js"></script>
+  <script src="/js/studio.js"></script>
+</body>
+</html>

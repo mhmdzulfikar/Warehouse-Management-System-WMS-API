@@ -40,16 +40,38 @@ app.use(telemetryMiddleware);
 app.use(express.static(path.resolve(process.cwd(), 'public')));
 app.use('/dashboard', express.static(path.resolve(process.cwd(), 'public')));
 
-// Dedicated Interactive Telemetry Studio & Benchmark Control Center
-app.get('/benchmark', (_req: Request, res: Response) => {
-    res.sendFile(path.resolve(process.cwd(), 'public/benchmark.html'));
-});
-app.get('/telemetry-studio', (_req: Request, res: Response) => {
-    res.sendFile(path.resolve(process.cwd(), 'public/benchmark.html'));
+// Unified Developer & Testing Hub (/studio)
+app.get('/studio', (_req: Request, res: Response) => {
+    res.sendFile(path.resolve(process.cwd(), 'public/studio.html'));
 });
 
-// Swagger Interactive Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Auto-Redirects for legacy URLs
+app.get('/benchmark', (_req: Request, res: Response) => {
+    res.redirect('/studio#telemetry');
+});
+app.get('/telemetry-studio', (_req: Request, res: Response) => {
+    res.redirect('/studio#telemetry');
+});
+app.get('/api-docs', (req: Request, res: Response, next) => {
+    if (req.accepts('html')) {
+        return res.redirect('/studio#api');
+    }
+    next();
+});
+
+// Swagger Specification JSON & Standalone Assets
+app.get('/api-docs.json', (_req: Request, res: Response) => {
+    res.json(swaggerDocument);
+});
+try {
+    const swaggerDistPath = require('swagger-ui-dist').getAbsoluteFSPath();
+    app.use('/swagger-dist', express.static(swaggerDistPath));
+} catch (e) {
+    console.warn('[SWAGGER] swagger-ui-dist asset mapping skipped');
+}
+
+// Swagger Interactive Documentation Fallback
+app.use('/api-docs/raw', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Service Routers
 app.use('/api/auth', authRoutes);

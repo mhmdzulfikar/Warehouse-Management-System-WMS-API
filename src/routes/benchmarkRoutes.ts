@@ -7,6 +7,17 @@ import { getAggregatorMetrics, ingestDirectLog } from '../aggregator';
 
 const router = Router();
 
+const isStudioEnabled = () => process.env.ENABLE_STUDIO !== 'false';
+const isStressLabEnabled = () => process.env.ENABLE_STRESS_LAB !== 'false';
+
+// Security Guard: Check if developer studio is enabled in current environment
+router.use((_req: Request, res: Response, next) => {
+  if (!isStudioEnabled()) {
+    return res.status(404).json({ error: 'Developer Studio is disabled in this environment' });
+  }
+  next();
+});
+
 /**
  * Standard simulated CPU workload (same benchmark math workload as UDP-AGGREGATOR reference)
  */
@@ -331,6 +342,12 @@ router.get('/metrics', async (req: Request, res: Response) => {
 let isAutocannonRunning = false;
 
 router.post('/autocannon', async (req: Request, res: Response) => {
+  if (!isStressLabEnabled()) {
+    return res.status(403).json({
+      error: 'Stress Lab testing is disabled by ENABLE_STRESS_LAB configuration.',
+    });
+  }
+
   if (isAutocannonRunning) {
     return res.status(429).json({
       error: 'Sesi pengujian beban Autocannon sedang berjalan. Harap tunggu hingga sesi sebelumnya selesai.',
