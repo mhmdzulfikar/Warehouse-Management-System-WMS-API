@@ -3,8 +3,9 @@
 Sistem Manajemen Pergudangan modern (*Enterprise Warehouse Management System*) terintegrasi dengan **Dual-Track Telemetry (UDP Log Aggregator)**, arsitektur microservices berbasis **Docker Compose**, dan antarmuka manajemen stok & outbound berbasis **React 19 + TypeScript**.
 
 > [!NOTE]
-> **Dokumentasi Riset & Panduan Teknis Lengkap:** Untuk analisis ilmiah mendalam, kamus pembacaan log terminal secara mendetail, arsitektur soket UDP, serta metodologi benchmark A/B testing Autocannon, silakan baca dokumentasi penelitian di:
-> 👉 [**RESEARCH_TELEMETRY.md**](RESEARCH_TELEMETRY.md)
+> **Panduan Lengkap Studio & Dokumentasi Riset:**
+> 👉 [**STUDIO_GUIDE.md**](STUDIO_GUIDE.md) — Panduan lengkap *WMS Nexus • Unified Developer & Testing Hub (`/studio`)*: Filosofi sistem, alasan setiap tombol & fitur, arsitektur *self-healing*, serta perbandingan `npm run dev` vs `npm run dev:all`.
+> 👉 [**RESEARCH_TELEMETRY.md**](RESEARCH_TELEMETRY.md) — Analisis ilmiah mendalam, arsitektur soket UDP, kamus log teknis, serta metodologi benchmark A/B testing Autocannon.
 
 ---
 
