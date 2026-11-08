@@ -340,8 +340,14 @@ body {
   border-radius: var(--radius-lg);
   padding: 14px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-sm);
+  z-index: 1;
+}
+
+.radar-cell:hover,
+.radar-cell:focus-within {
+  z-index: 100;
 }
 
 .radar-top {
@@ -606,12 +612,16 @@ body {
   position: relative;
   flex-shrink: 0;
   transition: all var(--transition-fast);
+  z-index: 5;
 }
 
-.btn-info-icon:hover {
+.btn-info-icon:hover,
+.btn-info-icon:focus,
+.btn-info-icon:focus-within {
   background: var(--surface-hover);
   color: var(--status-blue);
   border-color: var(--status-blue);
+  z-index: 1000;
 }
 
 /* Tooltip Bubble */
@@ -759,6 +769,11 @@ body {
   border-radius: 50%;
   line-height: 1;
   border-color: var(--border-muted);
+}
+
+.btn-info-icon.mini .tooltip-box {
+  width: 320px;
+  max-width: calc(100vw - 32px);
 }
 
 .tooltip-box.tooltip-down {
