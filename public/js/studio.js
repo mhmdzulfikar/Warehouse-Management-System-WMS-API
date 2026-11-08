@@ -139,6 +139,52 @@
     if (drawer) drawer.classList.toggle('open');
   }
 
+  /**
+   * One-click Terminal CLI / cURL copy helper with instant visual feedback
+   */
+  window.copyCliCode = function(cmd, btnEl) {
+    if (!cmd) return;
+
+    function showFeedback() {
+      if (!btnEl) return;
+      const originalHtml = btnEl.innerHTML;
+      btnEl.innerHTML = '✓ Tersalin!';
+      btnEl.style.color = 'var(--status-green)';
+      btnEl.style.borderColor = 'var(--status-green)';
+      setTimeout(() => {
+        btnEl.innerHTML = originalHtml;
+        btnEl.style.color = '';
+        btnEl.style.borderColor = '';
+      }, 1600);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(cmd)
+        .then(showFeedback)
+        .catch(() => fallbackCopy(cmd));
+    } else {
+      fallbackCopy(cmd);
+    }
+
+    function fallbackCopy(text) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showFeedback();
+      } catch (e) {
+        console.warn('Clipboard copy failed:', e);
+      }
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', initApp);
 
   window.toggleGuide = toggleGuide;

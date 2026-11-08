@@ -100,7 +100,7 @@ router.get('/udp-log', (req: Request, res: Response) => {
  * Fires 100, 1.000, or 5.000 UDP datagrams in a tight microsecond loop
  */
 router.post('/burst-udp', (req: Request, res: Response) => {
-  const count = Math.min(Math.max(parseInt(req.body.count || '1000', 10), 1), 10000);
+  const count = Math.min(Math.max(parseInt((req.body?.count ?? req.query?.count ?? '1000') as string, 10), 1), 10000);
   const start = performance.now();
   let lastSeq = 0;
 
@@ -136,7 +136,7 @@ router.post('/burst-udp', (req: Request, res: Response) => {
  * Demonstrates slow blocking I/O when inserting logs directly to DB
  */
 router.post('/burst-sync', async (req: Request, res: Response) => {
-  const count = Math.min(Math.max(parseInt(req.body.count || '50', 10), 1), 200);
+  const count = Math.min(Math.max(parseInt((req.body?.count ?? req.query?.count ?? '50') as string, 10), 1), 200);
   const start = performance.now();
 
   try {
@@ -176,7 +176,7 @@ router.post('/burst-sync', async (req: Request, res: Response) => {
  * Deliberately jumps sequence ID to trigger Piggyback & NACK TCP Self-Healing
  */
 router.post('/simulate-loss', (req: Request, res: Response) => {
-  const jump = Math.min(Math.max(parseInt(req.body.jump || '5', 10), 2), 50);
+  const jump = Math.min(Math.max(parseInt((req.body?.jump ?? req.query?.jump ?? '5') as string, 10), 2), 50);
   const aggregatorMetrics = getAggregatorMetrics();
   const ringStats = getRingBufferStats();
 

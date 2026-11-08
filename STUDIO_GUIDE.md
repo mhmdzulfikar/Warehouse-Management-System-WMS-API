@@ -204,6 +204,11 @@ Seluruh 16 tombol aksi dibagi ke dalam 3 kartu fungsional:
 16. **🔄 Paksa Sinkronkan Metrik:**
     * *Kenapa ada?* Memaksa browser mengambil data metrik terbaru dari server seketika tanpa menunggu interval polling otomatis (1.5 detik).
 
+> [!TIP]
+> **Fitur Verifikasi Terminal Mandiri (Anti-Asal Claim):**  
+> Setiap dari 16 tombol pengujian di atas kini dilengkapi dengan **blok perintah CLI / cURL terminal** di dalam tooltip tanda seru (`ⓘ`) lengkap dengan tombol interaktif **"📋 Salin"**.  
+> Dosen penguji, reviewer, atau pengembang dapat menyalin perintah tersebut dan mengeksekusinya langsung di layar terminal (PowerShell, Command Prompt, atau Bash) di luar browser untuk membuktikan bahwa seluruh pengujian bekerja nyata pada level jaringan dan API server, bukan sekadar simulasi atau klaim antarmuka semata.
+
 ---
 
 ## 7. Unified Log & Inspection Deck: Kenapa Ada 3 Tampilan Log?

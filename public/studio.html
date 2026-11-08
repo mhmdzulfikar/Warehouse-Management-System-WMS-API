@@ -292,6 +292,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Mengirim 1 data log kilat tanpa menunggu konfirmasi database. Server langsung merespons dalam sekejap mata (~0.2 milidetik) tanpa membuat aplikasi loading.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Kotak hijau baru bertuliskan Seq #X akan muncul di bawah.</div>
                   <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Fire-and-forget</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X GET http://localhost:5000/api/benchmark/udp-log">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X GET http://localhost:5000/api/benchmark/udp-log</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -308,6 +315,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Mengirim 100 data berturut-turut. Server menampungnya di RAM dulu, lalu menyimpannya sekaligus ke database begitu genap 100 (sangat hemat beban database).</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Angka RAM Buffer Queue naik lalu kembali 0, dan PostgreSQL Persisted bertambah +100 baris.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 100</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-udp -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;count\&quot;:100}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-udp -H "Content-Type: application/json" -d "{\"count\":100}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -324,6 +338,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Membanjiri server dengan 1.000 data dalam hitungan milidetik untuk membuktikan sistem tidak macet saat gudang sedang sangat sibuk.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Grafik biru RAM melompat tinggi dan log database bertambah +1.000 baris.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 1,000</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-udp -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;count\&quot;:1000}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-udp -H "Content-Type: application/json" -d "{\"count\":1000}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -340,6 +361,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Menembakkan 5.000 data sekaligus seperti jutaan barang discan bersamaan. Membuktikan memori komputer kuat dan tidak jebol (Out of Memory).</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Terminal log meluncur cepat dan grafik memori bergelombang.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 5,000</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-udp -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;count\&quot;:5000}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-udp -H "Content-Type: application/json" -d "{\"count\":5000}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -362,6 +390,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Meniru kejadian saat internet kedip dan 2 data tercecer di jalan. Data berikutnya otomatis "menggendong" salinannya, jadi langsung pulih seketika tanpa perlu kirim ulang (0 detik).</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> 2 kotak merah ⚠️ Hilang seketika berubah jadi UNGU bertuliskan 🔄 Pulih (0-RTT)!</div>
                   <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +3</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/simulate-loss -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;jump\&quot;:3}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/simulate-loss -H "Content-Type: application/json" -d "{\"jump\":3}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -378,6 +413,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Meniru kejadian jika ada 9 data hilang sekaligus. Karena terlalu banyak untuk digendong, penerima langsung menelepon balik pengirim via TCP untuk minta salinannya dari memori RAM.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> 9 kotak merah bersamaan berubah jadi UNGU bertuliskan 🔄 Pulih (TCP NACK) dan angka Recovered bertambah +9!</div>
                   <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +10</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/simulate-loss -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;jump\&quot;:10}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/simulate-loss -H "Content-Type: application/json" -d "{\"jump\":10}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -394,6 +436,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Meniru kejadian jika ada error fatal di server (HTTP 500). Sistem pintar tahu data error itu SANGAT PENTING, jadi otomatis dialihkan ke jalur darurat khusus (TCP VIP) yang 100% anti-hilang.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Muncul kotak khusus bertuliskan ✕ 500 (TCP Fallback).</div>
                   <div class="tt-meta">Target: /api/benchmark/critical-fallback &bull; Mode: Fallback</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/critical-fallback">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/critical-fallback</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -410,6 +459,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Seperti memeriksa denyut nadi. Server mengirim tanda "Saya masih hidup!" agar lampu indikator server di pojok kanan atas tetap berwarna HIJAU (OK).</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Lampu status Watchdog di kanan atas tetap berwarna HIJAU (OK).</div>
                   <div class="tt-meta">Target: /api/benchmark/heartbeat &bull; Type: HEARTBEAT</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/heartbeat">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/heartbeat</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -432,6 +488,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Robot menirukan 100 pengguna membuka sistem bersamaan tanpa henti selama 10 detik menggunakan teknologi cepat UDP WMS Nexus.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Muncul tabel hasil yang menunjukkan sistem mampu melayani ribuan request/detik tanpa lemot!</div>
                   <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Tool: autocannon</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/udp-log">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/udp-log</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -448,6 +511,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Menirukan 50 pengguna memakai sistem model lama yang harus antre menulis database satu per satu. Membuktikan cara lama jauh lebih lambat dan antre.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Angka kecepatan request/detik terlihat jauh lebih rendah dan latensi membengkak.</div>
                   <div class="tt-meta">Target: /api/benchmark/sync-log &bull; Tool: autocannon</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="npx autocannon -c 50 -d 5 http://localhost:5000/api/benchmark/sync-log">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">npx autocannon -c 50 -d 5 http://localhost:5000/api/benchmark/sync-log</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -464,6 +534,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Uji kecepatan kilat selama 3 detik saja jika Anda ingin demo cepat di depan dosen/penguji tanpa harus menunggu 10 detik penuh.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Tabel performa kilat langsung muncul di terminal bawah.</div>
                   <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Rapid Blitz</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="npx autocannon -c 25 -d 3 http://localhost:5000/api/benchmark/udp-log">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">npx autocannon -c 25 -d 3 http://localhost:5000/api/benchmark/udp-log</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -480,6 +557,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Menyalin kode perintah resmi ke memori komputer agar Anda bisa menempelnya (*paste*) dan menjalankannya manual di layar hitam Command Prompt / Terminal.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Muncul pesan bahwa teks perintah berhasil disalin.</div>
                   <div class="tt-meta">Command: npm run benchmark:udp</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="npm run benchmark:udp">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">npm run benchmark:udp</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -496,6 +580,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Menulis 10 catatan satu per satu langsung ke database untuk membuktikan bahwa cara lama itu memakan waktu (~10-20 milidetik per data).</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Tombol terasa ada jeda loading beberapa ratus milidetik.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 10</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-sync -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;count\&quot;:10}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-sync -H "Content-Type: application/json" -d "{\"count\":10}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -512,6 +603,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Menulis 50 catatan langsung ke database. Akan terasa jeda macet (~1 detik) karena database harus mengantre, membuktikan kenapa sistem baru kita jauh lebih hebat.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Terasa jeda loading ~1 detik sebelum selesai.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 50</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-sync -H &quot;Content-Type: application/json&quot; -d &quot;{\&quot;count\&quot;:50}&quot;">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X POST http://localhost:5000/api/benchmark/burst-sync -H "Content-Type: application/json" -d "{\"count\":50}"</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -528,6 +626,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Mengosongkan semua catatan log di database dan mereset semua hitungan angka di atas kembali ke angka 0, siap untuk pengujian baru yang segar.</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Semua angka baris dan drop kembali menjadi 0.</div>
                   <div class="tt-meta">Target: /api/benchmark/logs &bull; Method: DELETE</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X DELETE http://localhost:5000/api/benchmark/logs">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X DELETE http://localhost:5000/api/benchmark/logs</code>
+                  </div>
                 </div>
               </div>
             </div>
@@ -544,6 +649,13 @@
                   <div class="tt-body">👉 <strong>Maksudnya:</strong> Memaksa layar komputer Anda mengambil data terbaru dari server detik itu juga tanpa perlu menunggu jeda waktu otomatis (1,5 detik).</div>
                   <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Angka radar langsung terupdate seketika.</div>
                   <div class="tt-meta">Target: /api/benchmark/metrics &bull; Method: GET</div>
+                  <div class="tt-cli">
+                    <div class="tt-cli-header">
+                      <span class="tt-cli-label">💻 Eksekusi Terminal (CLI)</span>
+                      <button type="button" class="btn-copy-code" onclick="window.copyCliCode(this.getAttribute('data-cmd'), this); event.stopPropagation();" data-cmd="curl.exe -s -X GET http://localhost:5000/api/benchmark/metrics">📋 Salin</button>
+                    </div>
+                    <code class="tt-cli-code">curl.exe -s -X GET http://localhost:5000/api/benchmark/metrics</code>
+                  </div>
                 </div>
               </div>
             </div>
