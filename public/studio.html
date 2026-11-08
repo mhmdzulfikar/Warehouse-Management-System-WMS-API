@@ -81,7 +81,17 @@
       <div class="radar-strip" id="radarStrip">
         <div class="radar-cell">
           <div class="radar-top">
-            <span class="radar-label" data-i18n="effectiveLossRate">Effective Loss Rate</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="radar-label" data-i18n="effectiveLossRate">Effective Loss Rate</span>
+              <div class="btn-info-icon mini" tabindex="0">ⓘ
+                <div class="tooltip-box tooltip-down">
+                  <div class="tt-title">📊 Effective Loss Rate (Persentase Hilang Bersih)</div>
+                  <div class="tt-body">👉 <strong>Artinya:</strong> Berapa persen data log yang <em>benar-benar lenyap</em> dan gagal tersimpan ke database.</div>
+                  <div class="tt-effect">🎯 <strong>Target Ideal:</strong> 0.00% (Zero-Loss). Walaupun ada data tercecer di jaringan, sistem pemulihan berhasil menyelamatkannya kembali 100%!</div>
+                  <div class="tt-meta">Teks bawah: Raw Drop (total tercecer) vs Terpulihkan (berhasil diselamatkan)</div>
+                </div>
+              </div>
+            </div>
             <div class="sparkline-wrapper" id="sparklineLoss"></div>
           </div>
           <div class="radar-num" id="effectiveLoss">0.00% <span class="tag-badge tag-green">Zero-Loss</span></div>
@@ -91,7 +101,17 @@
 
         <div class="radar-cell">
           <div class="radar-top">
-            <span class="radar-label" data-i18n="totalRecovered">Total Recovered</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="radar-label" data-i18n="totalRecovered">Total Recovered</span>
+              <div class="btn-info-icon mini" tabindex="0">ⓘ
+                <div class="tooltip-box tooltip-down">
+                  <div class="tt-title">🔄 Total Paket Terpulihkan</div>
+                  <div class="tt-body">👉 <strong>Artinya:</strong> Jumlah total data yang sempat tercecer di jalan namun berhasil diselamatkan kembali ke database oleh mekanisme Self-Healing.</div>
+                  <div class="tt-effect">💡 <strong>Keterangan Bawah:</strong> NACK = berapa kali server menelepon balik untuk minta kirim ulang; Last Seq = nomor antrean paket paling baru.</div>
+                  <div class="tt-meta">Metode Pemulihan: Method 3 (Piggyback 0-RTT) &bull; Method 1 (TCP NACK ARQ)</div>
+                </div>
+              </div>
+            </div>
             <div class="sparkline-wrapper" id="sparklineRecovered"></div>
           </div>
           <div class="radar-num" id="totalRecovered">0 <span class="unit">pkts</span></div>
@@ -101,7 +121,17 @@
 
         <div class="radar-cell">
           <div class="radar-top">
-            <span class="radar-label" data-i18n="dbPersisted">PostgreSQL Persisted</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="radar-label" data-i18n="dbPersisted">PostgreSQL Persisted</span>
+              <div class="btn-info-icon mini" tabindex="0">ⓘ
+                <div class="tooltip-box tooltip-down">
+                  <div class="tt-title">📋 Data Nyata di PostgreSQL</div>
+                  <div class="tt-body">👉 <strong>Artinya:</strong> Jumlah baris data yang sudah benar-benar tertulis permanen di harddisk database tabel <code>telemetry_logs</code>.</div>
+                  <div class="tt-effect">👀 <strong>Cek Fisik:</strong> Klik tombol biru di bawah ("Lihat Log Database") untuk melihat tabel baris aslinya secara langsung.</div>
+                  <div class="tt-meta">Target Fisik: Tabel telemetry_logs di Database PostgreSQL</div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="radar-num" id="dbLogsCount">0 <span class="unit">rows</span></div>
           <div class="radar-sub" data-i18n="tableTarget">Table: telemetry_logs</div>
@@ -110,7 +140,17 @@
 
         <div class="radar-cell">
           <div class="radar-top">
-            <span class="radar-label" data-i18n="aggregatorBuffer">RAM Buffer Queue</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="radar-label" data-i18n="aggregatorBuffer">RAM Buffer Queue</span>
+              <div class="btn-info-icon mini" tabindex="0">ⓘ
+                <div class="tooltip-box tooltip-down-right">
+                  <div class="tt-title">📥 Antrean Memori RAM Sementara</div>
+                  <div class="tt-body">👉 <strong>Artinya:</strong> Jumlah data yang sedang antre di memori RAM sebelum dikirim ramai-ramai ke database.</div>
+                  <div class="tt-effect">⚡ <strong>Aturan Simpan:</strong> Begitu mencapai 100 data atau setiap 2 detik sekali, angka ini otomatis kembali menjadi 0 (disimpan sekaligus ke database).</div>
+                  <div class="tt-meta">Flush Threshold: 100 logs atau interval waktu 2.000 ms</div>
+                </div>
+              </div>
+            </div>
             <div class="sparkline-wrapper" id="sparklineBuffer"></div>
           </div>
           <div class="radar-num" id="activeBuffer">0 <span class="unit">items</span></div>
@@ -119,7 +159,17 @@
 
         <div class="radar-cell">
           <div class="radar-top">
-            <span class="radar-label" data-i18n="processMemory">Memory RSS</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="radar-label" data-i18n="processMemory">Memory RSS</span>
+              <div class="btn-info-icon mini" tabindex="0">ⓘ
+                <div class="tooltip-box tooltip-down-right">
+                  <div class="tt-title">🧠 Memori RAM Komputer (RSS)</div>
+                  <div class="tt-body">👉 <strong>Artinya:</strong> Ukuran memori RAM fisik (dalam Megabyte) yang sedang dipakai server untuk memproses seluruh data saat ini.</div>
+                  <div class="tt-effect">💡 <strong>Kondisi Sehat:</strong> Berkisar 20 MB – 60 MB. Menunjukkan sistem ini sangat hemat RAM dan tidak bocor (Memory Leak).</div>
+                  <div class="tt-meta">Teks bawah: Uptime server &bull; Kapasitas Ring Buffer pengirim</div>
+                </div>
+              </div>
+            </div>
             <div class="sparkline-wrapper" id="sparklineMemory"></div>
           </div>
           <div class="radar-num" id="memoryRss">0.00 <span class="unit">MB</span></div>

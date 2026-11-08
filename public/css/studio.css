@@ -670,6 +670,38 @@ body {
   transform: translateY(0);
 }
 
+.btn-info-icon.mini {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  border-radius: 50%;
+  line-height: 1;
+  border-color: var(--border-muted);
+}
+
+.tooltip-box.tooltip-down {
+  bottom: auto;
+  top: calc(100% + 8px);
+  left: 0;
+  right: auto;
+  transform: translateY(-4px);
+}
+
+.tooltip-box.tooltip-down-right {
+  bottom: auto;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  transform: translateY(-4px);
+}
+
+.btn-info-icon:hover .tooltip-box.tooltip-down,
+.btn-info-icon:focus .tooltip-box.tooltip-down,
+.btn-info-icon:hover .tooltip-box.tooltip-down-right,
+.btn-info-icon:focus .tooltip-box.tooltip-down-right {
+  transform: translateY(0);
+}
+
 .tt-title {
   font-weight: 700;
   color: var(--status-blue);
