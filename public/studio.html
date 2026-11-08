@@ -147,78 +147,78 @@
         <div class="guide-grid">
           <div class="guide-item">
             <div class="guide-item-btn">⚡ Single UDP Datagram (1 Log)</div>
-            <div class="guide-item-desc">Mengirim 1 paket log secara asinkron via soket UDP ke port 5001. Membuktikan latensi ultra-rendah tanpa menunggu database.</div>
-            <div class="guide-item-expect">Ekspektasi: Total durasi &lt; 5ms, log masuk antrean buffer RAM.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Mengirim 1 catatan kilat tanpa menunggu database. Membuktikan server merespon dalam sekejap mata (~0.2ms).</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Kotak hijau baru bertuliskan Seq #X muncul di bawah.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🚀 Batch Trigger (100 Logs)</div>
-            <div class="guide-item-desc">Menembakkan 100 paket berturut-turut untuk menguji batas ambang (*batch threshold*) Aggregator.</div>
-            <div class="guide-item-expect">Ekspektasi: Memicu Bulk-Insert SQL sekaligus ke PostgreSQL begitu paket ke-100 tiba.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Menembakkan 100 catatan berturut-turut. Server menampungnya di RAM dulu, lalu menyimpannya sekaligus ke database begitu genap 100.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Angka antrean RAM naik lalu kembali 0, dan database bertambah 100 baris.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🔥 High Load Burst (1.000 Logs)</div>
-            <div class="guide-item-desc">Menembakkan 1.000 paket dalam microsecond loop server untuk menguji throughput tinggi (&gt;50.000 paket/detik).</div>
-            <div class="guide-item-expect">Ekspektasi: Antrean buffer melonjak lalu dikosongkan secara bertahap dalam ~100ms.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Menembakkan 1.000 data dalam sekejap mata untuk membuktikan server tidak macet saat gudang sedang sangat ramai.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Grafik biru RAM melompat tinggi dan log database bertambah +1.000 baris.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">💥 Stress Blast (5,000 Logs)</div>
-            <div class="guide-item-desc">Membanjiri soket dengan 5.000 paket sekaligus untuk menguji batas buffer soket OS dan ketahanan memori RAM.</div>
-            <div class="guide-item-expect">Ekspektasi: Dapat memicu packet loss di OS, menguji self-healing bekerja di bawah tekanan berat.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Uji beban ekstrem menembakkan 5.000 data sekaligus seperti jutaan barang discan bersamaan. Membuktikan memori komputer kuat dan tidak jebol.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Terminal log meluncur sangat cepat dan grafik memori bergelombang.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🎯 Simulate Drop 2 Packets (Zero-RTT)</div>
-            <div class="guide-item-desc">Sengaja melompati sequence ID (+3) untuk membuktikan Metode 3 Piggybacking.</div>
-            <div class="guide-item-expect">Ekspektasi: Paket hilang langsung dipulihkan seketika dari payload cadangan paket berikutnya (0ms RTT).</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Pura-pura 2 data hilang di jalan karena internet kedip. Data berikutnya otomatis menggendong salinannya sehingga langsung pulih seketika (0 detik).</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: 2 kotak merah bertuliskan ⚠️ Hilang seketika berubah jadi UNGU bertuliskan 🔄 Pulih (0-RTT).</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🔄 Simulate Drop 9 Packets (TCP NACK)</div>
-            <div class="guide-item-desc">Sengaja melompati sequence ID (+10) untuk menguji Metode 1 NACK Selective Retransmission.</div>
-            <div class="guide-item-expect">Ekspektasi: Aggregator membuat request TCP ke Ring Buffer RAM API untuk menarik ulang 9 paket hilang.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Pura-pura 9 data hilang sekaligus. Karena terlalu banyak untuk digendong, penerima langsung menelepon balik pengirim via TCP untuk minta salinannya dari RAM.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: 9 kotak merah bersamaan berubah jadi UNGU bertuliskan 🔄 Pulih (TCP NACK) dan angka Recovered bertambah +9!</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🚨 Simulate Error 500 (TCP Fallback)</div>
-            <div class="guide-item-desc">Mengirim log error status 500 untuk menguji Metode 2 Circuit Breaker.</div>
-            <div class="guide-item-expect">Ekspektasi: Otomatis mem-bypass soket UDP dan dikirim via TCP HTTP Ingestion (Jaminan anti-hilang 100%).</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Pura-pura sistem error fatal. Sistem pintar tahu data error itu SANGAT PENTING, jadi otomatis dialihkan ke jalur darurat khusus (TCP VIP) yang 100% anti-hilang.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Muncul kotak khusus bertuliskan ✕ 500 (TCP Fallback).</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">💓 Manual Heartbeat Ping</div>
-            <div class="guide-item-desc">Menembakkan sinyal detak jantung (*HEARTBEAT*) ke port 5001.</div>
-            <div class="guide-item-expect">Ekspektasi: Mereset timer Watchdog (15s) dan memastikan badge Watchdog tetap hijau (OK).</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Mengecek detak jantung server utama. Memberi tahu penerima bahwa server masih hidup agar lampu status tidak berubah merah.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Lampu status Watchdog di kanan atas tetap berwarna HIJAU (OK).</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🚀 Autocannon UDP Route (10s, 100 Conn)</div>
-            <div class="guide-item-desc">Menjalankan uji beban HTTP resmi Autocannon (100 koneksi bersamaan selama 10 detik) ke rute /api/benchmark/udp-log.</div>
-            <div class="guide-item-expect">Ekspektasi: Throughput tinggi (>1.500 req/dtk), latensi p99 rendah (&lt;15ms), tanpa I/O blocking.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Robot menirukan 100 orang membuka sistem bersamaan tanpa henti selama 10 detik di jalur cepat UDP WMS Nexus.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Muncul tabel hasil yang menunjukkan sistem mampu melayani ribuan request/detik tanpa lemot!</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🐢 Autocannon Sync DB Route (5s, 50 Conn)</div>
-            <div class="guide-item-desc">Menjalankan uji beban Autocannon ke rute /api/benchmark/sync-log (koneksi sinkron ke database PostgreSQL).</div>
-            <div class="guide-item-expect">Ekspektasi: Penurunan throughput drastis dan latensi membengkak tinggi akibat lock contention database.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Menirukan 50 orang memakai sistem model lama yang harus antre menulis database satu per satu. Membuktikan cara lama jauh lebih lambat.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Angka kecepatan request/detik terlihat jauh lebih rendah dan latensi membengkak.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">⚡ Quick Autocannon Blitz (3s, 25 Conn)</div>
-            <div class="guide-item-desc">Uji beban cepat 3 detik untuk memverifikasi respons server dan throughput seketika tanpa menunggu 10 detik.</div>
-            <div class="guide-item-expect">Ekspektasi: Menyajikan tabel ringkasan performa ASCII langsung di terminal log.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Uji kecepatan kilat 3 detik saja jika ingin demo cepat tanpa menunggu 10 detik penuh.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Tabel performa kilat langsung muncul di terminal bawah.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">📋 Copy Terminal CLI Command</div>
-            <div class="guide-item-desc">Menyalin sintaks perintah resmi Autocannon untuk dieksekusi manual di terminal CMD / PowerShell.</div>
-            <div class="guide-item-expect">Ekspektasi: Command tersalin ke clipboard sistem secara instan.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Menyalin kode perintah uji coba ke clipboard agar bisa ditempel dan dijalankan manual di Command Prompt / PowerShell.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Muncul pesan bahwa teks perintah berhasil disalin.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🐢 Sync DB Logging (10 / 50 Logs)</div>
-            <div class="guide-item-desc">Menulis log secara sinkron langsung ke database satu per satu (arsitektur monolitik konvensional).</div>
-            <div class="guide-item-expect">Ekspektasi: Latensi lambat (~10-20ms per log), menunjukkan mengapa arsitektur UDP jauh lebih unggul.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Menulis 10 atau 50 catatan langsung ke database satu per satu. Memperlihatkan rasa lambat dan jeda antrean di sistem lama.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Tombol terasa ada jeda loading beberapa ratus milidetik.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🧹 Purge All Persisted Logs</div>
-            <div class="guide-item-desc">Mengeksekusi endpoint DELETE /logs untuk mengosongkan tabel telemetry_logs.</div>
-            <div class="guide-item-expect">Ekspektasi: Mengembalikan total log di database menjadi 0 baris seketika.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Reset bersih! Menghapus semua catatan log di database dan mengembalikan seluruh hitungan angka di atas kembali ke 0.</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Angka PostgreSQL Persisted, Raw Drop, dan Recovered kembali bersih menjadi 0.</div>
           </div>
           <div class="guide-item">
             <div class="guide-item-btn">🔄 Force Refresh Metrics</div>
-            <div class="guide-item-desc">Memaksa browser meminta data metrik terbaru dari server seketika tanpa menunggu interval polling.</div>
-            <div class="guide-item-expect">Ekspektasi: Radar ter-update dalam &lt;10ms.</div>
+            <div class="guide-item-desc"><strong>Maksud Awam:</strong> Menyegarkan seluruh angka di layar saat itu juga tanpa menunggu jeda waktu otomatis (1,5 detik).</div>
+            <div class="guide-item-expect">👀 Lihat di Layar: Angka radar langsung terupdate seketika.</div>
           </div>
         </div>
       </div>
@@ -238,8 +238,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Single UDP Datagram</div>
-                  Mengirim 1 paket log telemetri via soket UDP (:5001). Membuktikan latensi ultra-rendah tanpa menunggu database.
+                  <div class="tt-title">⚡ Kirim 1 Catatan Kilat</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Mengirim 1 data log kilat tanpa menunggu konfirmasi database. Server langsung merespons dalam sekejap mata (~0.2 milidetik) tanpa membuat aplikasi loading.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Kotak hijau baru bertuliskan Seq #X akan muncul di bawah.</div>
                   <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Fire-and-forget</div>
                 </div>
               </div>
@@ -253,8 +254,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Batch Trigger (100 Logs)</div>
-                  Menembakkan 100 paket berturut-turut untuk memicu ambang batas (*threshold 100*) Bulk-Insert Aggregator ke database.
+                  <div class="tt-title">🚀 Kirim 100 Catatan Sekaligus</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Mengirim 100 data berturut-turut. Server menampungnya di RAM dulu, lalu menyimpannya sekaligus ke database begitu genap 100 (sangat hemat beban database).</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Angka RAM Buffer Queue naik lalu kembali 0, dan PostgreSQL Persisted bertambah +100 baris.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 100</div>
                 </div>
               </div>
@@ -268,8 +270,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">High Load Burst (1,000 Logs)</div>
-                  Menembakkan 1.000 paket dalam hitungan milidetik langsung dari server. Menguji throughput tinggi (&gt;50k pkt/detik).
+                  <div class="tt-title">🔥 Uji Kecepatan Tinggi (1.000 Catatan)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Membanjiri server dengan 1.000 data dalam hitungan milidetik untuk membuktikan sistem tidak macet saat gudang sedang sangat sibuk.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Grafik biru RAM melompat tinggi dan log database bertambah +1.000 baris.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 1,000</div>
                 </div>
               </div>
@@ -283,8 +286,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Stress Blast (5,000 Logs)</div>
-                  Membanjiri soket dengan 5.000 paket sekaligus. Menguji kapasitas buffer OS dan melihat mekanisme pemulihan aktif.
+                  <div class="tt-title">💥 Uji Beban Ekstrem (5.000 Catatan)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Menembakkan 5.000 data sekaligus seperti jutaan barang discan bersamaan. Membuktikan memori komputer kuat dan tidak jebol (Out of Memory).</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Terminal log meluncur cepat dan grafik memori bergelombang.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-udp &bull; Count: 5,000</div>
                 </div>
               </div>
@@ -304,8 +308,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Simulate Drop 2 Packets (Zero-RTT)</div>
-                  Sengaja melompati urutan sequence +3. Membuktikan Metode 3 Piggybacking memulihkan paket secara instan (0ms delay).
+                  <div class="tt-title">🎯 Pura-pura 2 Data Hilang (Metode Gendongan)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Meniru kejadian saat internet kedip dan 2 data tercecer di jalan. Data berikutnya otomatis "menggendong" salinannya, jadi langsung pulih seketika tanpa perlu kirim ulang (0 detik).</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> 2 kotak merah ⚠️ Hilang seketika berubah jadi UNGU bertuliskan 🔄 Pulih (0-RTT)!</div>
                   <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +3</div>
                 </div>
               </div>
@@ -319,8 +324,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Simulate Drop 9 Packets (TCP NACK)</div>
-                  Melompati sequence +10. Memicu Aggregator mengirim NACK TCP request ke Ring Buffer API untuk menarik 9 paket hilang.
+                  <div class="tt-title">🔄 Pura-pura 9 Data Hilang (Metode Telepon Balik)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Meniru kejadian jika ada 9 data hilang sekaligus. Karena terlalu banyak untuk digendong, penerima langsung menelepon balik pengirim via TCP untuk minta salinannya dari memori RAM.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> 9 kotak merah bersamaan berubah jadi UNGU bertuliskan 🔄 Pulih (TCP NACK) dan angka Recovered bertambah +9!</div>
                   <div class="tt-meta">Target: /api/benchmark/simulate-loss &bull; Jump: +10</div>
                 </div>
               </div>
@@ -334,8 +340,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Simulate Error 500 (TCP Fallback)</div>
-                  Mengirim log berstatus HTTP 500. Membuktikan sistem otomatis beralih ke TCP Fallback Ingestion (Jaminan anti-hilang 100%).
+                  <div class="tt-title">🚨 Pura-pura Sistem Rusak Fatal (Jalur VIP)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Meniru kejadian jika ada error fatal di server (HTTP 500). Sistem pintar tahu data error itu SANGAT PENTING, jadi otomatis dialihkan ke jalur darurat khusus (TCP VIP) yang 100% anti-hilang.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Muncul kotak khusus bertuliskan ✕ 500 (TCP Fallback).</div>
                   <div class="tt-meta">Target: /api/benchmark/critical-fallback &bull; Mode: Fallback</div>
                 </div>
               </div>
@@ -349,8 +356,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Manual Heartbeat Ping</div>
-                  Menembakkan sinyal HEARTBEAT langsung ke port 5001 untuk mereset timer Watchdog 15 detik Aggregator.
+                  <div class="tt-title">💓 Cek Detak Jantung Server (Ping)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Seperti memeriksa denyut nadi. Server mengirim tanda "Saya masih hidup!" agar lampu indikator server di pojok kanan atas tetap berwarna HIJAU (OK).</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Lampu status Watchdog di kanan atas tetap berwarna HIJAU (OK).</div>
                   <div class="tt-meta">Target: /api/benchmark/heartbeat &bull; Type: HEARTBEAT</div>
                 </div>
               </div>
@@ -370,8 +378,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Autocannon UDP Route (100 Conn, 10s)</div>
-                  Menjalankan benchmark HTTP resmi dengan Autocannon (100 concurrent connections selama 10 detik) ke endpoint UDP asinkron.
+                  <div class="tt-title">🚀 Uji 100 Pengguna Sekaligus (Jalur Cepat UDP)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Robot menirukan 100 pengguna membuka sistem bersamaan tanpa henti selama 10 detik menggunakan teknologi cepat UDP WMS Nexus.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Muncul tabel hasil yang menunjukkan sistem mampu melayani ribuan request/detik tanpa lemot!</div>
                   <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Tool: autocannon</div>
                 </div>
               </div>
@@ -385,8 +394,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Autocannon Sync DB (50 Conn, 5s)</div>
-                  Menjalankan benchmark Autocannon ke endpoint blocking database. Menguji penurunan throughput akibat penumpukan query INSERT.
+                  <div class="tt-title">🐢 Uji 50 Pengguna (Sistem Model Lama)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Menirukan 50 pengguna memakai sistem model lama yang harus antre menulis database satu per satu. Membuktikan cara lama jauh lebih lambat dan antre.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Angka kecepatan request/detik terlihat jauh lebih rendah dan latensi membengkak.</div>
                   <div class="tt-meta">Target: /api/benchmark/sync-log &bull; Tool: autocannon</div>
                 </div>
               </div>
@@ -400,8 +410,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Quick Autocannon Blitz (25 Conn, 3s)</div>
-                  Pengujian kilat 3 detik untuk mengecek latensi rata-rata dan responsivitas tanpa perlu menunggu 10 detik penuh.
+                  <div class="tt-title">⚡ Uji Kecepatan Kilat 3 Detik</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Uji kecepatan kilat selama 3 detik saja jika Anda ingin demo cepat di depan dosen/penguji tanpa harus menunggu 10 detik penuh.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Tabel performa kilat langsung muncul di terminal bawah.</div>
                   <div class="tt-meta">Target: /api/benchmark/udp-log &bull; Mode: Rapid Blitz</div>
                 </div>
               </div>
@@ -415,8 +426,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Salin Perintah CLI Terminal</div>
-                  Menyalin perintah `npx autocannon -c 100 -d 10 http://localhost:5000/api/benchmark/udp-log` ke clipboard untuk dijalankan manual di terminal OS.
+                  <div class="tt-title">📋 Salin Perintah Kode ke Clipboard</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Menyalin kode perintah resmi ke memori komputer agar Anda bisa menempelnya (*paste*) dan menjalankannya manual di layar hitam Command Prompt / Terminal.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Muncul pesan bahwa teks perintah berhasil disalin.</div>
                   <div class="tt-meta">Command: npm run benchmark:udp</div>
                 </div>
               </div>
@@ -430,8 +442,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Sync DB Logging (10 Logs)</div>
-                  Menulis 10 log sinkron ke database secara berurutan. Menunjukkan latensi database blocking (~10-20ms per log).
+                  <div class="tt-title">⏳ Tulis 10 Data Langsung ke DB (Sistem Lama)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Menulis 10 catatan satu per satu langsung ke database untuk membuktikan bahwa cara lama itu memakan waktu (~10-20 milidetik per data).</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Tombol terasa ada jeda loading beberapa ratus milidetik.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 10</div>
                 </div>
               </div>
@@ -445,8 +458,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Sync DB Logging (50 Logs)</div>
-                  Menulis 50 log sinkron ke database. Menunjukkan efek *lock contention* dan latensi tinggi (~500ms s.d 1.000ms).
+                  <div class="tt-title">⚠️ Tulis 50 Data Langsung ke DB (Macet)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Menulis 50 catatan langsung ke database. Akan terasa jeda macet (~1 detik) karena database harus mengantre, membuktikan kenapa sistem baru kita jauh lebih hebat.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Terasa jeda loading ~1 detik sebelum selesai.</div>
                   <div class="tt-meta">Target: /api/benchmark/burst-sync &bull; Count: 50</div>
                 </div>
               </div>
@@ -460,8 +474,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Purge All Persisted Logs</div>
-                  Mengeksekusi endpoint DELETE /logs untuk mengosongkan tabel telemetry_logs dan mereset database kembali menjadi 0 baris.
+                  <div class="tt-title">🧹 Mulai Uji Coba dari Nol (Reset Bersih)</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Mengosongkan semua catatan log di database dan mereset semua hitungan angka di atas kembali ke angka 0, siap untuk pengujian baru yang segar.</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Semua angka baris dan drop kembali menjadi 0.</div>
                   <div class="tt-meta">Target: /api/benchmark/logs &bull; Method: DELETE</div>
                 </div>
               </div>
@@ -475,8 +490,9 @@
               </button>
               <div class="btn-info-icon" tabindex="0">ⓘ
                 <div class="tooltip-box">
-                  <div class="tt-title">Force Refresh Metrics</div>
-                  Memaksa browser meminta data metrik terbaru dari server seketika tanpa menunggu interval auto-polling (1.5 detik).
+                  <div class="tt-title">🔄 Perbarui Tampilan Angka Seketika</div>
+                  <div class="tt-body">👉 <strong>Maksudnya:</strong> Memaksa layar komputer Anda mengambil data terbaru dari server detik itu juga tanpa perlu menunggu jeda waktu otomatis (1,5 detik).</div>
+                  <div class="tt-effect">👀 <strong>Lihat di Layar:</strong> Angka radar langsung terupdate seketika.</div>
                   <div class="tt-meta">Target: /api/benchmark/metrics &bull; Method: GET</div>
                 </div>
               </div>
