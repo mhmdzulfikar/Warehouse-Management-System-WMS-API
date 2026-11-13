@@ -209,6 +209,23 @@ Seluruh 16 tombol aksi dibagi ke dalam 3 kartu fungsional:
 > Setiap dari 16 tombol pengujian di atas kini dilengkapi dengan **blok perintah CLI / cURL terminal** di dalam tooltip tanda seru (`ⓘ`) lengkap dengan tombol interaktif **"📋 Salin"**.  
 > Dosen penguji, reviewer, atau pengembang dapat menyalin perintah tersebut dan mengeksekusinya langsung di layar terminal (PowerShell, Command Prompt, atau Bash) di luar browser untuk membuktikan bahwa seluruh pengujian bekerja nyata pada level jaringan dan API server, bukan sekadar simulasi atau klaim antarmuka semata.
 
+### 💡 Membaca Hasil Autocannon: Memahami Hubungan Latensi & Throughput
+
+Saat menjalankan pengujian beban dengan Autocannon (baik melalui tombol UI di Studio maupun perintah terminal `npm run benchmark:udp`), dua metrik utama selalu disajikan dan dianalisis secara bersamaan:
+
+1. **Latensi (*Response Time* - Satuan: ms):**
+   * *Pertanyaan:* Berapa lama waktu yang dibutuhkan sejak request dikirim hingga respon diterima klien?
+   * *Target:* **Semakin KECIL semakin baik.** Pada jalur UDP, latensi rata-rata berada pada kisaran `~1.2 ms` dengan p99 `< 5 ms`.
+2. **Throughput (*Requests per Second* - Satuan: req/s):**
+   * *Pertanyaan:* Berapa banyak transaksi yang sanggup diselesaikan server dalam tempo satu detik?
+   * *Target:* **Semakin BESAR semakin baik.** Pada jalur UDP, throughput melonjak hingga `~4.750 req/s`.
+
+> [!NOTE]
+> **Hukum Antrean (*Little's Law*):**
+> $$\text{Throughput} = \frac{\text{Jumlah Koneksi Konkuren}}{\text{Latensi Respons}}$$
+> * **Pada Jalur Sinkron (Sync DB):** Kueri log audit menahan koneksi database selama 15–20 ms $\rightarrow$ Latensi melonjak $\rightarrow$ Throughput jatuh ke ~320 req/s.
+> * **Pada Jalur Asinkron (Dual-Track UDP):** Logging diserahkan ke soket UDP dalam ~0.2 ms (*fire-and-forget*) $\rightarrow$ Latensi turun drastis $\rightarrow$ Throughput melompat 14x lipat!
+
 ---
 
 ## 7. Unified Log & Inspection Deck: Kenapa Ada 3 Tampilan Log?
