@@ -1,7 +1,8 @@
 /**
  * WMS Nexus • Studio Architecture & Protocol Explorer Module (Tab 3)
- * 2.5D Isometric Network Topology, Dynamic Packet Travel Engine,
+ * 2.5D Isometric Network Topology, Dual-Track Simultaneous Packet Travel Engine,
  * Sequence Diagram, Technical Dictionary, and Empirical Report Export.
+ * Anti-Slop Compliant: Clean Blueprint Aesthetic, Crisp 1px Borders, Zero Slop.
  */
 (function() {
   const store = window.StudioStore;
@@ -10,9 +11,9 @@
   // PROTOCOL EXPLORER ENGINE & SCENARIO DEFINITIONS
   // =========================================================================
   const SCENARIOS = {
-    // Mode A: Synchronous DB Write (Blocking Baseline)
+    // Mode A: Single-Track Synchronous DB Write (Blocking Baseline)
     sync: {
-      modeName: 'TANPA UDP (SYNCHRONOUS DB BLOCKING)',
+      modeName: 'TANPA UDP (SINGLE-TRACK SYNCHRONOUS BLOCKING)',
       badgeClass: 'sync',
       benchmark: {
         throughput: '~540 req/s',
@@ -31,6 +32,7 @@
           num: '01',
           title: 'HTTP POST /api/items (Inbound)',
           shortDesc: 'Barcode Scanner/Web mengirim request transaksi stok ke Express API (:5000).',
+          isDualTrack: false,
           packetLabel: 'HTTP POST',
           packetColor: '#d29922',
           pathId: 'pathClientToExpress',
@@ -41,30 +43,14 @@
           eventLoopAlert: false,
           dbPool: '0 / 10 koneksi',
           clientLatency: '0.0 ms',
-          narrative: '<strong>[Langkah 1/6]</strong> Klien mengirim HTTP POST request mutasi barang melalui TCP connection ke server Node.js Express (:5000). Soket koneksi dialokasikan oleh kernel OS.'
+          narrative: '<strong>[Langkah 1/5]</strong> Klien barcode scanner/web mengirim request transaksi stok via HTTP/TCP ke Express API (:5000). Single-track baseline dimulai.'
         },
         {
           id: 2,
           num: '02',
-          title: 'Validasi & Hitung Logika Bisnis',
-          shortDesc: 'Express mengeksekusi route handler, validasi SKU, dan alokasi memori transaksi.',
-          packetLabel: 'LOGIC CHECK',
-          packetColor: '#58a6ff',
-          pathId: null,
-          fromNode: 'nodeExpress',
-          toNode: 'nodeExpress',
-          rippleTarget: 'rippleExpress',
-          eventLoop: '0.5 ms (Aktif)',
-          eventLoopAlert: false,
-          dbPool: '1 / 10 koneksi',
-          clientLatency: '+1.8 ms',
-          narrative: '<strong>[Langkah 2/6]</strong> Node.js mengeksekusi JavaScript handler di Call Stack: validasi skema payload, cek saldo stok, dan mulai mempersiapkan kueri SQL transaksi barang.'
-        },
-        {
-          id: 3,
-          num: '03',
-          title: 'Kueri Transaksi Bisnis (UPDATE Stok)',
-          shortDesc: 'Express meminjam slot pg.Pool untuk memperbarui data stok di PostgreSQL.',
+          title: 'Kueri Bisnis (UPDATE Stok Fisik)',
+          shortDesc: 'Express mengambil 1 slot pg.Pool untuk memperbarui data stok di PostgreSQL.',
+          isDualTrack: false,
           packetLabel: 'UPDATE items',
           packetColor: '#58a6ff',
           pathId: 'pathExpressToDb',
@@ -75,13 +61,14 @@
           eventLoopAlert: false,
           dbPool: '1 / 10 koneksi',
           clientLatency: '+5.4 ms',
-          narrative: '<strong>[Langkah 3/6]</strong> Express mengakuisisi 1 koneksi dari connection pool PostgreSQL (pg.Pool) untuk mengeksekusi kueri bisnis <code>UPDATE items SET stock...</code>. Libuv mengelola I/O socket wire protocol.'
+          narrative: '<strong>[Langkah 2/5]</strong> Express mengeksekusi kueri bisnis <code>UPDATE items SET stock...</code> ke PostgreSQL menggunakan connection pool bersama.'
         },
         {
-          id: 4,
-          num: '04',
-          title: 'Penulisan Log Audit Sinkron (BLOCKING)',
-          shortDesc: 'CRITICAL BOTTLENECK: Express await kueri INSERT log ke pool yang sama!',
+          id: 3,
+          num: '03',
+          title: 'Penulisan Log Audit Sinkron (CRITICAL BOTTLENECK)',
+          shortDesc: 'Jalur transaksi DITAHAN! Express await INSERT log ke pool koneksi yang sama.',
+          isDualTrack: false,
           packetLabel: 'INSERT log (BLOCK)',
           packetColor: '#f85149',
           pathId: 'pathExpressToDb',
@@ -92,13 +79,14 @@
           eventLoopAlert: true,
           dbPool: '2 / 10 koneksi (Contention)',
           clientLatency: '+16.8 ms',
-          narrative: '<strong>[Langkah 4/6 - BOTTLENECK]</strong> Jalur transaksi utama DITAHAN! Kode aplikasi memanggil <code>await db.query("INSERT INTO audit_logs...")</code> pada pool koneksi yang sama. Event Loop terbebani disk I/O latency, dan pada beban lonjakan, antrean pool habis (Connection Exhaustion)!'
+          narrative: '<strong>[Langkah 3/5 - BOTTLENECK]</strong> Jalur transaksi utama DITAHAN! Express memanggil <code>await db.query("INSERT INTO audit_logs...")</code> pada pool yang sama. Event Loop terbebani disk I/O latency, dan connection pool terancam habis (Connection Exhaustion)!'
         },
         {
-          id: 5,
-          num: '05',
+          id: 4,
+          num: '04',
           title: 'PostgreSQL Disk Commit & Release Pool',
           shortDesc: 'Database selesai menulis log audit ke disk, commit transaksi, dan melepas koneksi.',
+          isDualTrack: false,
           packetLabel: 'COMMIT & RELEASE',
           packetColor: '#f85149',
           pathId: 'pathDbToExpress',
@@ -109,13 +97,14 @@
           eventLoopAlert: false,
           dbPool: 'Koneksi Dilepas',
           clientLatency: '+18.1 ms',
-          narrative: '<strong>[Langkah 5/6]</strong> PostgreSQL menyelesaikan write-ahead log (WAL) ke hard disk, menyelesaikan commit transaksi, dan mengirimkan paket konfirmasi kembali ke Express. Slot koneksi pool baru bisa dibebaskan.'
+          narrative: '<strong>[Langkah 4/5]</strong> PostgreSQL menyelesaikan penulisan log audit ke disk, meng-commit transaksi, dan mengirim respon balik ke Express. Slot koneksi pool baru dibebaskan.'
         },
         {
-          id: 6,
-          num: '06',
+          id: 5,
+          num: '05',
           title: 'HTTP 200 OK Tertunda Lambat ke Klien',
           shortDesc: 'Klien baru menerima konfirmasi sukses setelah seluruh rantai disk I/O tuntas.',
+          isDualTrack: false,
           packetLabel: '200 OK (18.5ms)',
           packetColor: '#d29922',
           pathId: 'pathExpressToClient',
@@ -126,14 +115,14 @@
           eventLoopAlert: true,
           dbPool: 'Rentan Exhaustion',
           clientLatency: 'Total: 18.5 ms (Lambat)',
-          narrative: '<strong>[Langkah 6/6]</strong> Klien akhirnya menerima konfirmasi 200 OK setelah menunggu ~18.5 ms. Latensi tinggi ini membatasi throughput sistem pada ~540 req/s karena setiap transaksi dibebani penulisan log audit sinkron.'
+          narrative: '<strong>[Langkah 5/5]</strong> Klien akhirnya menerima konfirmasi 200 OK setelah menunggu ~18.5 ms. Latensi tinggi ini membatasi throughput sistem pada ~540 req/s karena setiap transaksi dibebani penulisan log audit sinkron.'
         }
       ]
     },
 
     // Mode B: Dual-Track Telemetry + Tri-Layer Self-Healing (UDP Socket)
     udp: {
-      modeName: 'DENGAN UDP (DUAL-TRACK NON-BLOCKING)',
+      modeName: 'DENGAN UDP (DUAL-TRACK NON-BLOCKING PARALEL)',
       badgeClass: 'udp',
       benchmark: {
         throughput: '~3,480 req/s',
@@ -152,6 +141,7 @@
           num: '01',
           title: 'HTTP POST /api/items (Inbound)',
           shortDesc: 'Barcode Scanner/Web mengirim request transaksi mutasi barang ke Express API (:5000).',
+          isDualTrack: false,
           packetLabel: 'HTTP POST',
           packetColor: '#d29922',
           pathId: 'pathClientToExpress',
@@ -162,81 +152,72 @@
           eventLoopAlert: false,
           dbPool: '0 / 10 koneksi',
           clientLatency: '0.0 ms',
-          narrative: '<strong>[Langkah 1/6]</strong> Klien mengirim HTTP POST request mutasi barang. Node.js menerima paket TCP melalui Libuv non-blocking I/O event loop.'
+          narrative: '<strong>[Langkah 1/5]</strong> Klien mengirim HTTP POST request mutasi barang ke Express API (:5000). Event loop Libuv menerima paket TCP tanpa antrean.'
         },
         {
           id: 2,
           num: '02',
-          title: 'Dual-Track: UDP Fire-and-Forget (~0.2ms)',
-          shortDesc: 'Express memproses transaksi, sekaligus menembak datagram telemetri via UDP lokal (:5001).',
-          packetLabel: 'UDP :5001 (0.2ms)',
-          packetColor: '#bc8cff',
-          pathId: 'pathExpressToUdp',
-          fromNode: 'nodeExpress',
-          toNode: 'nodeUdp',
-          rippleTarget: 'rippleUdp',
+          title: '⚡ DUAL-TRACK: BERCABANG DUA JALUR SEKALIGUS!',
+          shortDesc: 'Jalur 1: Respon 200 OK instan ke Klien (2.1ms) | Jalur 2: Datagram UDP ke :5001 (~0.2ms).',
+          isDualTrack: true, // TRIGGER DUAL SIMULTANEOUS PACKETS!
+          // Track 1 (Business Transaction Return):
+          path1: 'pathExpressToClient',
+          packet1Label: '⚡ 200 OK (2.1ms)',
+          packet1Color: '#3fb950',
+          ripple1Target: 'rippleClient',
+          // Track 2 (Telemetry Datagram):
+          path2: 'pathExpressToUdp',
+          packet2Label: 'UDP :5001 (0.2ms)',
+          packet2Color: '#bc8cff',
+          ripple2Target: 'rippleUdp',
           eventLoop: '0.3 ms (NON-BLOCKING ⚡)',
           eventLoopAlert: false,
-          dbPool: '1 / 10 (Hanya Transaksi)',
-          clientLatency: '+1.8 ms',
-          narrative: '<strong>[Langkah 2/6 - DUAL-TRACK]</strong> Keajaiban arsitektur: Express menembakkan datagram log audit ke socket UDP lokal (:5001) melalui <code>dgram.send()</code> dalam ~0.2ms secara Fire-and-Forget tanpa menunggu database!'
+          dbPool: '1 / 10 (Terisolasi)',
+          clientLatency: 'Total: 2.1 ms (-88.6%)',
+          narrative: '<strong>[Langkah 2/5 - DUAL-TRACK SIMULTAN]</strong> Arsitektur membelah proses menjadi DUA JALUR BERJALAN SEKALIGUS! <em>Jalur 1:</em> Mengirimkan respon HTTP 200 OK ke Klien seketika (2.1ms). <em>Jalur 2:</em> Menembakkan datagram telemetri ke UDP Socket :5001 secara Fire-and-Forget (~0.2ms). Klien tidak pernah menunggu database!'
         },
         {
           id: 3,
           num: '03',
-          title: 'Respon Klien Instan: HTTP 200 OK (2.1ms)',
-          shortDesc: 'Klien langsung menerima konfirmasi sukses! Barcode scanner langsung siap tembak berikutnya.',
-          packetLabel: '⚡ 200 OK (2.1ms)',
-          packetColor: '#3fb950',
-          pathId: 'pathExpressToClient',
-          fromNode: 'nodeExpress',
-          toNode: 'nodeClient',
-          rippleTarget: 'rippleClient',
-          eventLoop: '0.2 ms (Bersih & Bebas)',
-          eventLoopAlert: false,
-          dbPool: 'Koneksi Langsung Bebas',
-          clientLatency: 'Total: 2.1 ms (-88.6%)',
-          narrative: '<strong>[Langkah 3/6 - FAST RESPOND]</strong> Klien menerima respon 200 OK dalam 2.1ms! Klien tidak pernah menunggu log audit ditulis ke hard disk. Event loop langsung bebas melayani request berikutnya.'
-        },
-        {
-          id: 4,
-          num: '04',
-          title: 'RAM Ring Buffer & Aggregator Ingestion',
-          shortDesc: 'Log diamankan di 3.000 Circular Ring Buffer RAM; Aggregator (:5001) verifikasi sequence.',
+          title: 'RAM Ring Buffer & Sequence Verification',
+          shortDesc: 'Klien sudah bebas! Log telemetri diamankan di 3.000 Circular Ring Buffer RAM pengirim.',
+          isDualTrack: false,
           packetLabel: 'RAM BUFFER (3K)',
           packetColor: '#bc8cff',
           pathId: null,
           fromNode: 'nodeUdp',
           toNode: 'nodeUdp',
           rippleTarget: 'rippleUdp',
-          eventLoop: 'Express Tidak Terganggu',
+          eventLoop: 'Bebas / Klien Selesai',
           eventLoopAlert: false,
           dbPool: '0 Contention',
           clientLatency: 'Background Track',
-          narrative: '<strong>[Langkah 4/6]</strong> Di pengirim, paket disimpan sementara di In-Memory Circular Ring Buffer RAM (3.000 log) untuk proteksi NACK ARQ. Di penerima, Aggregator Daemon (:5001) mencatat sequence number.'
+          narrative: '<strong>[Langkah 3/5]</strong> Klien sudah bebas dan dapat memindai barcode berikutnya. Di latar belakang, log telemetri diamankan di In-Memory Circular Ring Buffer RAM (3.000 log) untuk proteksi NACK ARQ, dan Aggregator memverifikasi sequence number.'
         },
         {
-          id: 5,
-          num: '05',
+          id: 4,
+          num: '04',
           title: 'Batch Queueing & Double-Buffer Flush',
           shortDesc: 'Aggregator menampung paket hingga 100 log / 2.000ms, lalu swap buffer secara atomik.',
+          isDualTrack: false,
           packetLabel: 'BATCH FLUSH (100)',
           packetColor: '#58a6ff',
           pathId: 'pathUdpToDb',
           fromNode: 'nodeUdp',
           toNode: 'nodeDb',
           rippleTarget: 'rippleDb',
-          eventLoop: 'Terisolasi Sempurna',
+          eventLoop: 'Terisolasi Total',
           eventLoopAlert: false,
           dbPool: 'Pool Khusus Aggregator',
           clientLatency: 'Background Track',
-          narrative: '<strong>[Langkah 5/6]</strong> Log dikumpulkan dalam antrean memori. Saat ambang 100 log atau interval 2.000ms tercapai, Aggregator melakukan swap double-buffer dan mengirimkan batch kueri melalui koneksi terpisah.'
+          narrative: '<strong>[Langkah 4/5]</strong> Log telemetri dikumpulkan dalam antrean RAM. Saat ambang 100 log atau interval 2.000ms tercapai, Aggregator melakukan swap double-buffer dan mengirimkan batch kueri melalui koneksi database terpisah.'
         },
         {
-          id: 6,
-          num: '06',
-          title: 'Batch Bulk-Insert & Tri-Layer Recovery',
-          shortDesc: '100 log ditulis sekaligus via 1 kueri bulk-insert; Tri-Layer menjamin Loss Rate 0.00%!',
+          id: 5,
+          num: '05',
+          title: 'Bulk INSERT & Tri-Layer Recovery (0.00% Loss)',
+          shortDesc: '100 log ditulis via 1 kueri bulk-insert; Tri-Layer menjamin Loss Rate 0.00% Zero-Loss!',
+          isDualTrack: false,
           packetLabel: 'BULK INSERT (0.00% LOSS)',
           packetColor: '#3fb950',
           pathId: 'pathAggregatorToExpress',
@@ -247,7 +228,7 @@
           eventLoopAlert: false,
           dbPool: 'Efisiensi Pool Maksimal',
           clientLatency: 'Loss Rate: 0.00% Zero-Loss',
-          narrative: '<strong>[Langkah 6/6 - ZERO LOSS]</strong> PostgreSQL mengeksekusi 1 kueri bulk-insert efisien untuk 100 log sekaligus. Jika terjadi paket tercecer di jaringan, Tri-Layer Self-Healing (Piggybacking + NACK TCP ARQ + Watchdog) otomatis menyerapnya kembali sehingga 0.00% data hilang!'
+          narrative: '<strong>[Langkah 5/5 - ZERO LOSS]</strong> PostgreSQL mengeksekusi 1 kueri bulk-insert efisien untuk 100 log sekaligus. Jika terjadi paket tercecer di jaringan, Tri-Layer Self-Healing (Piggybacking + NACK TCP ARQ + Watchdog) otomatis menyerapnya kembali sehingga 0.00% data hilang!'
         }
       ]
     }
@@ -288,6 +269,23 @@
     if (btnSync && btnUdp) {
       btnSync.classList.toggle('active', modeKey === 'sync');
       btnUdp.classList.toggle('active', modeKey === 'udp');
+    }
+
+    // Toggle Track Labels on Canvas
+    const lblTrack1 = document.getElementById('lblTrack1');
+    const lblTrack2 = document.getElementById('lblTrack2');
+    if (lblTrack1 && lblTrack2) {
+      if (modeKey === 'sync') {
+        lblTrack1.textContent = 'SINGLE TRACK: TRANSAKSI (SYNC BLOCKING)';
+        lblTrack1.setAttribute('fill', '#f85149');
+        lblTrack2.textContent = 'UDP SOCKET :5001 (OFFLINE / TIDAK DIPAKAI)';
+        lblTrack2.setAttribute('fill', '#6e7681');
+      } else {
+        lblTrack1.textContent = 'TRACK 1: TRANSAKSI (HTTP)';
+        lblTrack1.setAttribute('fill', '#3fb950');
+        lblTrack2.textContent = 'TRACK 2: TELEMETRI (UDP :5001)';
+        lblTrack2.setAttribute('fill', '#bc8cff');
+      }
     }
 
     renderStepList();
@@ -387,6 +385,10 @@
       clearTimeout(state.playTimeoutId);
       state.playTimeoutId = null;
     }
+    if (state.animFrameId) {
+      cancelAnimationFrame(state.animFrameId);
+      state.animFrameId = null;
+    }
     const btnPlay = document.getElementById('btnProtoPlay');
     if (btnPlay) {
       btnPlay.innerHTML = '▶ Putar';
@@ -394,10 +396,12 @@
     }
   }
 
+  // Continuous fluid playback without jarring freeze pauses
   function runPlayCycle() {
     if (!state.isPlaying) return;
-    const duration = (1200 / state.speed);
-    const dwell = (700 / state.speed);
+    const duration = (750 / state.speed);
+    // Smooth micro-handoff: enough to let the ripple wave expand, but zero lag freeze
+    const dwell = Math.max(90, 140 / state.speed);
 
     triggerStepAnimation(duration, () => {
       if (!state.isPlaying) return;
@@ -422,8 +426,9 @@
     const scenario = SCENARIOS[state.mode];
     list.innerHTML = scenario.steps.map((step, idx) => {
       const isBlocking = step.packetColor === '#f85149';
+      const isDual = step.isDualTrack;
       return `
-        <div class="proto-step-item ${idx === state.stepIndex ? 'active' : ''} ${isBlocking ? 'sync-blocking' : ''}" 
+        <div class="proto-step-item ${idx === state.stepIndex ? 'active' : ''} ${isBlocking ? 'sync-blocking' : ''} ${isDual ? 'dual-track-active' : ''}" 
              data-step-idx="${idx}"
              onclick="window.ProtocolSimulator.goToStep(${idx})">
           <div class="step-num-pill">${step.num}</div>
@@ -472,13 +477,13 @@
     const statLat = document.getElementById('statClientLatency');
     if (statLat) {
       statLat.textContent = currentStep.clientLatency;
-      statLat.className = `stat-val ${state.mode === 'sync' && state.stepIndex >= 3 ? 'alert' : ''}`;
+      statLat.className = `stat-val ${state.mode === 'sync' && state.stepIndex >= 2 ? 'alert' : ''}`;
     }
 
     const narrative = document.getElementById('protoNarrative');
     if (narrative) {
       narrative.innerHTML = currentStep.narrative;
-      narrative.style.borderLeftColor = currentStep.packetColor;
+      narrative.style.borderLeftColor = currentStep.isDualTrack ? '#3fb950' : (currentStep.packetColor || '#6366f1');
     }
 
     // 4. Benchmark Ticker
@@ -500,7 +505,7 @@
   }
 
   // =========================================================================
-  // ANIMATED TRAVELING DATA PACKET ENGINE (2.5D ISOMETRIC)
+  // DUAL-TRACK SIMULTANEOUS TRAVELING PACKET ENGINE (2.5D ISOMETRIC)
   // =========================================================================
   function triggerStepAnimation(customDuration, onComplete) {
     if (state.view !== 'network') {
@@ -512,21 +517,97 @@
     const step = scenario.steps[state.stepIndex];
     if (!step) return;
 
-    const pktGroup = document.getElementById('protoTravelingPacket');
-    const pktAura = document.getElementById('pktAura');
-    const pktBody = document.getElementById('pktBody');
-    const pktLabel = document.getElementById('pktLabel');
-    if (!pktGroup || !pktAura || !pktBody || !pktLabel) return;
+    const pkt1 = document.getElementById('protoTravelingPacket1');
+    const pkt2 = document.getElementById('protoTravelingPacket2');
+    const pkt1Body = document.getElementById('pkt1Body');
+    const pkt1Dot = document.getElementById('pkt1Dot');
+    const pkt1Label = document.getElementById('pkt1Label');
+    const pkt2Body = document.getElementById('pkt2Body');
+    const pkt2Dot = document.getElementById('pkt2Dot');
+    const pkt2Label = document.getElementById('pkt2Label');
+
+    if (!pkt1 || !pkt2 || !pkt1Body || !pkt1Dot || !pkt1Label || !pkt2Body || !pkt2Dot || !pkt2Label) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    if (state.animFrameId) {
+      cancelAnimationFrame(state.animFrameId);
+      state.animFrameId = null;
+    }
 
     // Reset circuit stroke highlights
     document.querySelectorAll('#isoCircuitPaths path').forEach(p => {
-      p.setAttribute('stroke', '#30363d');
-      p.setAttribute('stroke-width', '2.5');
+      p.setAttribute('stroke', '#253041');
+      p.setAttribute('stroke-width', '2');
     });
 
-    // If step has no path (internal computation on node)
+    const duration = customDuration || (750 / state.speed);
+
+    // CASE 1: DUAL-TRACK SIMULTANEOUS SPLIT (PARALLEL EXECUTION!)
+    if (step.isDualTrack) {
+      const path1 = document.getElementById(step.path1);
+      const path2 = document.getElementById(step.path2);
+      if (!path1 || !path2) {
+        if (onComplete) onComplete();
+        return;
+      }
+
+      // Highlight BOTH circuit paths simultaneously
+      path1.setAttribute('stroke', step.packet1Color);
+      path1.setAttribute('stroke-width', '3');
+      path2.setAttribute('stroke', step.packet2Color);
+      path2.setAttribute('stroke-width', '3');
+
+      // Configure Packet 1 (Track 1: Business 200 OK)
+      pkt1Body.setAttribute('stroke', step.packet1Color);
+      pkt1Dot.setAttribute('fill', step.packet1Color);
+      pkt1Label.textContent = step.packet1Label;
+      pkt1.style.opacity = '1';
+
+      // Configure Packet 2 (Track 2: UDP Telemetry)
+      pkt2Body.setAttribute('stroke', step.packet2Color);
+      pkt2Dot.setAttribute('fill', step.packet2Color);
+      pkt2Label.textContent = step.packet2Label;
+      pkt2.style.opacity = '1';
+
+      const len1 = path1.getTotalLength();
+      const len2 = path2.getTotalLength();
+      const startTime = performance.now();
+
+      function dualFrame(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = easeInOutCubic(progress);
+
+        // Interpolate Packet 1 along Track 1
+        const pt1 = path1.getPointAtLength(ease * len1);
+        pkt1.setAttribute('transform', `translate(${pt1.x}, ${pt1.y})`);
+
+        // Interpolate Packet 2 along Track 2 SIMULTANEOUSLY!
+        const pt2 = path2.getPointAtLength(ease * len2);
+        pkt2.setAttribute('transform', `translate(${pt2.x}, ${pt2.y})`);
+
+        if (progress < 1) {
+          state.animFrameId = requestAnimationFrame(dualFrame);
+        } else {
+          // Trigger simultaneous ripples
+          triggerNodeRipple(step.ripple1Target, step.packet1Color);
+          triggerNodeRipple(step.ripple2Target, step.packet2Color);
+          if (onComplete) onComplete();
+        }
+      }
+
+      state.animFrameId = requestAnimationFrame(dualFrame);
+      return;
+    }
+
+    // CASE 2: SINGLE PACKET (OR INTERNAL STEP)
+    pkt2.style.opacity = '0'; // Hide second packet
+
     if (!step.pathId) {
-      pktGroup.style.opacity = '0';
+      // Internal processing on node (no path flight)
+      pkt1.style.opacity = '0';
       triggerNodeRipple(step.rippleTarget, step.packetColor);
       if (onComplete) onComplete();
       return;
@@ -534,44 +615,41 @@
 
     const pathElem = document.getElementById(step.pathId);
     if (!pathElem) {
-      pktGroup.style.opacity = '0';
+      pkt1.style.opacity = '0';
       if (onComplete) onComplete();
       return;
     }
 
-    // Highlight active circuit path
+    // Highlight active path
     pathElem.setAttribute('stroke', step.packetColor);
-    pathElem.setAttribute('stroke-width', '3.5');
+    pathElem.setAttribute('stroke-width', '3');
 
-    // Configure packet visuals
-    pktAura.setAttribute('fill', step.packetColor);
-    pktBody.setAttribute('stroke', step.packetColor);
-    pktLabel.textContent = step.packetLabel;
-    pktGroup.style.opacity = '1';
+    // Configure Packet 1
+    pkt1Body.setAttribute('stroke', step.packetColor);
+    pkt1Dot.setAttribute('fill', step.packetColor);
+    pkt1Label.textContent = step.packetLabel;
+    pkt1.style.opacity = '1';
 
     const pathLen = pathElem.getTotalLength();
-    const duration = customDuration || (1000 / state.speed);
     const startTime = performance.now();
 
-    if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
-
-    function stepFrame(now) {
+    function singleFrame(now) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = easeInOutQuad(progress);
+      const ease = easeInOutCubic(progress);
 
-      const pt = pathElem.getPointAtLength(easeProgress * pathLen);
-      pktGroup.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+      const pt = pathElem.getPointAtLength(ease * pathLen);
+      pkt1.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
 
       if (progress < 1) {
-        state.animFrameId = requestAnimationFrame(stepFrame);
+        state.animFrameId = requestAnimationFrame(singleFrame);
       } else {
         triggerNodeRipple(step.rippleTarget, step.packetColor);
         if (onComplete) onComplete();
       }
     }
 
-    state.animFrameId = requestAnimationFrame(stepFrame);
+    state.animFrameId = requestAnimationFrame(singleFrame);
   }
 
   function triggerNodeRipple(rippleId, color) {
@@ -581,13 +659,13 @@
 
     ripple.setAttribute('stroke', color);
     ripple.classList.remove('ripple-active');
-    // Force DOM reflow
-    void ripple.offsetWidth;
+    void ripple.offsetWidth; // Reflow
     ripple.classList.add('ripple-active');
   }
 
-  function easeInOutQuad(t) {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  // Silky smooth cubic easing without jerky starts or stops
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
   // =========================================================================
@@ -600,141 +678,138 @@
     const scenario = SCENARIOS[state.mode];
     const isSync = state.mode === 'sync';
 
-    // Lifeline positions
+    // Lifeline X positions
     const xClient = 130;
     const xExpress = 350;
     const xUdp = 570;
     const xDb = 750;
 
     let markup = `
-      <!-- Lifeline Headers -->
+      <!-- Lifeline Headers (Crisp 1px Blueprint) -->
       <g class="seq-headers">
         <!-- Client -->
-        <rect x="${xClient - 55}" y="20" width="110" height="32" rx="4" fill="#131b2c" stroke="#58a6ff" stroke-width="1.5"/>
+        <rect x="${xClient - 55}" y="20" width="110" height="32" rx="4" fill="#0d1117" stroke="#30363d" stroke-width="1.2"/>
         <text x="${xClient}" y="36" text-anchor="middle" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="10" font-weight="bold">Client (WMS)</text>
         <text x="${xClient}" y="47" text-anchor="middle" fill="#8b949e" font-family="monospace" font-size="8">192.168.1.50</text>
-        <line x1="${xClient}" y1="52" x2="${xClient}" y2="400" stroke="#30363d" stroke-dasharray="4 4" stroke-width="1.5"/>
+        <line x1="${xClient}" y1="52" x2="${xClient}" y2="400" stroke="#253041" stroke-dasharray="3 3" stroke-width="1.2"/>
 
         <!-- Express -->
-        <rect x="${xExpress - 60}" y="20" width="120" height="32" rx="4" fill="#131b2c" stroke="#6366f1" stroke-width="1.5"/>
+        <rect x="${xExpress - 60}" y="20" width="120" height="32" rx="4" fill="#0d1117" stroke="#6366f1" stroke-width="1.2"/>
         <text x="${xExpress}" y="36" text-anchor="middle" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="10" font-weight="bold">Express API</text>
         <text x="${xExpress}" y="47" text-anchor="middle" fill="#6366f1" font-family="monospace" font-size="8">:5000 (Libuv)</text>
-        <line x1="${xExpress}" y1="52" x2="${xExpress}" y2="400" stroke="#30363d" stroke-dasharray="4 4" stroke-width="1.5"/>
+        <line x1="${xExpress}" y1="52" x2="${xExpress}" y2="400" stroke="#253041" stroke-dasharray="3 3" stroke-width="1.2"/>
 
         <!-- UDP Socket -->
-        <rect x="${xUdp - 60}" y="20" width="120" height="32" rx="4" fill="#131b2c" stroke="#bc8cff" stroke-width="1.5"/>
+        <rect x="${xUdp - 60}" y="20" width="120" height="32" rx="4" fill="#0d1117" stroke="#bc8cff" stroke-width="1.2"/>
         <text x="${xUdp}" y="36" text-anchor="middle" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="10" font-weight="bold">UDP Aggregator</text>
         <text x="${xUdp}" y="47" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="8">:5001 (RAM Buffer)</text>
-        <line x1="${xUdp}" y1="52" x2="${xUdp}" y2="400" stroke="#30363d" stroke-dasharray="4 4" stroke-width="1.5"/>
+        <line x1="${xUdp}" y1="52" x2="${xUdp}" y2="400" stroke="#253041" stroke-dasharray="3 3" stroke-width="1.2"/>
 
         <!-- PostgreSQL -->
-        <rect x="${xDb - 55}" y="20" width="110" height="32" rx="4" fill="#131b2c" stroke="#d29922" stroke-width="1.5"/>
+        <rect x="${xDb - 55}" y="20" width="110" height="32" rx="4" fill="#0d1117" stroke="#d29922" stroke-width="1.2"/>
         <text x="${xDb}" y="36" text-anchor="middle" fill="#f0f6fc" font-family="Inter, sans-serif" font-size="10" font-weight="bold">PostgreSQL</text>
         <text x="${xDb}" y="47" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="8">:5432 (pg.Pool)</text>
-        <line x1="${xDb}" y1="52" x2="${xDb}" y2="400" stroke="#30363d" stroke-dasharray="4 4" stroke-width="1.5"/>
+        <line x1="${xDb}" y1="52" x2="${xDb}" y2="400" stroke="#253041" stroke-dasharray="3 3" stroke-width="1.2"/>
       </g>
     `;
 
     if (isSync) {
-      // MODE A: Synchronous Blocking
+      // MODE A: Synchronous Blocking (Single-Track)
       markup += `
         <!-- Step 1: HTTP POST -->
-        <g opacity="${state.stepIndex === 0 ? '1' : '0.65'}">
-          <line x1="${xClient}" y1="85" x2="${xExpress}" y2="85" stroke="#d29922" stroke-width="${state.stepIndex === 0 ? '3' : '1.5'}"/>
-          <polygon points="${xExpress},85 ${xExpress - 8},81 ${xExpress - 8},89" fill="#d29922"/>
+        <g opacity="${state.stepIndex === 0 ? '1' : '0.6'}">
+          <line x1="${xClient}" y1="85" x2="${xExpress}" y2="85" stroke="#d29922" stroke-width="${state.stepIndex === 0 ? '2.5' : '1.5'}"/>
+          <polygon points="${xExpress},85 ${xExpress - 7},81 ${xExpress - 7},89" fill="#d29922"/>
           <text x="${(xClient + xExpress) / 2}" y="78" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="9" font-weight="bold">1. POST /api/items</text>
         </g>
 
-        <!-- Step 2: Route Processing -->
-        <g opacity="${state.stepIndex === 1 ? '1' : '0.65'}">
-          <rect x="${xExpress - 4}" y="95" width="8" height="30" fill="#58a6ff"/>
-          <text x="${xExpress + 12}" y="112" fill="#58a6ff" font-family="monospace" font-size="9">2. Logic &amp; Stock Calc</text>
+        <!-- Step 2: DB Query Stock -->
+        <g opacity="${state.stepIndex === 1 ? '1' : '0.6'}">
+          <line x1="${xExpress}" y1="125" x2="${xDb}" y2="125" stroke="#58a6ff" stroke-width="${state.stepIndex === 1 ? '2.5' : '1.5'}"/>
+          <polygon points="${xDb},125 ${xDb - 7},121 ${xDb - 7},129" fill="#58a6ff"/>
+          <text x="${(xExpress + xDb) / 2}" y="118" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="9">2. UPDATE stock (pg.Pool)</text>
         </g>
 
-        <!-- Step 3: DB Query Stock -->
-        <g opacity="${state.stepIndex === 2 ? '1' : '0.65'}">
-          <line x1="${xExpress}" y1="140" x2="${xDb}" y2="140" stroke="#58a6ff" stroke-width="${state.stepIndex === 2 ? '3' : '1.5'}"/>
-          <polygon points="${xDb},140 ${xDb - 8},136 ${xDb - 8},144" fill="#58a6ff"/>
-          <text x="${(xExpress + xDb) / 2}" y="133" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="9">3. UPDATE stock (pg.Pool)</text>
+        <!-- Step 3: BLOCKING AUDIT LOG WRITE -->
+        <g opacity="${state.stepIndex === 2 ? '1' : '0.75'}">
+          <line x1="${xExpress}" y1="165" x2="${xDb}" y2="165" stroke="#f85149" stroke-width="${state.stepIndex === 2 ? '3' : '1.8'}"/>
+          <polygon points="${xDb},165 ${xDb - 7},161 ${xDb - 7},169" fill="#f85149"/>
+          <text x="${(xExpress + xDb) / 2}" y="158" text-anchor="middle" fill="#f85149" font-family="monospace" font-size="9" font-weight="bold">3. INSERT audit_logs (AWAITING DISK)</text>
+
+          <!-- RED BLOCKING BOX ON EXPRESS -->
+          <rect x="${xExpress - 12}" y="165" width="24" height="110" rx="3" fill="#1f1315" stroke="#f85149" stroke-width="1.5"/>
+          <text x="${xExpress + 20}" y="220" fill="#f85149" font-family="Inter, sans-serif" font-size="9.5" font-weight="bold">⛔ EVENT LOOP TERTAHAN</text>
+          <text x="${xExpress + 20}" y="233" fill="#8b949e" font-family="monospace" font-size="8">Disk I/O Wait: 15-20ms</text>
         </g>
 
-        <!-- Step 4: BLOCKING AUDIT LOG WRITE -->
-        <g opacity="${state.stepIndex === 3 ? '1' : '0.75'}">
-          <line x1="${xExpress}" y1="180" x2="${xDb}" y2="180" stroke="#f85149" stroke-width="${state.stepIndex === 3 ? '3.5' : '2'}"/>
-          <polygon points="${xDb},180 ${xDb - 8},176 ${xDb - 8},184" fill="#f85149"/>
-          <text x="${(xExpress + xDb) / 2}" y="173" text-anchor="middle" fill="#f85149" font-family="monospace" font-size="9.5" font-weight="bold">4. INSERT audit_logs (AWAITING DISK)</text>
-
-          <!-- BIG RED BLOCKING RECTANGLE ON EXPRESS -->
-          <rect x="${xExpress - 14}" y="180" width="28" height="110" rx="4" fill="rgba(248, 81, 73, 0.25)" stroke="#f85149" stroke-width="2"/>
-          <text x="${xExpress + 22}" y="235" fill="#f85149" font-family="Inter, sans-serif" font-size="10" font-weight="bold">⛔ EVENT LOOP TERTAHAN</text>
-          <text x="${xExpress + 22}" y="248" fill="#8b949e" font-family="monospace" font-size="8.5">Disk I/O Wait: 15-20ms</text>
+        <!-- Step 4: DB Commit & Return -->
+        <g opacity="${state.stepIndex === 3 ? '1' : '0.6'}">
+          <line x1="${xDb}" y1="275" x2="${xExpress}" y2="275" stroke="#f85149" stroke-width="${state.stepIndex === 3 ? '2.5' : '1.5'}"/>
+          <polygon points="${xExpress},275 ${xExpress + 7},271 ${xExpress + 7},279" fill="#f85149"/>
+          <text x="${(xExpress + xDb) / 2}" y="268" text-anchor="middle" fill="#f85149" font-family="monospace" font-size="9">4. Commit &amp; Release Pool</text>
         </g>
 
-        <!-- Step 5: DB Commit & Return -->
-        <g opacity="${state.stepIndex === 4 ? '1' : '0.65'}">
-          <line x1="${xDb}" y1="290" x2="${xExpress}" y2="290" stroke="#f85149" stroke-width="${state.stepIndex === 4 ? '3' : '1.5'}"/>
-          <polygon points="${xExpress},290 ${xExpress + 8},286 ${xExpress + 8},294" fill="#f85149"/>
-          <text x="${(xExpress + xDb) / 2}" y="283" text-anchor="middle" fill="#f85149" font-family="monospace" font-size="9">5. Commit &amp; Release Pool</text>
-        </g>
-
-        <!-- Step 6: HTTP 200 Delayed Response -->
-        <g opacity="${state.stepIndex === 5 ? '1' : '0.65'}">
-          <line x1="${xExpress}" y1="330" x2="${xClient}" y2="330" stroke="#d29922" stroke-width="${state.stepIndex === 5 ? '3' : '1.5'}"/>
-          <polygon points="${xClient},330 ${xClient + 8},326 ${xClient + 8},334" fill="#d29922"/>
-          <text x="${(xClient + xExpress) / 2}" y="323" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="9" font-weight="bold">6. 200 OK (Latensi: 18.5ms - Lambat)</text>
+        <!-- Step 5: HTTP 200 Delayed Response -->
+        <g opacity="${state.stepIndex === 4 ? '1' : '0.6'}">
+          <line x1="${xExpress}" y1="315" x2="${xClient}" y2="315" stroke="#d29922" stroke-width="${state.stepIndex === 4 ? '2.5' : '1.5'}"/>
+          <polygon points="${xClient},315 ${xClient + 7},311 ${xClient + 7},319" fill="#d29922"/>
+          <text x="${(xClient + xExpress) / 2}" y="308" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="9" font-weight="bold">5. 200 OK (Latensi: 18.5ms - Lambat)</text>
         </g>
       `;
     } else {
-      // MODE B: Dual-Track UDP Non-Blocking
+      // MODE B: Dual-Track Non-Blocking (PARALLEL SPLIT!)
       markup += `
         <!-- Step 1: HTTP POST -->
-        <g opacity="${state.stepIndex === 0 ? '1' : '0.65'}">
-          <line x1="${xClient}" y1="85" x2="${xExpress}" y2="85" stroke="#d29922" stroke-width="${state.stepIndex === 0 ? '3' : '1.5'}"/>
-          <polygon points="${xExpress},85 ${xExpress - 8},81 ${xExpress - 8},89" fill="#d29922"/>
+        <g opacity="${state.stepIndex === 0 ? '1' : '0.6'}">
+          <line x1="${xClient}" y1="85" x2="${xExpress}" y2="85" stroke="#d29922" stroke-width="${state.stepIndex === 0 ? '2.5' : '1.5'}"/>
+          <polygon points="${xExpress},85 ${xExpress - 7},81 ${xExpress - 7},89" fill="#d29922"/>
           <text x="${(xClient + xExpress) / 2}" y="78" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="9" font-weight="bold">1. POST /api/items</text>
         </g>
 
-        <!-- Step 2: UDP Fire-and-Forget -->
+        <!-- Step 2: DUAL-TRACK PARALLEL BRANCH (SIMULTANEOUS!) -->
         <g opacity="${state.stepIndex === 1 ? '1' : '0.75'}">
-          <line x1="${xExpress}" y1="115" x2="${xUdp}" y2="115" stroke="#bc8cff" stroke-width="${state.stepIndex === 1 ? '3.5' : '2'}"/>
-          <polygon points="${xUdp},115 ${xUdp - 8},111 ${xUdp - 8},119" fill="#bc8cff"/>
-          <text x="${(xExpress + xUdp) / 2}" y="108" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="9" font-weight="bold">2. dgram.send(:5001) ~0.2ms</text>
+          <!-- Dual-Track Architectural Banner -->
+          <rect x="180" y="105" width="440" height="20" rx="3" fill="#0e1726" stroke="#3fb950" stroke-width="1"/>
+          <text x="400" y="119" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="8.5" font-weight="bold">⚡ DUAL-TRACK: BERCABANG DUA JALUR SEKALIGUS!</text>
+
+          <!-- Track 1 Arrow (Left to Client: 200 OK) -->
+          <line x1="${xExpress}" y1="140" x2="${xClient}" y2="140" stroke="#3fb950" stroke-width="${state.stepIndex === 1 ? '3' : '2'}"/>
+          <polygon points="${xClient},140 ${xClient + 7},136 ${xClient + 7},144" fill="#3fb950"/>
+          <text x="${(xClient + xExpress) / 2}" y="133" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">⚡ Track 1: 200 OK (2.1ms)</text>
+
+          <!-- Track 2 Arrow (Right to UDP Aggregator) AT THE EXACT SAME TIME! -->
+          <line x1="${xExpress}" y1="140" x2="${xUdp}" y2="140" stroke="#bc8cff" stroke-width="${state.stepIndex === 1 ? '3' : '2'}"/>
+          <polygon points="${xUdp},140 ${xUdp - 7},136 ${xUdp - 7},144" fill="#bc8cff"/>
+          <text x="${(xExpress + xUdp) / 2}" y="133" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="9" font-weight="bold">⚡ Track 2: UDP :5001 (0.2ms)</text>
+
+          <!-- Green Free Event Loop Bar on Express -->
+          <rect x="${xExpress - 3}" y="145" width="6" height="235" fill="#1b4728" rx="1"/>
+          <text x="${xExpress - 12}" y="240" text-anchor="end" fill="#3fb950" font-family="Inter, sans-serif" font-size="9" font-weight="bold">🟢 Event Loop Bebas</text>
+          <text x="${xExpress - 12}" y="252" text-anchor="end" fill="#8b949e" font-family="monospace" font-size="8">Siap Request Baru</text>
         </g>
 
-        <!-- Step 3: INSTANT HTTP 200 OK -->
-        <g opacity="${state.stepIndex === 2 ? '1' : '0.75'}">
-          <line x1="${xExpress}" y1="140" x2="${xClient}" y2="140" stroke="#3fb950" stroke-width="${state.stepIndex === 2 ? '3.5' : '2'}"/>
-          <polygon points="${xClient},140 ${xClient + 8},136 ${xClient + 8},144" fill="#3fb950"/>
-          <text x="${(xClient + xExpress) / 2}" y="133" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9.5" font-weight="bold">⚡ 3. HTTP 200 OK (2.1ms Kilat!)</text>
-
-          <!-- GREEN READY BAR ON EXPRESS -->
-          <rect x="${xExpress - 4}" y="145" width="8" height="240" fill="rgba(63, 185, 80, 0.4)" rx="2"/>
-          <text x="${xExpress - 14}" y="240" text-anchor="end" fill="#3fb950" font-family="Inter, sans-serif" font-size="9.5" font-weight="bold">🟢 Event Loop Bebas</text>
-          <text x="${xExpress - 14}" y="252" text-anchor="end" fill="#8b949e" font-family="monospace" font-size="8">Siap Request Berikutnya</text>
+        <!-- Step 3: RAM Ring Buffer (Track 2 Background) -->
+        <g opacity="${state.stepIndex === 2 ? '1' : '0.6'}">
+          <rect x="${xUdp - 6}" y="170" width="12" height="35" fill="#2d1f4d" stroke="#bc8cff" stroke-width="1" rx="2"/>
+          <text x="${xUdp + 14}" y="190" fill="#bc8cff" font-family="monospace" font-size="8.5">3. Ring Buffer RAM (3K)</text>
         </g>
 
-        <!-- Step 4: RAM Ring Buffer -->
-        <g opacity="${state.stepIndex === 3 ? '1' : '0.65'}">
-          <rect x="${xUdp - 6}" y="150" width="12" height="40" fill="#bc8cff" rx="3"/>
-          <text x="${xUdp + 14}" y="172" fill="#bc8cff" font-family="monospace" font-size="9">4. Circular Ring Buffer (3K RAM)</text>
+        <!-- Step 4: Aggregator Batch Flush -->
+        <g opacity="${state.stepIndex === 3 ? '1' : '0.6'}">
+          <line x1="${xUdp}" y1="240" x2="${xDb}" y2="240" stroke="#58a6ff" stroke-width="${state.stepIndex === 3 ? '2.5' : '1.5'}"/>
+          <polygon points="${xDb},240 ${xDb - 7},236 ${xDb - 7},244" fill="#58a6ff"/>
+          <text x="${(xUdp + xDb) / 2}" y="233" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="9">4. Batch Flush (100 logs)</text>
         </g>
 
-        <!-- Step 5: Aggregator Batch Flush -->
-        <g opacity="${state.stepIndex === 4 ? '1' : '0.65'}">
-          <line x1="${xUdp}" y1="230" x2="${xDb}" y2="230" stroke="#58a6ff" stroke-width="${state.stepIndex === 4 ? '3' : '1.5'}"/>
-          <polygon points="${xDb},230 ${xDb - 8},226 ${xDb - 8},234" fill="#58a6ff"/>
-          <text x="${(xUdp + xDb) / 2}" y="223" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="9">5. Batch Flush (100 logs / 2.000ms)</text>
-        </g>
-
-        <!-- Step 6: Bulk Insert & Tri-Layer Recovery -->
-        <g opacity="${state.stepIndex === 5 ? '1' : '0.65'}">
-          <line x1="${xDb}" y1="285" x2="${xUdp}" y2="285" stroke="#3fb950" stroke-width="${state.stepIndex === 5 ? '3' : '1.5'}"/>
-          <polygon points="${xUdp},285 ${xUdp + 8},281 ${xUdp + 8},289" fill="#3fb950"/>
-          <text x="${(xUdp + xDb) / 2}" y="278" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">6. Bulk INSERT &amp; 0.00% Packet Loss</text>
+        <!-- Step 5: Bulk Insert & Zero Loss -->
+        <g opacity="${state.stepIndex === 4 ? '1' : '0.6'}">
+          <line x1="${xDb}" y1="295" x2="${xUdp}" y2="295" stroke="#3fb950" stroke-width="${state.stepIndex === 4 ? '2.5' : '1.5'}"/>
+          <polygon points="${xUdp},295 ${xUdp + 7},291 ${xUdp + 7},299" fill="#3fb950"/>
+          <text x="${(xUdp + xDb) / 2}" y="288" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">5. Bulk INSERT (Loss: 0.00%)</text>
 
           <!-- Tri-layer Self-Healing Loop -->
-          <path d="M ${xUdp} 310 C ${xUdp - 60} 335 ${xExpress + 60} 335 ${xExpress} 310" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
-          <text x="${(xUdp + xExpress) / 2}" y="350" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="8.5">NACK TCP ARQ &amp; Piggybacking Self-Healing</text>
+          <path d="M ${xUdp} 320 C ${xUdp - 60} 345 ${xExpress + 60} 345 ${xExpress} 320" stroke="#bc8cff" stroke-width="1.2" stroke-dasharray="3 3" fill="none"/>
+          <text x="${(xUdp + xExpress) / 2}" y="355" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="8">Tri-Layer Self-Healing (Piggybacking + NACK ARQ)</text>
         </g>
       `;
     }
@@ -747,7 +822,6 @@
   // =========================================================================
   function bindKeyboard() {
     window.addEventListener('keydown', (e) => {
-      // Don't trigger if user is typing in form inputs
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
       const archTab = document.getElementById('tab-architecture');

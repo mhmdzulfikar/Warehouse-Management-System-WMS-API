@@ -1978,6 +1978,11 @@ body {
   box-shadow: inset 2px 0 0 var(--status-red);
 }
 
+.proto-step-item.active.dual-track-active {
+  border-color: var(--status-green);
+  box-shadow: inset 2px 0 0 var(--status-green);
+}
+
 .step-num-pill {
   width: 20px;
   height: 20px;
@@ -2004,6 +2009,12 @@ body {
 .proto-step-item.active.sync-blocking .step-num-pill {
   background: var(--status-red);
   border-color: var(--status-red);
+  color: #fff;
+}
+
+.proto-step-item.active.dual-track-active .step-num-pill {
+  background: var(--status-green);
+  border-color: var(--status-green);
   color: #fff;
 }
 
