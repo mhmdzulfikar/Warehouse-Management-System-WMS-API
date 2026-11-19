@@ -197,52 +197,52 @@
         {
           id: 4,
           num: '04',
-          title: 'Batch Queueing & Double-Buffer Flush',
-          shortDesc: 'Aggregator menampung paket hingga 100 log / 2.000ms, lalu swap buffer secara atomik.',
+          title: 'Batch Queueing & Double-Buffer Swap',
+          shortDesc: 'Aggregator menampung paket hingga ambang 100 log / 2.000ms, lalu swap buffer secara atomik.',
           isDualTrack: false,
-          packetLabel: 'BATCH FLUSH (100)',
+          packetLabel: 'SWAP BUFFER (100)',
           packetColor: '#58a6ff',
-          pathId: 'pathUdpToDb',
+          pathId: null,
           fromNode: 'nodeUdp',
-          toNode: 'nodeDb',
-          rippleTarget: 'rippleDb',
+          toNode: 'nodeUdp',
+          rippleTarget: 'rippleUdp',
           eventLoop: 'Terisolasi Total',
           eventLoopAlert: false,
           dbPool: 'Pool Khusus Aggregator',
           clientLatency: 'Background Track',
-          narrative: '<strong>[Langkah 4/5]</strong> Log telemetri dikumpulkan dalam antrean RAM. Saat ambang 100 log atau interval 2.000ms tercapai, Aggregator melakukan swap double-buffer dan mengirimkan batch kueri melalui koneksi database terpisah.'
+          narrative: '<strong>[Langkah 4/5]</strong> Log telemetri dikumpulkan dalam antrean RAM. Saat ambang 100 log atau interval 2.000ms tercapai, Aggregator melakukan swap double-buffer dan menyiapkan pengiriman batch.'
         },
         {
           id: 5,
           num: '05',
-          title: 'Bulk INSERT & Tri-Layer Recovery (0.00% Loss)',
-          shortDesc: '100 log ditulis via 1 kueri bulk-insert; Tri-Layer menjamin Loss Rate 0.00% Zero-Loss!',
+          title: 'Bulk INSERT Langsung ke PostgreSQL (Zero-Loss)',
+          shortDesc: 'Aggregator menulis 100 log LANGSUNG ke Database PostgreSQL (:5432) via koneksi terpisah.',
           isDualTrack: false,
-          packetLabel: 'BULK INSERT (0.00% LOSS)',
+          packetLabel: 'BULK INSERT DB',
           packetColor: '#3fb950',
-          pathId: 'pathAggregatorToExpress',
+          pathId: 'pathUdpToDb',
           fromNode: 'nodeUdp',
-          toNode: 'nodeExpress',
-          rippleTarget: 'rippleExpress',
+          toNode: 'nodeDb',
+          rippleTarget: 'rippleDb',
           eventLoop: 'Throughput: ~3.480 req/s',
           eventLoopAlert: false,
           dbPool: 'Efisiensi Pool Maksimal',
           clientLatency: 'Loss Rate: 0.00% Zero-Loss',
-          narrative: '<strong>[Langkah 5/5 - ZERO LOSS]</strong> PostgreSQL mengeksekusi 1 kueri bulk-insert efisien untuk 100 log sekaligus. Jika terjadi paket tercecer di jaringan, Tri-Layer Self-Healing (Piggybacking + NACK TCP ARQ + Watchdog) otomatis menyerapnya kembali sehingga 0.00% data hilang!'
+          narrative: '<strong>[Langkah 5/5 - BULK INSERT DATABASE]</strong> Log telemetri ditulis LANGSUNG dari UDP Aggregator ke PostgreSQL Database (:5432) via koneksi terpisah tanpa pernah menyentuh Express / Node.js! Persistensi 100 log selesai sekaligus dalam 1 kueri bulk-insert efisien, menjaga Loss Rate 0.00% dan Zero Contention!'
         }
       ]
     }
   };
 
   // =========================================================================
-  // SIMULATOR STATE MACHINE
+  // SIMULATOR STATE MACHINE (Default Speed: 0.5x)
   // =========================================================================
   const state = {
     mode: 'udp',          // 'udp' | 'sync'
     view: 'network',      // 'network' | 'sequence'
     stepIndex: 0,
     isPlaying: false,
-    speed: 1,             // 0.5 | 1 | 2
+    speed: 0.5,           // Default 0.5x for smooth, cinematic review
     animFrameId: null,
     playTimeoutId: null
   };
@@ -794,22 +794,17 @@
           <text x="${xUdp + 14}" y="190" fill="#bc8cff" font-family="monospace" font-size="8.5">3. Ring Buffer RAM (3K)</text>
         </g>
 
-        <!-- Step 4: Aggregator Batch Flush -->
+        <!-- Step 4: Double-Buffer Swap -->
         <g opacity="${state.stepIndex === 3 ? '1' : '0.6'}">
-          <line x1="${xUdp}" y1="240" x2="${xDb}" y2="240" stroke="#58a6ff" stroke-width="${state.stepIndex === 3 ? '2.5' : '1.5'}"/>
-          <polygon points="${xDb},240 ${xDb - 7},236 ${xDb - 7},244" fill="#58a6ff"/>
-          <text x="${(xUdp + xDb) / 2}" y="233" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="9">4. Batch Flush (100 logs)</text>
+          <rect x="${xUdp - 6}" y="225" width="12" height="30" fill="#253041" stroke="#58a6ff" stroke-width="1" rx="2"/>
+          <text x="${xUdp + 14}" y="243" fill="#58a6ff" font-family="monospace" font-size="8.5">4. Swap Double-Buffer (100 logs)</text>
         </g>
 
-        <!-- Step 5: Bulk Insert & Zero Loss -->
+        <!-- Step 5: Bulk INSERT Langsung ke PostgreSQL Database -->
         <g opacity="${state.stepIndex === 4 ? '1' : '0.6'}">
-          <line x1="${xDb}" y1="295" x2="${xUdp}" y2="295" stroke="#3fb950" stroke-width="${state.stepIndex === 4 ? '2.5' : '1.5'}"/>
-          <polygon points="${xUdp},295 ${xUdp + 7},291 ${xUdp + 7},299" fill="#3fb950"/>
-          <text x="${(xUdp + xDb) / 2}" y="288" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">5. Bulk INSERT (Loss: 0.00%)</text>
-
-          <!-- Tri-layer Self-Healing Loop -->
-          <path d="M ${xUdp} 320 C ${xUdp - 60} 345 ${xExpress + 60} 345 ${xExpress} 320" stroke="#bc8cff" stroke-width="1.2" stroke-dasharray="3 3" fill="none"/>
-          <text x="${(xUdp + xExpress) / 2}" y="355" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="8">Tri-Layer Self-Healing (Piggybacking + NACK ARQ)</text>
+          <line x1="${xUdp}" y1="285" x2="${xDb}" y2="285" stroke="#3fb950" stroke-width="${state.stepIndex === 4 ? '3' : '1.8'}"/>
+          <polygon points="${xDb},285 ${xDb - 7},281 ${xDb - 7},289" fill="#3fb950"/>
+          <text x="${(xUdp + xDb) / 2}" y="278" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">5. Bulk INSERT Langsung ke PostgreSQL (:5432)</text>
         </g>
       `;
     }
