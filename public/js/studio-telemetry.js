@@ -740,12 +740,17 @@
         const d = await res.json();
         if (!res.ok) throw new Error(d.error || 'Autocannon execution failed');
 
-        appendLog('SUCCESS', `[AUTOCANNON COMPLETED] Total: ${d.requestsTotal.toLocaleString()} | Avg: ${d.requestsAverage} req/s | Latency p99: ${d.latencyP99Ms}ms | Errors: ${d.errors}`);
+        const prevDbCount = store.metrics?.database?.totalPersistedLogs || 0;
+        appendLog('SUCCESS', `[AUTOCANNON COMPLETED] Total: ${d.requestsTotal.toLocaleString()} requests | Avg: ${d.requestsAverage} req/s | Latency p99: ${d.latencyP99Ms}ms | Errors: ${d.errors}`);
+        appendLog('INFO', `[DATABASE LOGS] +${d.requestsTotal.toLocaleString()} log baru dari sesi ini tersimpan ke PostgreSQL. Total kumulatif tabel telemetry_logs sekarang: ${(prevDbCount + d.requestsTotal).toLocaleString()} baris. (Gunakan tombol 'Bersihkan Semua Log DB' di panel kanan jika ingin mereset ke 0 sebelum uji coba).`);
 
         if (d.formattedTable) {
           const pre = document.createElement('pre');
           pre.className = 'log-table';
-          pre.textContent = d.formattedTable;
+          // Strip any residual ANSI escape codes so ASCII box borders render cleanly
+          pre.textContent = d.formattedTable
+            .replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+            .replace(/\[[0-9;]+m/g, '');
           const term = document.getElementById('terminalLog');
           if (term) {
             term.appendChild(pre);

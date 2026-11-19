@@ -453,7 +453,11 @@ router.post('/autocannon', async (req: Request, res: Response) => {
       pipelining: 1,
     });
 
-    const formattedTable = autocannon.printResult(result, { renderLatencyTable: true });
+    const rawTable = autocannon.printResult(result, { renderLatencyTable: true });
+    // Strip all ANSI escape sequences so the ASCII box table renders cleanly in Web UI and log viewers
+    const formattedTable = rawTable
+      .replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+      .replace(/\[[0-9;]+m/g, '');
 
     res.json({
       status: 'ok',

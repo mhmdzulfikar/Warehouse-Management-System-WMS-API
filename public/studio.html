@@ -126,16 +126,16 @@
               <span class="radar-label" data-i18n="dbPersisted">PostgreSQL Persisted</span>
               <div class="btn-info-icon mini" tabindex="0">ⓘ
                 <div class="tooltip-box tooltip-down">
-                  <div class="tt-title">📋 Data Nyata di PostgreSQL</div>
-                  <div class="tt-body">👉 <strong>Artinya:</strong> Jumlah baris data yang sudah benar-benar tertulis permanen di harddisk database tabel <code>telemetry_logs</code>.</div>
-                  <div class="tt-effect">👀 <strong>Cek Fisik:</strong> Klik tombol biru di bawah ("Lihat Log Database") untuk melihat tabel baris aslinya secara langsung.</div>
-                  <div class="tt-meta">Target Fisik: Tabel telemetry_logs di Database PostgreSQL</div>
+                  <div class="tt-title">📋 Data Nyata di PostgreSQL (Kumulatif)</div>
+                  <div class="tt-body">👉 <strong>Artinya:</strong> Total seluruh baris log yang tersimpan di tabel <code>telemetry_logs</code> (hasil akumulasi dari seluruh pengujian yang pernah dijalankan).</div>
+                  <div class="tt-effect">👀 <strong>Info Reset:</strong> Gunakan tombol "Bersihkan Semua Log DB" di panel Testbed sebelah kanan jika ingin mengosongkan tabel kembali ke 0 baris sebelum memulai benchmark baru.</div>
+                  <div class="tt-meta">Target Fisik: Tabel telemetry_logs di Database PostgreSQL (Total Kumulatif)</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="radar-num" id="dbLogsCount">0 <span class="unit">rows</span></div>
-          <div class="radar-sub" data-i18n="tableTarget">Table: telemetry_logs</div>
+          <div class="radar-sub" data-i18n="tableTarget" title="Total kumulatif baris tersimpan di database">Table: telemetry_logs (Total Kumulatif)</div>
           <button class="radar-quick-btn" onclick="window.TelemetryModule.switchDeckView('db')">📋 Lihat Log Database</button>
         </div>
 
