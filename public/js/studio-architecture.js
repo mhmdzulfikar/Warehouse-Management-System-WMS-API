@@ -157,15 +157,15 @@
         {
           id: 2,
           num: '02',
-          title: '⚡ DUAL-TRACK: BERCABANG DUA JALUR SEKALIGUS!',
-          shortDesc: 'Jalur 1: Respon 200 OK instan ke Klien (2.1ms) | Jalur 2: Datagram UDP ke :5001 (~0.2ms).',
-          isDualTrack: true, // TRIGGER DUAL SIMULTANEOUS PACKETS!
-          // Track 1 (Business Transaction Return):
-          path1: 'pathExpressToClient',
-          packet1Label: '⚡ 200 OK (2.1ms)',
-          packet1Color: '#3fb950',
-          ripple1Target: 'rippleClient',
-          // Track 2 (Telemetry Datagram):
+          title: '⚡ DUAL-TRACK: TRANSAKSI DB & UDP BERBARENGAN!',
+          shortDesc: 'Express kueri stok ke DB, berbarengan menembak log ke UDP Aggregator (:5001).',
+          isDualTrack: true, // DUAL CONCURRENT PACKETS SIMULTANEOUS!
+          // Track 1 (Business Transaction Query to DB):
+          path1: 'pathExpressToDb',
+          packet1Label: 'UPDATE items (DB)',
+          packet1Color: '#58a6ff',
+          ripple1Target: 'rippleDb',
+          // Track 2 (Telemetry Datagram to UDP Aggregator):
           path2: 'pathExpressToUdp',
           packet2Label: 'UDP :5001 (0.2ms)',
           packet2Color: '#bc8cff',
@@ -173,50 +173,50 @@
           eventLoop: '0.3 ms (NON-BLOCKING ⚡)',
           eventLoopAlert: false,
           dbPool: '1 / 10 (Terisolasi)',
-          clientLatency: 'Total: 2.1 ms (-88.6%)',
-          narrative: '<strong>[Langkah 2/5 - DUAL-TRACK SIMULTAN]</strong> Arsitektur membelah proses menjadi DUA JALUR BERJALAN SEKALIGUS! <em>Jalur 1:</em> Mengirimkan respon HTTP 200 OK ke Klien seketika (2.1ms). <em>Jalur 2:</em> Menembakkan datagram telemetri ke UDP Socket :5001 secara Fire-and-Forget (~0.2ms). Klien tidak pernah menunggu database!'
+          clientLatency: 'Sedang Proses Transaksi',
+          narrative: '<strong>[Langkah 2/5 - DUAL-TRACK SIMULTAN]</strong> Dua jalur berjalan bersamaan! <em>Jalur Bisnis:</em> Express mengirim kueri mutasi barang ke PostgreSQL Database. <em>Jalur Telemetri:</em> Secara berbarengan, Express menembakkan datagram log audit ke UDP Aggregator (:5001) via dgram.send() dalam ~0.2ms tanpa menunggu DB!'
         },
         {
           id: 3,
           num: '03',
-          title: 'RAM Ring Buffer & Sequence Verification',
-          shortDesc: 'Klien sudah bebas! Log telemetri diamankan di 3.000 Circular Ring Buffer RAM pengirim.',
+          title: 'Respon Kilat ke Klien: HTTP 200 OK (2.1ms)',
+          shortDesc: 'Kueri barang selesai! Klien langsung terima 200 OK tanpa menunggu penulisan log.',
           isDualTrack: false,
-          packetLabel: 'RAM BUFFER (3K)',
+          packetLabel: '⚡ 200 OK (2.1ms)',
+          packetColor: '#3fb950',
+          pathId: 'pathExpressToClient',
+          fromNode: 'nodeExpress',
+          toNode: 'nodeClient',
+          rippleTarget: 'rippleClient',
+          eventLoop: '0.2 ms (Bebas)',
+          eventLoopAlert: false,
+          dbPool: 'Koneksi Langsung Bebas',
+          clientLatency: 'Total: 2.1 ms (-88.6%)',
+          narrative: '<strong>[Langkah 3/5 - RESPON KILAT KE KLIEN]</strong> Kueri bisnis barang selesai di-commit di database. Express LANGSUNG membalas HTTP 200 OK ke Klien (latensi kilat 2.1ms)! Klien tidak pernah menunggu log audit ditulis. Barcode scanner langsung bebas memindai barang berikutnya!'
+        },
+        {
+          id: 4,
+          num: '04',
+          title: 'Aggregator Menampung di RAM (2s / 100 Logs)',
+          shortDesc: 'Log ditampung di memori RAM hingga 2 detik atau mencapai ambang batas 100 log.',
+          isDualTrack: false,
+          packetLabel: 'BUFFER RAM (2s / 100)',
           packetColor: '#bc8cff',
           pathId: null,
           fromNode: 'nodeUdp',
           toNode: 'nodeUdp',
           rippleTarget: 'rippleUdp',
-          eventLoop: 'Bebas / Klien Selesai',
+          eventLoop: 'Terisolasi Total (Bebas)',
           eventLoopAlert: false,
           dbPool: '0 Contention',
           clientLatency: 'Background Track',
-          narrative: '<strong>[Langkah 3/5]</strong> Klien sudah bebas dan dapat memindai barcode berikutnya. Di latar belakang, log telemetri diamankan di In-Memory Circular Ring Buffer RAM (3.000 log) untuk proteksi NACK ARQ, dan Aggregator memverifikasi sequence number.'
-        },
-        {
-          id: 4,
-          num: '04',
-          title: 'Batch Queueing & Double-Buffer Swap',
-          shortDesc: 'Aggregator menampung paket hingga ambang 100 log / 2.000ms, lalu swap buffer secara atomik.',
-          isDualTrack: false,
-          packetLabel: 'SWAP BUFFER (100)',
-          packetColor: '#58a6ff',
-          pathId: null,
-          fromNode: 'nodeUdp',
-          toNode: 'nodeUdp',
-          rippleTarget: 'rippleUdp',
-          eventLoop: 'Terisolasi Total',
-          eventLoopAlert: false,
-          dbPool: 'Pool Khusus Aggregator',
-          clientLatency: 'Background Track',
-          narrative: '<strong>[Langkah 4/5]</strong> Log telemetri dikumpulkan dalam antrean RAM. Saat ambang 100 log atau interval 2.000ms tercapai, Aggregator melakukan swap double-buffer dan menyiapkan pengiriman batch.'
+          narrative: '<strong>[Langkah 4/5 - BUFFER RAM 2 DETIK / 100 LOG]</strong> Klien sudah bebas bertransaksi. Di latar belakang, log telemetri ditampung di buffer RAM Aggregator. Aggregator mengumpulkan paket hingga mencapai ambang batas 100 log ATAU waktu berjalan selama dua detik (2.000 ms), lalu bersiap melakukan flush bulk insert.'
         },
         {
           id: 5,
           num: '05',
-          title: 'Bulk INSERT Langsung ke PostgreSQL (Zero-Loss)',
-          shortDesc: 'Aggregator menulis 100 log LANGSUNG ke Database PostgreSQL (:5432) via koneksi terpisah.',
+          title: 'Bulk INSERT Langsung ke PostgreSQL Database',
+          shortDesc: 'Aggregator menulis 100 log LANGSUNG ke Database (:5432) via koneksi terpisah tanpa sentuh Express.',
           isDualTrack: false,
           packetLabel: 'BULK INSERT DB',
           packetColor: '#3fb950',
@@ -228,7 +228,7 @@
           eventLoopAlert: false,
           dbPool: 'Efisiensi Pool Maksimal',
           clientLatency: 'Loss Rate: 0.00% Zero-Loss',
-          narrative: '<strong>[Langkah 5/5 - BULK INSERT DATABASE]</strong> Log telemetri ditulis LANGSUNG dari UDP Aggregator ke PostgreSQL Database (:5432) via koneksi terpisah tanpa pernah menyentuh Express / Node.js! Persistensi 100 log selesai sekaligus dalam 1 kueri bulk-insert efisien, menjaga Loss Rate 0.00% dan Zero Contention!'
+          narrative: '<strong>[Langkah 5/5 - BULK INSERT DATABASE]</strong> Ambang 2 detik atau 100 log tercapai! Aggregator Daemon menuliskan 100 log sekaligus LANGSUNG ke tabel telemetry_logs di PostgreSQL (:5432) via koneksi terpisah. Transaksi utama Express tidak pernah terbebani, menghasilkan Loss Rate 0.00% Zero-Loss dan Zero Pool Contention!'
         }
       ]
     }
@@ -769,42 +769,43 @@
         <!-- Step 2: DUAL-TRACK PARALLEL BRANCH (SIMULTANEOUS!) -->
         <g opacity="${state.stepIndex === 1 ? '1' : '0.75'}">
           <!-- Dual-Track Architectural Banner -->
-          <rect x="180" y="105" width="440" height="20" rx="3" fill="#0e1726" stroke="#3fb950" stroke-width="1"/>
-          <text x="400" y="119" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="8.5" font-weight="bold">⚡ DUAL-TRACK: BERCABANG DUA JALUR SEKALIGUS!</text>
+          <rect x="180" y="105" width="440" height="20" rx="3" fill="#0e1726" stroke="#58a6ff" stroke-width="1"/>
+          <text x="400" y="119" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="8.5" font-weight="bold">⚡ DUAL-TRACK: TRANSAKSI DB &amp; TELEMETRI UDP BERJALAN BERSAMAAN!</text>
 
-          <!-- Track 1 Arrow (Left to Client: 200 OK) -->
-          <line x1="${xExpress}" y1="140" x2="${xClient}" y2="140" stroke="#3fb950" stroke-width="${state.stepIndex === 1 ? '3' : '2'}"/>
-          <polygon points="${xClient},140 ${xClient + 7},136 ${xClient + 7},144" fill="#3fb950"/>
-          <text x="${(xClient + xExpress) / 2}" y="133" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">⚡ Track 1: 200 OK (2.1ms)</text>
+          <!-- Track 1 Arrow (Express -> DB: UPDATE stock) -->
+          <line x1="${xExpress}" y1="140" x2="${xDb}" y2="140" stroke="#58a6ff" stroke-width="${state.stepIndex === 1 ? '3' : '2'}"/>
+          <polygon points="${xDb},140 ${xDb - 7},136 ${xDb - 7},144" fill="#58a6ff"/>
+          <text x="${(xExpress + xDb) / 2}" y="133" text-anchor="middle" fill="#58a6ff" font-family="monospace" font-size="9" font-weight="bold">⚡ 2A. Transaksi Barang: UPDATE stock (pg.Pool)</text>
 
-          <!-- Track 2 Arrow (Right to UDP Aggregator) AT THE EXACT SAME TIME! -->
+          <!-- Track 2 Arrow (Express -> UDP Aggregator) AT THE EXACT SAME TIME! -->
           <line x1="${xExpress}" y1="140" x2="${xUdp}" y2="140" stroke="#bc8cff" stroke-width="${state.stepIndex === 1 ? '3' : '2'}"/>
           <polygon points="${xUdp},140 ${xUdp - 7},136 ${xUdp - 7},144" fill="#bc8cff"/>
-          <text x="${(xExpress + xUdp) / 2}" y="133" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="9" font-weight="bold">⚡ Track 2: UDP :5001 (0.2ms)</text>
+          <text x="${(xExpress + xUdp) / 2}" y="133" text-anchor="middle" fill="#bc8cff" font-family="monospace" font-size="9" font-weight="bold">⚡ 2B. Log Telemetri: dgram.send(:5001)</text>
+        </g>
+
+        <!-- Step 3: Fast Response to Client (2.1ms) -->
+        <g opacity="${state.stepIndex === 2 ? '1' : '0.75'}">
+          <line x1="${xExpress}" y1="185" x2="${xClient}" y2="185" stroke="#3fb950" stroke-width="${state.stepIndex === 2 ? '3' : '2'}"/>
+          <polygon points="${xClient},185 ${xClient + 7},181 ${xClient + 7},189" fill="#3fb950"/>
+          <text x="${(xClient + xExpress) / 2}" y="178" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">⚡ 3. HTTP 200 OK (2.1ms Kilat ke Klien!)</text>
 
           <!-- Green Free Event Loop Bar on Express -->
-          <rect x="${xExpress - 3}" y="145" width="6" height="235" fill="#1b4728" rx="1"/>
-          <text x="${xExpress - 12}" y="240" text-anchor="end" fill="#3fb950" font-family="Inter, sans-serif" font-size="9" font-weight="bold">🟢 Event Loop Bebas</text>
-          <text x="${xExpress - 12}" y="252" text-anchor="end" fill="#8b949e" font-family="monospace" font-size="8">Siap Request Baru</text>
+          <rect x="${xExpress - 3}" y="190" width="6" height="190" fill="#1b4728" rx="1"/>
+          <text x="${xExpress - 12}" y="250" text-anchor="end" fill="#3fb950" font-family="Inter, sans-serif" font-size="9" font-weight="bold">🟢 Event Loop Bebas</text>
+          <text x="${xExpress - 12}" y="262" text-anchor="end" fill="#8b949e" font-family="monospace" font-size="8">Siap Request Baru</text>
         </g>
 
-        <!-- Step 3: RAM Ring Buffer (Track 2 Background) -->
-        <g opacity="${state.stepIndex === 2 ? '1' : '0.6'}">
-          <rect x="${xUdp - 6}" y="170" width="12" height="35" fill="#2d1f4d" stroke="#bc8cff" stroke-width="1" rx="2"/>
-          <text x="${xUdp + 14}" y="190" fill="#bc8cff" font-family="monospace" font-size="8.5">3. Ring Buffer RAM (3K)</text>
-        </g>
-
-        <!-- Step 4: Double-Buffer Swap -->
+        <!-- Step 4: UDP Aggregator RAM Buffer Holding (2s / 100 Logs) -->
         <g opacity="${state.stepIndex === 3 ? '1' : '0.6'}">
-          <rect x="${xUdp - 6}" y="225" width="12" height="30" fill="#253041" stroke="#58a6ff" stroke-width="1" rx="2"/>
-          <text x="${xUdp + 14}" y="243" fill="#58a6ff" font-family="monospace" font-size="8.5">4. Swap Double-Buffer (100 logs)</text>
+          <rect x="${xUdp - 6}" y="225" width="12" height="35" fill="#2d1f4d" stroke="#bc8cff" stroke-width="1" rx="2"/>
+          <text x="${xUdp + 14}" y="245" fill="#bc8cff" font-family="monospace" font-size="8.5">4. Buffer RAM (2s / 100 Logs)</text>
         </g>
 
         <!-- Step 5: Bulk INSERT Langsung ke PostgreSQL Database -->
         <g opacity="${state.stepIndex === 4 ? '1' : '0.6'}">
-          <line x1="${xUdp}" y1="285" x2="${xDb}" y2="285" stroke="#3fb950" stroke-width="${state.stepIndex === 4 ? '3' : '1.8'}"/>
-          <polygon points="${xDb},285 ${xDb - 7},281 ${xDb - 7},289" fill="#3fb950"/>
-          <text x="${(xUdp + xDb) / 2}" y="278" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">5. Bulk INSERT Langsung ke PostgreSQL (:5432)</text>
+          <line x1="${xUdp}" y1="290" x2="${xDb}" y2="290" stroke="#3fb950" stroke-width="${state.stepIndex === 4 ? '3' : '1.8'}"/>
+          <polygon points="${xDb},290 ${xDb - 7},286 ${xDb - 7},294" fill="#3fb950"/>
+          <text x="${(xUdp + xDb) / 2}" y="283" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">5. Bulk INSERT Langsung ke PostgreSQL (:5432)</text>
         </g>
       `;
     }
