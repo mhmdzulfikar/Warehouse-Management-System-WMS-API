@@ -852,7 +852,7 @@
           </div>
 
           <div class="proto-header-actions">
-            <!-- Mode Toggle: Sync Blocking vs UDP Dual-Track -->
+            <!-- Mode Toggle: Sync Blocking vs UDP Dual-Track vs ARQ Recovery -->
             <div class="proto-mode-toggle" role="group" aria-label="Mode Simulasi">
               <button type="button" class="btn-proto-toggle" id="btnModeSync" onclick="window.ProtocolSimulator.setMode('sync')">
                 <span class="dot-indicator red"></span>
@@ -861,6 +861,10 @@
               <button type="button" class="btn-proto-toggle active" id="btnModeUdp" onclick="window.ProtocolSimulator.setMode('udp')">
                 <span class="dot-indicator green"></span>
                 <span>Dengan UDP (Dual-Track)</span>
+              </button>
+              <button type="button" class="btn-proto-toggle" id="btnModeRecovery" onclick="window.ProtocolSimulator.setMode('recovery')">
+                <span class="dot-indicator amber"></span>
+                <span>Simulasi Paket Hilang &amp; Recovery (ARQ)</span>
               </button>
             </div>
 
@@ -969,7 +973,10 @@
                   <path id="pathExpressToUdp" d="M 440 190 L 440 120" stroke="#253041" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
 
                   <!-- UDP Aggregator -> Express ARQ Self-Healing Loop -->
-                  <path id="pathAggregatorToExpress" d="M 410 115 C 370 145 370 170 410 195" stroke="#253041" stroke-width="1.8" stroke-dasharray="3 3" fill="none"/>
+                  <g style="cursor: pointer;" onclick="window.ArchitectureModule.explainNode('pathAggregatorToExpress')">
+                    <path id="pathAggregatorToExpress" d="M 410 115 C 370 145 370 170 410 195" stroke="#253041" stroke-width="1.8" stroke-dasharray="3 3" fill="none"/>
+                    <text id="lblArqCurve" x="330" y="158" fill="#8b949e" font-family="monospace" font-size="7.5" text-anchor="middle" opacity="0.8">Jalur NACK ARQ</text>
+                  </g>
 
                   <!-- Express -> PostgreSQL Direct Transaction Path -->
                   <path id="pathExpressToDb" d="M 490 235 L 680 195" stroke="#253041" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
@@ -1096,8 +1103,9 @@
             <span class="legend-item"><span class="dot-lg" style="background: #d29922;"></span> Inbound POST</span>
             <span class="legend-item"><span class="dot-lg" style="background: #58a6ff;"></span> Transaksi DB (pg.Pool)</span>
             <span class="legend-item"><span class="dot-lg" style="background: #bc8cff;"></span> Telemetri UDP (:5001)</span>
-            <span class="legend-item"><span class="dot-lg" style="background: #3fb950;"></span> 200 OK Kilat / Bulk DB</span>
-            <span class="legend-item"><span class="dot-lg" style="background: #f85149;"></span> Sync Blocking</span>
+            <span class="legend-item"><span class="dot-lg" style="background: #f85149;"></span> ❌ Drop / Hilang di Wire</span>
+            <span class="legend-item"><span class="dot-lg" style="background: #e3b341;"></span> 🔄 Sinyal NACK (Jalur Melengkung)</span>
+            <span class="legend-item"><span class="dot-lg" style="background: #3fb950;"></span> ⚡ 200 OK Kilat / Pulih / Bulk DB</span>
           </div>
 
           <!-- Player Controls -->

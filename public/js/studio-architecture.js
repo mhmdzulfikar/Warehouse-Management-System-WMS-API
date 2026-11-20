@@ -231,6 +231,134 @@
           narrative: '<strong>[Langkah 5/5 - BULK INSERT DATABASE]</strong> Ambang 2 detik atau 100 log tercapai! Aggregator Daemon menuliskan 100 log sekaligus LANGSUNG ke tabel telemetry_logs di PostgreSQL (:5432) via koneksi terpisah. Transaksi utama Express tidak pernah terbebani, menghasilkan Loss Rate 0.00% Zero-Loss dan Zero Pool Contention!'
         }
       ]
+    },
+
+    // Mode C: Packet Loss & Self-Healing Recovery Loop (NACK ARQ)
+    recovery: {
+      modeName: 'SIMULASI PAKET HILANG & RECOVERY ARQ (SELF-HEALING)',
+      badgeClass: 'udp',
+      benchmark: {
+        throughput: '~3,480 req/s',
+        throughputTag: 'Zero-Impact',
+        throughputClass: 'green',
+        latency: '2.1 ms',
+        latencyTag: '-88.6%',
+        latencyClass: 'green',
+        loss: '0.00% Zero-Loss',
+        lossTag: 'Self-Healing',
+        lossClass: 'green'
+      },
+      steps: [
+        {
+          id: 1,
+          num: '01',
+          title: 'HTTP POST /api/items (Inbound)',
+          shortDesc: 'Barcode Scanner/Web mengirim request transaksi mutasi ke Express API (:5000).',
+          isDualTrack: false,
+          packetLabel: 'HTTP POST',
+          packetColor: '#d29922',
+          pathId: 'pathClientToExpress',
+          fromNode: 'nodeClient',
+          toNode: 'nodeExpress',
+          rippleTarget: 'rippleExpress',
+          eventLoop: '0.1 ms (Responsive)',
+          eventLoopAlert: false,
+          dbPool: '0 / 10 koneksi',
+          clientLatency: '0.0 ms',
+          narrative: '<strong>[Langkah 1/6]</strong> Klien barcode scanner/web mengirim request transaksi stok ke Express API (:5000). Event loop Libuv menerima paket TCP tanpa antrean.'
+        },
+        {
+          id: 2,
+          num: '02',
+          title: '⚡ Dual-Track: 200 OK ke Klien & Paket UDP Jatuh di Wire!',
+          shortDesc: 'Klien dapat 200 OK kilat, tapi datagram UDP #101 hilang di jaringan (Wire Drop).',
+          isDualTrack: false,
+          isDrop: true,
+          packetLabel: '❌ DROP WIRE (UDP)',
+          packetColor: '#f85149',
+          pathId: 'pathExpressToUdp',
+          fromNode: 'nodeExpress',
+          toNode: 'nodeUdp',
+          rippleTarget: 'rippleExpress',
+          eventLoop: '0.2 ms (Klien Aman)',
+          eventLoopAlert: false,
+          dbPool: 'Transaksi Sukses',
+          clientLatency: 'Total: 2.1 ms (Aman)',
+          narrative: '<strong>[Langkah 2/6 - SIMULASI PAKET HILANG]</strong> Klien SUDAH menerima respon 200 OK kilat (transaksi bisnis sukses dan tidak terganggu sama sekali). Namun, di saat yang sama, datagram telemetri UDP #101 mengalami <em>packet loss</em> di kabel jaringan (misal akibat kongesti jaringan atau network drop).'
+        },
+        {
+          id: 3,
+          num: '03',
+          title: 'Aggregator Mendeteksi Gap Sequence (NACK Trigger)',
+          shortDesc: 'Paket #102 tiba. Aggregator mendeteksi urutan lompat: paket #101 hilang!',
+          isDualTrack: false,
+          packetLabel: 'GAP DETECTED!',
+          packetColor: '#e3b341',
+          pathId: null,
+          fromNode: 'nodeUdp',
+          toNode: 'nodeUdp',
+          rippleTarget: 'rippleUdp',
+          eventLoop: 'Aggregator Alert',
+          eventLoopAlert: true,
+          dbPool: '0 Terkunci',
+          clientLatency: 'Background ARQ',
+          narrative: '<strong>[Langkah 3/6 - DETEKSI SEQUENCE GAP]</strong> Datagram berikutnya (#102) tiba di Aggregator. Sequence Tracker mendeteksi ada celah (Gap): <em>Expected #101, but got #102!</em> Sistem otomatis mengaktifkan protokol pemulihan <strong>Metode 1: NACK ARQ</strong>.'
+        },
+        {
+          id: 4,
+          num: '04',
+          title: '🔄 JALUR MELENGKUNG: TCP NACK Resend Request',
+          shortDesc: 'Aggregator menembak sinyal NACK lewat Jalur Melengkung kembali ke Express.',
+          isDualTrack: false,
+          packetLabel: 'TCP NACK (:5000)',
+          packetColor: '#e3b341',
+          pathId: 'pathAggregatorToExpress',
+          fromNode: 'nodeUdp',
+          toNode: 'nodeExpress',
+          rippleTarget: 'rippleExpress',
+          eventLoop: 'Ring Buffer Hit (RAM)',
+          eventLoopAlert: false,
+          dbPool: '0 DB Query',
+          clientLatency: 'Self-Healing Active',
+          narrative: '<strong>[Langkah 4/6 - JALUR MELENGKUNG AKTIF!]</strong> Aggregator menembakkan sinyal TCP NACK (<code>POST /api/benchmark/telemetry-resend</code>) melalui <strong>Jalur Melengkung Kembali</strong> ke Express API (:5000), meminta paket hilang #101 dikirim ulang.'
+        },
+        {
+          id: 5,
+          num: '05',
+          title: 'Express Ambil dari RAM Ring Buffer & Kirim Ulang',
+          shortDesc: 'Express mengambil paket dari 3.000 Circular Ring Buffer di RAM (<0.1ms) dan kirim balik.',
+          isDualTrack: false,
+          packetLabel: 'RETRANSMIT #101',
+          packetColor: '#3fb950',
+          pathId: 'pathExpressToUdp',
+          fromNode: 'nodeExpress',
+          toNode: 'nodeUdp',
+          rippleTarget: 'rippleUdp',
+          eventLoop: '0.1 ms (RAM Speed)',
+          eventLoopAlert: false,
+          dbPool: 'Zero Contention',
+          clientLatency: 'Recovered in ~1ms',
+          narrative: '<strong>[Langkah 5/6 - RING BUFFER RETRANSMISSION]</strong> Express TIDAK perlu kueri ke database! Paket #101 langsung diambil dari <strong>Circular Ring Buffer di RAM</strong> (kapasitas 3.000 log) dalam tempo mikrodetik (&lt;0.1ms), lalu dikirimkan ulang ke Aggregator via TCP!'
+        },
+        {
+          id: 6,
+          num: '06',
+          title: 'Pemulihan Zero-Loss 100% & Bulk INSERT ke Database',
+          shortDesc: 'Paket pulih utuh! Aggregator melakukan Bulk Insert seluruh log ke PostgreSQL.',
+          isDualTrack: false,
+          packetLabel: 'BULK INSERT DB',
+          packetColor: '#3fb950',
+          pathId: 'pathUdpToDb',
+          fromNode: 'nodeUdp',
+          toNode: 'nodeDb',
+          rippleTarget: 'rippleDb',
+          eventLoop: 'Loss Rate: 0.00% Zero-Loss',
+          eventLoopAlert: false,
+          dbPool: 'Efisiensi Pool Maksimal',
+          clientLatency: 'Self-Healing Sukses 100%',
+          narrative: '<strong>[Langkah 6/6 - ZERO-LOSS TERCAPAI]</strong> Aggregator menyusun kembali urutan sequence log menjadi sempurna (100% utuh tanpa ada yang hilang). Metrik <em>Total Recovered</em> bertambah! Aggregator mengeksekusi Bulk Insert ke PostgreSQL tanpa Express terbebani.'
+        }
+      ]
     }
   };
 
@@ -266,25 +394,42 @@
     // Toggle Mode buttons
     const btnSync = document.getElementById('btnModeSync');
     const btnUdp = document.getElementById('btnModeUdp');
+    const btnRecovery = document.getElementById('btnModeRecovery');
     if (btnSync && btnUdp) {
       btnSync.classList.toggle('active', modeKey === 'sync');
       btnUdp.classList.toggle('active', modeKey === 'udp');
+      if (btnRecovery) btnRecovery.classList.toggle('active', modeKey === 'recovery');
     }
 
     // Toggle Track Labels on Canvas
     const lblTrack1 = document.getElementById('lblTrack1');
     const lblTrack2 = document.getElementById('lblTrack2');
+    const lblArqCurve = document.getElementById('lblArqCurve');
     if (lblTrack1 && lblTrack2) {
       if (modeKey === 'sync') {
         lblTrack1.textContent = 'SINGLE TRACK: TRANSAKSI (SYNC BLOCKING)';
         lblTrack1.setAttribute('fill', '#f85149');
         lblTrack2.textContent = 'UDP SOCKET :5001 (OFFLINE / TIDAK DIPAKAI)';
         lblTrack2.setAttribute('fill', '#6e7681');
+        if (lblArqCurve) lblArqCurve.style.opacity = '0.3';
+      } else if (modeKey === 'recovery') {
+        lblTrack1.textContent = 'TRACK 1: TRANSAKSI KLIEN (200 OK AMAN)';
+        lblTrack1.setAttribute('fill', '#3fb950');
+        lblTrack2.textContent = 'TRACK 2: SIMULASI LOSS & RETRANSMIT';
+        lblTrack2.setAttribute('fill', '#e3b341');
+        if (lblArqCurve) {
+          lblArqCurve.style.opacity = '1';
+          lblArqCurve.setAttribute('fill', '#e3b341');
+        }
       } else {
         lblTrack1.textContent = 'TRACK 1: TRANSAKSI (HTTP)';
         lblTrack1.setAttribute('fill', '#3fb950');
         lblTrack2.textContent = 'TRACK 2: TELEMETRI (UDP :5001)';
         lblTrack2.setAttribute('fill', '#bc8cff');
+        if (lblArqCurve) {
+          lblArqCurve.style.opacity = '0.5';
+          lblArqCurve.setAttribute('fill', '#8b949e');
+        }
       }
     }
 
@@ -455,7 +600,7 @@
     const badge = document.getElementById('protoModeBadge');
     if (badge) {
       badge.textContent = `MODE: ${scenario.modeName}`;
-      badge.style.color = state.mode === 'sync' ? 'var(--status-red)' : 'var(--status-green)';
+      badge.style.color = state.mode === 'sync' ? 'var(--status-red)' : (state.mode === 'recovery' ? 'var(--status-amber, #e3b341)' : 'var(--status-green)');
     }
 
     const counter = document.getElementById('protoStepCounter');
@@ -638,13 +783,26 @@
       const progress = Math.min(elapsed / duration, 1);
       const ease = easeInOutCubic(progress);
 
+      if (step.isDrop) {
+        if (progress > 0.4) {
+          pkt1.style.opacity = String(Math.max(1 - (progress - 0.4) * 4, 0));
+        } else {
+          pkt1.style.opacity = '1';
+        }
+      }
+
       const pt = pathElem.getPointAtLength(ease * pathLen);
       pkt1.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
 
       if (progress < 1) {
         state.animFrameId = requestAnimationFrame(singleFrame);
       } else {
-        triggerNodeRipple(step.rippleTarget, step.packetColor);
+        if (step.isDrop) {
+          pkt1.style.opacity = '0';
+          triggerNodeRipple(step.rippleTarget, '#f85149');
+        } else {
+          triggerNodeRipple(step.rippleTarget, step.packetColor);
+        }
         if (onComplete) onComplete();
       }
     }
@@ -754,6 +912,56 @@
           <line x1="${xExpress}" y1="315" x2="${xClient}" y2="315" stroke="#d29922" stroke-width="${state.stepIndex === 4 ? '2.5' : '1.5'}"/>
           <polygon points="${xClient},315 ${xClient + 7},311 ${xClient + 7},319" fill="#d29922"/>
           <text x="${(xClient + xExpress) / 2}" y="308" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="9" font-weight="bold">5. 200 OK (Latensi: 18.5ms - Lambat)</text>
+        </g>
+      `;
+    } else if (state.mode === 'recovery') {
+      // MODE C: Packet Loss & Self-Healing ARQ Recovery Loop (Curved Retransmission)
+      markup += `
+        <!-- Step 1: Inbound HTTP POST -->
+        <g opacity="${state.stepIndex === 0 ? '1' : '0.6'}">
+          <line x1="${xClient}" y1="85" x2="${xExpress}" y2="85" stroke="#d29922" stroke-width="${state.stepIndex === 0 ? '2.5' : '1.5'}"/>
+          <polygon points="${xExpress},85 ${xExpress - 7},81 ${xExpress - 7},89" fill="#d29922"/>
+          <text x="${(xClient + xExpress) / 2}" y="78" text-anchor="middle" fill="#d29922" font-family="monospace" font-size="9" font-weight="bold">1. POST /api/items (Inbound)</text>
+        </g>
+
+        <!-- Step 2: 200 OK to Client & Dropped UDP Packet -->
+        <g opacity="${state.stepIndex === 1 ? '1' : '0.75'}">
+          <!-- Client Response 200 OK -->
+          <line x1="${xExpress}" y1="125" x2="${xClient}" y2="125" stroke="#3fb950" stroke-width="${state.stepIndex === 1 ? '3' : '2'}"/>
+          <polygon points="${xClient},125 ${xClient + 7},121 ${xClient + 7},129" fill="#3fb950"/>
+          <text x="${(xClient + xExpress) / 2}" y="118" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="8.5" font-weight="bold">⚡ 2A. 200 OK (2.1ms Klien Bebas)</text>
+
+          <!-- Dropped UDP Datagram Wire Arrow (Broken Line) -->
+          <line x1="${xExpress}" y1="125" x2="${(xExpress + xUdp) / 2 + 10}" y2="125" stroke="#f85149" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="${(xExpress + xUdp) / 2}" y="118" text-anchor="middle" fill="#f85149" font-family="monospace" font-size="8.5" font-weight="bold">❌ 2B. UDP #101 DROP DI KABEL</text>
+        </g>
+
+        <!-- Step 3: Aggregator Gap Detection -->
+        <g opacity="${state.stepIndex === 2 ? '1' : '0.6'}">
+          <rect x="${xUdp - 6}" y="155" width="12" height="30" fill="#2d1f4d" stroke="#e3b341" stroke-width="1.2" rx="2"/>
+          <text x="${xUdp + 14}" y="173" fill="#e3b341" font-family="monospace" font-size="8.5" font-weight="bold">3. Sequence Gap: Paket #101 Hilang!</text>
+        </g>
+
+        <!-- Step 4: TCP NACK REQUEST BACK TO EXPRESS (CURVED RETURN ARROW!) -->
+        <g opacity="${state.stepIndex === 3 ? '1' : '0.8'}">
+          <!-- Return Path from UDP Aggregator back to Express -->
+          <path d="M ${xUdp} 210 C ${xUdp - 60} 245 ${xExpress + 60} 245 ${xExpress} 210" fill="none" stroke="#e3b341" stroke-width="${state.stepIndex === 3 ? '3' : '2'}" stroke-dasharray="4 3"/>
+          <polygon points="${xExpress},210 ${xExpress + 7},205 ${xExpress + 7},215" fill="#e3b341"/>
+          <text x="${(xExpress + xUdp) / 2}" y="250" text-anchor="middle" fill="#e3b341" font-family="monospace" font-size="8.5" font-weight="bold">🔄 4. JALUR MELENGKUNG: TCP NACK /telemetry-resend [seq: 101]</text>
+        </g>
+
+        <!-- Step 5: Ring Buffer In-Memory Retransmit -->
+        <g opacity="${state.stepIndex === 4 ? '1' : '0.8'}">
+          <line x1="${xExpress}" y1="285" x2="${xUdp}" y2="285" stroke="#3fb950" stroke-width="${state.stepIndex === 4 ? '3' : '2'}"/>
+          <polygon points="${xUdp},285 ${xUdp - 7},281 ${xUdp - 7},289" fill="#3fb950"/>
+          <text x="${(xExpress + xUdp) / 2}" y="278" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="8.5" font-weight="bold">⚡ 5. Retransmit #101 dari RAM Ring Buffer (&lt;0.1ms)</text>
+        </g>
+
+        <!-- Step 6: Bulk INSERT to Database (Zero Loss) -->
+        <g opacity="${state.stepIndex === 5 ? '1' : '0.6'}">
+          <line x1="${xUdp}" y1="330" x2="${xDb}" y2="330" stroke="#3fb950" stroke-width="${state.stepIndex === 5 ? '3' : '1.8'}"/>
+          <polygon points="${xDb},330 ${xDb - 7},326 ${xDb - 7},334" fill="#3fb950"/>
+          <text x="${(xUdp + xDb) / 2}" y="323" text-anchor="middle" fill="#3fb950" font-family="monospace" font-size="9" font-weight="bold">6. Bulk INSERT ke PostgreSQL (Zero-Loss 100% Terpulihkan!)</text>
         </g>
       `;
     } else {
@@ -977,6 +1185,10 @@
       nodePostgres: {
         title: 'PostgreSQL Database (Prisma 7 :5432)',
         role: 'Tabel persistensi akhir (telemetry_logs). Menerima insert secara bulk/batch sehingga tidak ada contention lock antar-koneksi.'
+      },
+      pathAggregatorToExpress: {
+        title: '🔄 Jalur Melengkung: ARQ NACK Retransmission Loop',
+        role: 'Jalur pemulihan mandiri (Self-Healing). Ketika Aggregator mendeteksi sequence log yang hilang di jaringan, sinyal TCP NACK ditembakkan via jalur melengkung ini kembali ke Express untuk meminta paket hilang diambil dari RAM Ring Buffer.'
       }
     };
 

@@ -1858,6 +1858,10 @@ body {
   border-bottom: 2px solid var(--status-green);
 }
 
+.btn-proto-toggle.active#btnModeRecovery {
+  border-bottom: 2px solid var(--status-amber);
+}
+
 .dot-indicator {
   width: 7px;
   height: 7px;
@@ -1867,6 +1871,8 @@ body {
 
 .dot-indicator.red { background: var(--status-red); }
 .dot-indicator.green { background: var(--status-green); }
+.dot-indicator.purple { background: var(--status-purple); }
+.dot-indicator.amber { background: var(--status-amber); }
 
 /* View Perspective Switch */
 .proto-view-toggle {
