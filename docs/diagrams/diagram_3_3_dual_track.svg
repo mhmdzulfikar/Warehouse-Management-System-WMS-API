@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" width="100%" height="100%" style="background-color:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+  <defs>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#9333ea"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#d97706"/>
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <text x="500" y="32" text-anchor="middle" font-size="16" font-weight="bold" fill="#0f172a">Gambar 3.3 Arsitektur Usulan (Dual-Track Telemetry berbasis UDP Sockets)</text>
+  <text x="500" y="52" text-anchor="middle" font-size="11.5" fill="#64748b">Pemisahan Aliran Data: Transaksi Bisnis (HTTP/TCP Strict ACID) dan Telemetri Asinkron (UDP Fire-and-Forget)</text>
+
+  <!-- Node 1: Client Scanner -->
+  <rect x="40" y="235" width="200" height="90" rx="8" fill="#f8fafc" stroke="#334155" stroke-width="1.8"/>
+  <rect x="40" y="235" width="200" height="24" rx="8" fill="#334155"/>
+  <text x="140" y="252" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">1. Klien Pengguna Gudang</text>
+  <text x="140" y="278" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">Barcode Scanner / Web</text>
+  <text x="140" y="295" text-anchor="middle" font-size="9.5" fill="#64748b">IP: 192.168.1.50</text>
+  <text x="140" y="312" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#16a34a">⚡ Respon Kilat: 2.1 ms</text>
+
+  <!-- Arrow Client -> Express -->
+  <path d="M 240 265 L 340 265" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <text x="290" y="255" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#2563eb">1. POST /items</text>
+
+  <!-- Arrow Express -> Client (Fast 200 OK) -->
+  <path d="M 340 295 L 240 295" fill="none" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+  <text x="290" y="315" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#16a34a">⚡ 200 OK (2.1ms)</text>
+
+  <!-- Main Container: Node.js Core API -->
+  <rect x="340" y="160" width="280" height="240" rx="10" fill="#f8fafc" stroke="#2563eb" stroke-width="2"/>
+  <rect x="340" y="160" width="280" height="28" rx="10" fill="#2563eb"/>
+  <text x="480" y="179" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#ffffff">Node.js Express API Core (:5000)</text>
+
+  <rect x="360" y="205" width="240" height="55" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="480" y="226" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e40af">Handler Transaksi Bisnis</text>
+  <text x="480" y="244" text-anchor="middle" font-size="9.5" fill="#3b82f6">Kueri Mutasi Stok (Strict ACID)</text>
+
+  <rect x="360" y="275" width="240" height="55" rx="6" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="480" y="296" text-anchor="middle" font-size="11" font-weight="bold" fill="#6b21a8">Telemetry Middleware (dgram)</text>
+  <text x="480" y="314" text-anchor="middle" font-size="9.5" fill="#7c3aed">socket.send() Fire-and-Forget (~0.2ms)</text>
+
+  <rect x="360" y="345" width="240" height="40" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="480" y="369" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#475569">RAM Ring Buffer (Kapasitas: 3.000 log)</text>
+
+  <!-- TRACK 1: Database Business Transaction -->
+  <path d="M 620 230 L 760 230" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <text x="690" y="220" text-anchor="middle" font-size="10" font-weight="bold" fill="#2563eb">TRACK 1: HTTP/TCP</text>
+  <text x="690" y="245" text-anchor="middle" font-size="9" fill="#1e40af">pg.Pool (1 slot)</text>
+
+  <!-- Database Node (Right) -->
+  <rect x="760" y="180" width="200" height="230" rx="8" fill="#f8fafc" stroke="#0284c7" stroke-width="1.8"/>
+  <rect x="760" y="180" width="200" height="26" rx="8" fill="#0284c7"/>
+  <text x="860" y="198" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">PostgreSQL (:5432)</text>
+
+  <rect x="775" y="220" width="170" height="50" rx="4" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+  <text x="860" y="242" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#1e40af">Tabel items (Bisnis)</text>
+  <text x="860" y="258" text-anchor="middle" font-size="9" fill="#2563eb">Konsistensi Stok Terjamin</text>
+
+  <rect x="775" y="330" width="170" height="55" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/>
+  <text x="860" y="352" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#166534">Tabel telemetry_logs</text>
+  <text x="860" y="368" text-anchor="middle" font-size="9" fill="#15803d">Bulk Insert (100 log/2s)</text>
+
+  <!-- TRACK 2: UDP Telemetry Upwards -->
+  <path d="M 480 160 L 480 100" fill="none" stroke="#9333ea" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+  <text x="490" y="130" font-size="10" font-weight="bold" fill="#9333ea">TRACK 2: UDP Datagram :5001 (~0.2ms)</text>
+
+  <!-- UDP Aggregator Node (Top) -->
+  <rect x="340" y="420" width="280" height="150" rx="8" fill="#faf5ff" stroke="#9333ea" stroke-width="2"/>
+  <rect x="340" y="420" width="280" height="26" rx="8" fill="#9333ea"/>
+  <text x="480" y="438" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#ffffff">UDP Log Aggregator Daemon (:5001)</text>
+
+  <rect x="360" y="458" width="240" height="42" rx="4" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="480" y="476" text-anchor="middle" font-size="10" font-weight="bold" fill="#6b21a8">Double Buffering di RAM</text>
+  <text x="480" y="492" text-anchor="middle" font-size="9" fill="#7c3aed">Ambang Flush: 100 log / 2.000 ms</text>
+
+  <rect x="360" y="510" width="240" height="42" rx="4" fill="#ffffff" stroke="#c4b5fd" stroke-width="1.2"/>
+  <text x="480" y="528" text-anchor="middle" font-size="10" font-weight="bold" fill="#6b21a8">Sequence Tracker &amp; NACK Engine</text>
+  <text x="480" y="544" text-anchor="middle" font-size="9" fill="#7c3aed">Deteksi Gap urutan log secara realtime</text>
+
+  <!-- Bulk Insert Path from Aggregator to DB -->
+  <path d="M 620 500 C 720 500 740 400 760 360" fill="none" stroke="#16a34a" stroke-width="2.2" marker-end="url(#arrow-green)"/>
+  <text x="710" y="480" text-anchor="middle" font-size="10" font-weight="bold" fill="#16a34a">Bulk INSERT (Koneksi Terpisah)</text>
+  <text x="710" y="495" text-anchor="middle" font-size="8.5" fill="#15803d">Zero Pool Contention</text>
+
+  <!-- RETRANSMISSION ARQ LOOP (Curved Path) -->
+  <path d="M 340 520 C 260 520 260 370 340 370" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow-amber)"/>
+  <text x="210" y="445" text-anchor="middle" font-size="10" font-weight="bold" fill="#d97706">JALUR MELENGKUNG ARQ</text>
+  <text x="210" y="460" text-anchor="middle" font-size="8.5" fill="#b45309">TCP NACK /telemetry-resend</text>
+  <text x="210" y="475" text-anchor="middle" font-size="8.5" fill="#b45309">Ambil paket hilang dari RAM</text>
+</svg>

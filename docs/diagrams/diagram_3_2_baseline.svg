@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width="100%" height="100%" style="background-color:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#1e293b"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <text x="480" y="32" text-anchor="middle" font-size="16" font-weight="bold" fill="#0f172a">Gambar 3.2 Arsitektur Baseline (Konvensional Synchronous Monolithic Logging)</text>
+  <text x="480" y="52" text-anchor="middle" font-size="11.5" fill="#64748b">Bottleneck: Transaksi bisnis tertahan oleh proses penulisan log audit sinkron pada connection pool yang sama</text>
+
+  <!-- Node 1: Client Scanner -->
+  <rect x="370" y="80" width="220" height="75" rx="8" fill="#f8fafc" stroke="#334155" stroke-width="1.8"/>
+  <rect x="370" y="80" width="220" height="24" rx="8" fill="#334155"/>
+  <text x="480" y="97" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">1. Klien Pengguna Gudang</text>
+  <text x="480" y="122" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">Barcode Scanner / Web WMS</text>
+  <text x="480" y="139" text-anchor="middle" font-size="10" fill="#64748b">Protokol: HTTP/TCP (Port 5000)</text>
+
+  <!-- Node 2: Node.js Backend Container -->
+  <rect x="270" y="200" width="420" height="170" rx="10" fill="#f8fafc" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 4"/>
+  <text x="290" y="222" font-size="12" font-weight="bold" fill="#334155">2. Backend Server (Node.js Express API)</text>
+
+  <!-- Sub-block 2A: Business Handler -->
+  <rect x="290" y="238" width="180" height="115" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="380" y="260" text-anchor="middle" font-size="11" font-weight="bold" fill="#1d4ed8">Handler Transaksi Bisnis</text>
+  <text x="380" y="278" text-anchor="middle" font-size="10" fill="#475569">(Inbound / Outbound)</text>
+  <line x1="300" y1="288" x2="460" y2="288" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="380" y="310" text-anchor="middle" font-size="9.5" fill="#dc2626">⛔ Menunggu penulisan</text>
+  <text x="380" y="325" text-anchor="middle" font-size="9.5" fill="#dc2626">log audit selesai</text>
+
+  <!-- Sub-block 2B: Sync Logger -->
+  <rect x="490" y="238" width="180" height="115" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="580" y="260" text-anchor="middle" font-size="11" font-weight="bold" fill="#b91c1c">Logging Sinkron (AWAIT)</text>
+  <text x="580" y="278" text-anchor="middle" font-size="10" fill="#7f1d1d">await db.telemetryLog.create()</text>
+  <line x1="500" y1="288" x2="660" y2="288" stroke="#fecaca" stroke-width="1"/>
+  <text x="580" y="310" text-anchor="middle" font-size="9.5" fill="#991b1b">⚠️ Menahan Event Loop</text>
+  <text x="580" y="325" text-anchor="middle" font-size="9.5" fill="#991b1b">dan alur respon klien</text>
+
+  <!-- Arrow Client -> Express -->
+  <path d="M 480 155 L 480 200" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="490" y="180" font-size="10" font-weight="bold" fill="#1e293b">1. Request Transaksi</text>
+
+  <!-- Arrow Express -> Client (Delayed Response) -->
+  <path d="M 340 238 C 340 180 375 168 405 160" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#arrow-red)"/>
+  <text x="245" y="175" font-size="10" font-weight="bold" fill="#dc2626">4. Respon 200 OK Tertunda (~18-50ms)</text>
+
+  <!-- Internal Arrow in Node.js -->
+  <path d="M 470 295 L 490 295" fill="none" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- Node 3: Shared Connection Pool -->
+  <rect x="320" y="415" width="320" height="68" rx="8" fill="#fffbeb" stroke="#d97706" stroke-width="1.8"/>
+  <text x="480" y="437" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">3. Shared Connection Pool (pg.Pool)</text>
+  <text x="480" y="454" text-anchor="middle" font-size="10" fill="#b45309">Kapasitas Terbatas: Maksimum 10 Koneksi Bersama</text>
+  <text x="480" y="470" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#dc2626">⚠️ Titik Perebutan Slot (Connection Contention &amp; Exhaustion)</text>
+
+  <!-- Arrows from Express to Connection Pool -->
+  <path d="M 380 353 L 380 415" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <text x="315" y="388" font-size="9.5" font-weight="bold" fill="#2563eb">2A. Kueri Stok</text>
+
+  <path d="M 580 353 L 580 415" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)"/>
+  <text x="590" y="388" font-size="9.5" font-weight="bold" fill="#dc2626">2B. Kueri Log Audit</text>
+
+  <!-- Node 4: PostgreSQL Database -->
+  <rect x="290" y="520" width="380" height="75" rx="8" fill="#f8fafc" stroke="#0284c7" stroke-width="1.8"/>
+  <rect x="290" y="520" width="380" height="24" rx="8" fill="#0284c7"/>
+  <text x="480" y="537" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">4. Basis Data PostgreSQL (:5432) - Harddisk I/O</text>
+
+  <rect x="310" y="552" width="160" height="32" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="390" y="572" text-anchor="middle" font-size="10" font-weight="bold" fill="#334155">Tabel Bisnis (items)</text>
+
+  <rect x="490" y="552" width="160" height="32" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-width="1"/>
+  <text x="570" y="572" text-anchor="middle" font-size="10" font-weight="bold" fill="#334155">Tabel telemetry_logs</text>
+
+  <!-- Arrows Pool -> Database -->
+  <path d="M 400 483 L 390 520" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+  <path d="M 560 483 L 570 520" fill="none" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- Left Callout: Dampak Masalah -->
+  <rect x="20" y="240" width="220" height="205" rx="6" fill="#fff1f2" stroke="#f43f5e" stroke-width="1.2"/>
+  <text x="130" y="262" text-anchor="middle" font-size="11" font-weight="bold" fill="#9f1239">⚠️ IDENTIFIKASI MASALAH</text>
+  <line x1="30" y1="270" x2="230" y2="270" stroke="#fecdd3" stroke-width="1"/>
+  
+  <text x="30" y="288" font-size="9.5" font-weight="bold" fill="#881337">1. Connection Contention:</text>
+  <text x="30" y="303" font-size="9" fill="#9f1239">Kueri log berebut slot koneksi</text>
+  <text x="30" y="316" font-size="9" fill="#9f1239">dengan kueri transaksi barang.</text>
+
+  <text x="30" y="338" font-size="9.5" font-weight="bold" fill="#881337">2. Pool Exhaustion:</text>
+  <text x="30" y="353" font-size="9" fill="#9f1239">10 koneksi cepat habis saat</text>
+  <text x="30" y="366" font-size="9" fill="#9f1239">terjadi lonjakan transaksi.</text>
+
+  <text x="30" y="388" font-size="9.5" font-weight="bold" fill="#881337">3. Latensi Membengkak:</text>
+  <text x="30" y="403" font-size="9" fill="#9f1239">Scanner menunggu kueri log</text>
+  <text x="30" y="416" font-size="9" fill="#9f1239">selesai ditulis ke piringan disk.</text>
+
+  <!-- Right Callout: Karakteristik -->
+  <rect x="720" y="240" width="220" height="205" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+  <text x="830" y="262" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">📊 KARAKTERISTIK BASELINE</text>
+  <line x1="730" y1="270" x2="930" y2="270" stroke="#e2e8f0" stroke-width="1"/>
+  
+  <text x="730" y="290" font-size="9.5" font-weight="bold" fill="#1e293b">• Eksekusi: Serial / Sinkron</text>
+  <text x="730" y="305" font-size="9" fill="#64748b">Thread menunggu I/O disk.</text>
+
+  <text x="730" y="330" font-size="9.5" font-weight="bold" fill="#1e293b">• Throughput: Rendah (~540 req/s)</text>
+  <text x="730" y="345" font-size="9" fill="#64748b">Drop hingga -84.5% saat beban.</text>
+
+  <text x="730" y="370" font-size="9.5" font-weight="bold" fill="#1e293b">• P99 Latency: ~18-50 ms</text>
+  <text x="730" y="385" font-size="9" fill="#64748b">Operator gudang mengalami jeda.</text>
+
+  <text x="730" y="410" font-size="9.5" font-weight="bold" fill="#1e293b">• Ketahanan: Rawan Cascading</text>
+  <text x="730" y="425" font-size="9" fill="#64748b">Tabel log macet = transaksi mati.</text>
+</svg>

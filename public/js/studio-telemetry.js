@@ -3,7 +3,7 @@
  * Manages 16 testbed actions, area gradient sparklines,
  * Visual Packet Sequence Inspector, PostgreSQL Live DB Log Table, and Audit Terminal.
  */
-(function() {
+(function () {
   const store = window.StudioStore;
   let pollingTimer = null;
   let isAutocannonRunning = false;
@@ -26,8 +26,8 @@
 
     const coords = points.map((p, idx) => {
       const x = (idx / (points.length - 1)) * (width - 8) + 4;
-      const y = isFlat 
-        ? height / 2 
+      const y = isFlat
+        ? height / 2
         : height - 6 - ((p - min) / range) * (height - 12);
       return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)) };
     });
@@ -54,7 +54,7 @@
   // --- Deck View Switcher ---
   function switchDeckView(view) {
     activeDeckView = view;
-    
+
     // Tab buttons
     const btnSeq = document.getElementById('tabBtnSeq');
     const btnDb = document.getElementById('tabBtnDb');
@@ -273,7 +273,7 @@
       tbody.innerHTML = '';
       cachedDbLogs.forEach(row => {
         const tr = document.createElement('tr');
-        
+
         let badgeClass = 'tag-blue';
         if (row.level === 'SUCCESS') badgeClass = 'tag-green';
         else if (row.level === 'WARN') badgeClass = 'tag-amber';
@@ -347,7 +347,7 @@
   function appendLog(level, message, correlationId = null) {
     const now = new Date();
     const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
-    
+
     const entry = {
       id: Date.now() + Math.random(),
       timestamp: timeStr,
@@ -433,7 +433,7 @@
       const lossEl = document.getElementById('effectiveLoss');
       if (lossEl) {
         const lossVal = parseFloat(data.aggregator?.effectiveLossRatePercent || '0');
-        const badge = lossVal === 0 
+        const badge = lossVal === 0
           ? `<span class="tag-badge tag-green">${window.I18N.t('zeroLoss')}</span>`
           : `<span class="tag-badge tag-red">${window.I18N.t('lossDetected')}</span>`;
         lossEl.innerHTML = `${data.aggregator.effectiveLossRatePercent} ${badge}`;
@@ -536,7 +536,7 @@
         const res = await fetch('/api/benchmark/udp-log');
         const d = await res.json();
         appendLog('SUCCESS', `UDP Datagram #${d.seqId} dispatched in ${d.totalDurationMs}ms (Workload: ${d.workloadLatencyMs}ms).`);
-        
+
         // Add to Visual Sequence Tracker
         addSequencePacket({
           seqId: d.seqId,
