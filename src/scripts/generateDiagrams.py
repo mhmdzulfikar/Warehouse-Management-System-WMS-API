@@ -184,8 +184,8 @@ svg_3_3 = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" width
   <text x="187" y="142" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#0f172a">1. HTTP POST /items</text>
 
   <!-- Note 1: Transaksi Bisnis Cepat -->
-  <rect x="286" y="155" width="155" height="20" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
-  <text x="363" y="169" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#1e40af">TRACK 1: TRANSAKSI BISNIS</text>
+  <rect x="286" y="155" width="230" height="20" rx="4" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="401" y="169" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#1e40af">TAHAP 1: TRANSAKSI BISNIS UTAMA (HTTP/TCP)</text>
 
   <!-- STEP 2: Express -> Pool -->
   <path d="M 286 185 L 449 185" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
