@@ -204,4 +204,7 @@ svg_dengan_udp = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 720
 with open('docs/diagrams/flowchart_bab2_tanpa_udp.svg', 'w', encoding='utf-8') as f:
     f.write(svg_tanpa_udp)
 
+with open('docs/diagrams/flowchart_bab2_dengan_udp.svg', 'w', encoding='utf-8') as f:
+    f.write(svg_dengan_udp)
+
 print("Both BAB II Flowcharts generated successfully!")
