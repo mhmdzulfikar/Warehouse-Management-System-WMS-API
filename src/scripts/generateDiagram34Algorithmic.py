@@ -1,0 +1,172 @@
+"""
+Script to generate standalone high-resolution SVG for Gambar 3.4 in BAB III:
+Diagram Alir Detail Algoritma Tri-Layer Self-Healing pada UDP Log Aggregator & WMS Core API.
+"""
+import os
+
+os.makedirs('docs/diagrams', exist_ok=True)
+
+svg_3_4 = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 960" width="100%" height="100%" style="background-color:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#1e293b"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <text x="490" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#0f172a">Gambar 3.4 Diagram Alir Detail Algoritma Tri-Layer Self-Healing pada UDP Log Aggregator</text>
+  <text x="490" y="48" text-anchor="middle" font-size="11" fill="#64748b">Detail Perancangan Algoritma Evaluasi Paket, Ekstraksi Piggyback, NACK ARQ via RAM, dan Circuit Breaker</text>
+
+  <!-- 1. Start Terminal -->
+  <rect x="330" y="70" width="320" height="38" rx="19" fill="#1e293b" stroke="#0f172a" stroke-width="1.5"/>
+  <text x="490" y="94" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff">([ MULAI: Aggregator Menerima Datagram UDP :5001 ])</text>
+
+  <!-- Arrow 1 -> 2 -->
+  <path d="M 490 108 L 490 135" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 2. Parse Datagram JSON -->
+  <rect x="350" y="135" width="280" height="42" rx="4" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <text x="490" y="153" text-anchor="middle" font-size="10" font-weight="bold" fill="#0f172a">Parsing Buffer Datagram JSON: packet</text>
+  <text x="490" y="167" text-anchor="middle" font-size="8.5" fill="#64748b">totalReceivedCount++</text>
+
+  <!-- Arrow 2 -> 3 -->
+  <path d="M 490 177 L 490 205" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 3. Decision: Sequence ID Check -->
+  <polygon points="490,205 660,240 490,275 320,240" fill="#fefce8" stroke="#ca8a04" stroke-width="1.8"/>
+  <text x="490" y="235" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#854d0e">Apakah incomingSeq &gt; lastSeqId + 1?</text>
+  <text x="490" y="249" text-anchor="middle" font-size="8.5" fill="#a16207">(Pemeriksaan Diskontinuitas Nomor Urut)</text>
+
+  <!-- Branch Normal (Right) -> Direct Push to Buffer -->
+  <path d="M 660 240 L 830 240 L 830 670 L 635 670" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <text x="740" y="232" text-anchor="middle" font-size="9" font-weight="bold" fill="#16a34a">Tidak (Urut / Gap = 0)</text>
+
+  <!-- Branch Loss Detected (Down) -->
+  <path d="M 490 275 L 490 305" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)"/>
+  <text x="560" y="293" font-size="9" font-weight="bold" fill="#dc2626">Ya (Gap Terdeteksi)</text>
+
+  <!-- 4. Process: Calculate Missing Seqs -->
+  <rect x="330" y="305" width="320" height="46" rx="4" fill="#fef2f2" stroke="#f87171" stroke-width="1.5"/>
+  <text x="490" y="323" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#991b1b">Hitung Paket Hilang &amp; Susun Daftar Celah:</text>
+  <text x="490" y="338" text-anchor="middle" font-size="8.5" fill="#b91c1c">missingSeqs = [lastSeqId + 1 ... incomingSeq - 1]</text>
+
+  <!-- Arrow to Layer 1 -->
+  <path d="M 490 351 L 490 380" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 5. Decision: LAPISAN 1 PIGGYBACK CHECK -->
+  <polygon points="490,380 650,415 490,450 330,415" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8"/>
+  <text x="490" y="408" text-anchor="middle" font-size="9" font-weight="bold" fill="#1e40af">LAPISAN 1: Apakah Paket Hilang Ada</text>
+  <text x="490" y="422" text-anchor="middle" font-size="8.5" fill="#3b82f6">di Array packet.piggyback (2 Log Terakhir)?</text>
+
+  <!-- Branch Layer 1 Success (Left) -->
+  <path d="M 330 415 L 180 415 L 180 450" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <text x="250" y="407" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#16a34a">Ditemukan (Zero-RTT)</text>
+
+  <rect x="70" y="450" width="220" height="48" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="180" y="468" text-anchor="middle" font-size="9" font-weight="bold" fill="#15803d">Ekstrak dari Piggyback Payload</text>
+  <text x="180" y="481" text-anchor="middle" font-size="8" fill="#166534">logBuffer.push(recovered) &amp; totalRecovered++</text>
+  <text x="180" y="492" text-anchor="middle" font-size="7.5" fill="#15803d">Hapus ID dari daftar missingSeqs</text>
+
+  <!-- Arrow from Layer 1 to Check Remaining -->
+  <path d="M 180 498 L 180 540 L 330 540" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Decision: Sisa Paket Hilang? -->
+  <polygon points="430,515 530,540 430,565 330,540" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="430" y="536" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#1e40af">Masih Ada Sisa</text>
+  <text x="430" y="548" text-anchor="middle" font-size="8" fill="#3b82f6">Paket Hilang?</text>
+
+  <!-- Branch No Remaining -> Direct to Buffer -->
+  <path d="M 430 565 L 430 655" fill="none" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="435" y="610" font-size="8" font-weight="bold" fill="#16a34a">Tidak (Semua Pulih)</text>
+
+  <!-- Branch Still Missing -> Go to Layer 2 -->
+  <path d="M 530 540 L 630 540" fill="none" stroke="#d97706" stroke-width="1.8" marker-end="url(#arrow-amber)"/>
+  <text x="580" y="532" text-anchor="middle" font-size="8" font-weight="bold" fill="#d97706">Ya (Sisa &gt; 0)</text>
+
+  <!-- Layer 1 Miss -> directly down to Layer 2 -->
+  <path d="M 490 450 L 490 515" fill="none" stroke="#d97706" stroke-width="1.8" marker-end="url(#arrow-amber)"/>
+  <text x="510" y="475" font-size="8" fill="#d97706">Tidak Ada</text>
+
+  <!-- 6. Process: LAPISAN 2 NACK VIA TCP -->
+  <rect x="630" y="515" width="220" height="50" rx="4" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="740" y="534" text-anchor="middle" font-size="9" font-weight="bold" fill="#92400e">LAPISAN 2: NACK ARQ VIA TCP</text>
+  <text x="740" y="547" text-anchor="middle" font-size="8" fill="#b45309">Kirim HTTP POST /telemetry-resend</text>
+  <text x="740" y="559" text-anchor="middle" font-size="7.5" fill="#78350f">Membawa daftar remainingMissingSeqs</text>
+
+  <!-- Arrow to Layer 2 Decision -->
+  <path d="M 740 565 L 740 595" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- Decision: Found in 3000 RAM Ring Buffer? -->
+  <polygon points="740,595 860,625 740,655 620,625" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="740" y="620" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#92400e">Ditemukan di RAM Buffer?</text>
+  <text x="740" y="633" text-anchor="middle" font-size="8" fill="#b45309">(3.000 Entri RAM Ring Buffer)</text>
+
+  <!-- Layer 2 Success -> Back to buffer -->
+  <path d="M 620 625 L 530 625 L 530 655" fill="none" stroke="#16a34a" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+  <text x="575" y="618" text-anchor="middle" font-size="8" font-weight="bold" fill="#16a34a">Ditemukan (&lt;0.1 ms)</text>
+
+  <!-- Layer 2 Failure -> LAPISAN 3 -->
+  <path d="M 740 655 L 740 685" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)"/>
+  <text x="790" y="672" font-size="8" font-weight="bold" fill="#dc2626">Tertimpa / Gagal</text>
+
+  <!-- Decision: Lapisan 3 Severity Check -->
+  <polygon points="740,685 860,715 740,745 620,715" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="740" y="711" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#991b1b">Kategori Log Kritis?</text>
+  <text x="740" y="723" text-anchor="middle" font-size="8" fill="#b91c1c">(HTTP 500 / Circuit Breaker OPEN)</text>
+
+  <!-- Layer 3 Critical: Direct Ingest -->
+  <path d="M 620 715 L 430 715 L 430 685" fill="none" stroke="#dc2626" stroke-width="1.8" marker-end="url(#arrow-red)"/>
+  <text x="525" y="707" text-anchor="middle" font-size="8" font-weight="bold" fill="#dc2626">Ya: LAPISAN 3 TCP Ingest Darurat</text>
+
+  <!-- Layer 3 Non-Critical: Drop -->
+  <path d="M 740 745 L 740 765" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="740" y="758" text-anchor="middle" font-size="7.5" fill="#64748b">Tidak (Info/Debug): Catat Unrecoverable Loss</text>
+
+  <!-- 7. CONVERGENCE: PUSH TO ACTIVE LOG BUFFER -->
+  <rect x="360" y="655" width="275" height="42" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="497" y="674" text-anchor="middle" font-size="10" font-weight="bold" fill="#14532d">Masukkan Log ke logBuffer Aktif</text>
+  <text x="497" y="688" text-anchor="middle" font-size="8.5" fill="#166534">lastSequenceId = Math.max(lastSequenceId, incomingSeq)</text>
+
+  <!-- Arrow to Flush Check -->
+  <path d="M 497 697 L 497 730" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 8. Decision: Ambang Flush -->
+  <polygon points="497,730 650,765 497,800 344,765" fill="#f8fafc" stroke="#334155" stroke-width="1.8"/>
+  <text x="497" y="760" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a">Apakah Ambang Terjadwal Tercapai?</text>
+  <text x="497" y="774" text-anchor="middle" font-size="8.5" fill="#475569">(logBuffer.length &gt;= 100 ATAU timer &gt;= 2.000 ms)</text>
+
+  <!-- Branch Flush Belum -> Loop/Wait -->
+  <path d="M 344 765 L 200 765 L 200 900 L 400 900" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="250" y="757" font-size="8.5" fill="#64748b">Belum Tercapai (Tampung di RAM)</text>
+
+  <!-- Branch Flush Ya -> Bulk INSERT -->
+  <path d="M 497 800 L 497 830" fill="none" stroke="#16a34a" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <text x="515" y="818" font-size="8.5" font-weight="bold" fill="#15803d">Ya</text>
+
+  <!-- 9. Process: Bulk Insert via Prisma -->
+  <rect x="340" y="830" width="315" height="44" rx="4" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="497" y="848" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#15803d">Eksekusi Bulk INSERT ke PostgreSQL</text>
+  <text x="497" y="862" text-anchor="middle" font-size="8" fill="#166534">prisma.telemetryLog.createMany({ skipDuplicates: true })</text>
+
+  <!-- 10. End Terminal -->
+  <path d="M 497 874 L 497 905" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="400" y="905" width="195" height="34" rx="17" fill="#1e293b" stroke="#0f172a" stroke-width="1.5"/>
+  <text x="497" y="926" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#ffffff">([ SELESAI: Log Terarsip Permanen ])</text>
+</svg>"""
+
+with open('docs/diagrams/diagram_3_4_self_healing.svg', 'w', encoding='utf-8') as f:
+    f.write(svg_3_4)
+
+print("Diagram 3.4 in docs/diagrams/ updated successfully with detailed algorithmic flowchart!")
