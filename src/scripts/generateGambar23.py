@@ -1,0 +1,156 @@
+"""
+Script to generate standalone high-resolution SVG for Gambar 2.3:
+Flowchart Lengkap Dual-Track Telemetry + Tri-Layer Self-Healing (sesuai gambar yang diinginkan pengguna).
+"""
+import os
+
+os.makedirs('docs/diagrams', exist_ok=True)
+
+svg_gambar_2_3 = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 780" width="100%" height="100%" style="background-color:#ffffff; font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#1e293b"/>
+    </marker>
+  </defs>
+
+  <!-- Title Header -->
+  <text x="510" y="28" text-anchor="middle" font-size="15" font-weight="bold" fill="#0f172a">Gambar 2.3 Diagram Alir Logika Dual-Track Telemetry dan Tri-Layer Self-Healing</text>
+
+  <!-- 1. Start Terminal (Oval) -->
+  <rect x="295" y="45" width="170" height="36" rx="18" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="380" y="61" text-anchor="middle" font-size="10" font-weight="bold" fill="#0f172a">Mulai: Klien Mengirim</text>
+  <text x="380" y="73" text-anchor="middle" font-size="10" font-weight="bold" fill="#0f172a">Transaksi</text>
+  <path d="M 380 81 L 380 100" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 2. Input HTTP (Parallelogram) -->
+  <polygon points="265,100 495,100 480,135 250,135" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="372" y="122" text-anchor="middle" font-size="9.5" fill="#0f172a">/Terima Request HTTP POST /api/items/</text>
+  <path d="M 372 135 L 372 155" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 3. Eksekusi Logika Bisnis -->
+  <rect x="260" y="155" width="225" height="34" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="372" y="176" text-anchor="middle" font-size="9.5" fill="#0f172a">Eksekusi Logika Bisnis Mutasi Stok</text>
+  <path d="M 372 189 L 372 208" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 4. Kueri UPDATE Stok -->
+  <rect x="260" y="208" width="225" height="34" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="372" y="229" text-anchor="middle" font-size="9.5" fill="#0f172a">Kueri UPDATE Stok ke Basis Data</text>
+  <path d="M 372 242 L 372 262" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 5. Commit Stok Berhasil -->
+  <rect x="260" y="262" width="225" height="34" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="372" y="283" text-anchor="middle" font-size="9.5" fill="#0f172a">Commit Stok Berhasil &amp; Lepas Koneksi</text>
+  <path d="M 372 296 L 372 318" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- 6. Diamond: Pemisahan Aliran Data (Decoupling) -->
+  <polygon points="372,318 472,343 372,368 272,343" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="372" y="340" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a">Pemisahan Aliran Data</text>
+  <text x="372" y="352" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a">(Decoupling)</text>
+
+  <!-- Branch Left: Kirim Respon 200 OK -->
+  <path d="M 272 343 L 107 343 L 107 410" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  
+  <polygon points="15,410 200,410 185,446 0,446" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="100" y="433" text-anchor="middle" font-size="9" fill="#0f172a">/Kirim Respon HTTP 200 OK ke Klien/</text>
+
+  <!-- Terminal Selesai Bisnis -->
+  <path d="M 100 446 L 100 500" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="22" y="500" width="155" height="38" rx="19" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="100" y="517" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a">SELESAI: Transaksi</text>
+  <text x="100" y="529" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a">Bisnis Tuntas</text>
+
+  <!-- Branch Right: Pancarkan Datagram via UDP -->
+  <path d="M 472 343 L 570 343" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  
+  <rect x="570" y="325" width="200" height="36" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="670" y="341" text-anchor="middle" font-size="8.5" fill="#0f172a">Pancarkan Datagram via Soket UDP Port 5001</text>
+  <text x="670" y="353" text-anchor="middle" font-size="8" fill="#64748b">(Fire-and-Forget, ~ 0.2 ms)</text>
+  
+  <path d="M 670 361 L 670 382" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- Diterima UDP Log Aggregator -->
+  <rect x="570" y="382" width="200" height="34" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="670" y="403" text-anchor="middle" font-size="9" fill="#0f172a">Diterima UDP Log Aggregator Daemon</text>
+
+  <!-- Arrow to Diamond Evaluasi Kontinuitas -->
+  <path d="M 670 416 L 670 436 C 670 436 430 436 430 445" fill="none" stroke="#1e293b" stroke-width="1.8"/>
+  <path d="M 430 445 L 430 460" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- Diamond: Evaluasi Kontinuitas Sequence ID -->
+  <polygon points="430,460 535,488 430,516 325,488" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="430" y="484" text-anchor="middle" font-size="9" font-weight="bold" fill="#0f172a">Evaluasi Kontinuitas</text>
+  <text x="430" y="497" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">Nomor Urut (Sequence ID)?</text>
+
+  <!-- 4 Branches of Tri-Layer Self-Healing -->
+  <!-- 1. Gap = 0 (Urut / Normal) -->
+  <path d="M 325 488 L 225 488 L 225 680 L 635 680" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="250" y="555" font-size="8" font-weight="bold" fill="#0f172a">Gap = 0</text>
+  <text x="250" y="567" font-size="8" fill="#64748b">(Urut / Normal)</text>
+
+  <!-- 2. Gap <= 2 (Kehilangan Minor) -> LAPISAN 1 -->
+  <path d="M 380 503 L 380 540" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="380" y="530" text-anchor="middle" font-size="8" font-weight="bold" fill="#0f172a">Gap &lt;= 2 (Kehilangan Minor)</text>
+
+  <rect x="300" y="540" width="160" height="48" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="380" y="558" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">LAPISAN 1: ZERO-RTT PIGGYBACKING</text>
+  <text x="380" y="571" text-anchor="middle" font-size="7.5" fill="#475569">Ekstrak log hilang langsung dari</text>
+  <text x="380" y="582" text-anchor="middle" font-size="7.5" fill="#475569">payload redundan</text>
+  <path d="M 380 588 L 380 660 L 635 660" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 3. Gap >= 3 (Kehilangan Mayor) -> LAPISAN 2 -->
+  <path d="M 480 503 L 480 540" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="480" y="530" text-anchor="middle" font-size="8" font-weight="bold" fill="#0f172a">Gap &gt;= 3 (Kehilangan Mayor)</text>
+
+  <rect x="475" y="540" width="160" height="48" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="555" y="558" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">LAPISAN 2: NACK ARQ VIA RAM BUFFER</text>
+  <text x="555" y="571" text-anchor="middle" font-size="7.5" fill="#475569">Kirim sinyal NACK ke 3.000 RAM</text>
+  <text x="555" y="582" text-anchor="middle" font-size="7.5" fill="#475569">Ring Buffer Express</text>
+  <path d="M 555 588 L 555 640 L 635 640" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 4. Kondisi Error Fatal 500 -> LAPISAN 3 -->
+  <path d="M 535 488 L 740 488 L 740 540" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="740" y="530" text-anchor="middle" font-size="8" font-weight="bold" fill="#0f172a">Kondisi Error Fatal 500</text>
+
+  <rect x="650" y="540" width="180" height="48" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="740" y="558" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">LAPISAN 3: CIRCUIT BREAKER TCP FALLBACK</text>
+  <text x="740" y="571" text-anchor="middle" font-size="7.5" fill="#475569">Buka saluran darurat HTTP/TCP</text>
+  <text x="740" y="582" text-anchor="middle" font-size="7.5" fill="#475569">Ingest langsung</text>
+  <path d="M 740 588 L 740 635" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Process Box: Simpan ke Buffer Memori RAM -->
+  <rect x="635" y="635" width="170" height="36" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="720" y="657" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#0f172a">Simpan ke Buffer Memori RAM</text>
+
+  <!-- Arrow to Diamond Ambang Terjadwal -->
+  <path d="M 805 653 L 890 653 L 890 560" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- Diamond: Ambang Terjadwal -->
+  <polygon points="890,515 970,540 890,565 810,540" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="890" y="536" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">Ambang</text>
+  <text x="890" y="546" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">Terjadwal</text>
+  <text x="890" y="557" text-anchor="middle" font-size="7.5" fill="#475569">(100 log / 2 detik)</text>
+
+  <!-- Branch Belum (Loop back) -->
+  <path d="M 810 540 L 780 540 L 780 635" fill="none" stroke="#1e293b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="795" y="533" text-anchor="middle" font-size="8" fill="#0f172a">Belum</text>
+
+  <!-- Branch Ya -> Bulk INSERT -->
+  <path d="M 890 565 L 890 615" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="900" y="585" font-size="8" font-weight="bold" fill="#0f172a">Ya</text>
+
+  <rect x="815" y="615" width="165" height="48" rx="2" fill="#ffffff" stroke="#1e293b" stroke-width="1.5"/>
+  <text x="897" y="633" text-anchor="middle" font-size="8" font-weight="bold" fill="#0f172a">Bulk INSERT ke Basis Data PostgreSQL</text>
+  <text x="897" y="646" text-anchor="middle" font-size="7.5" fill="#475569">(Koneksi Terpisah &amp;</text>
+  <text x="897" y="656" text-anchor="middle" font-size="7.5" fill="#475569">Zero Pool Contention)</text>
+
+  <!-- Final Terminal: Selesai Log Terarsip -->
+  <path d="M 897 663 L 897 695" fill="none" stroke="#1e293b" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <rect x="825" y="695" width="145" height="38" rx="19" fill="#ffffff" stroke="#1e293b" stroke-width="1.8"/>
+  <text x="897" y="711" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#0f172a">SELESAI: Log Terarsip</text>
+  <text x="897" y="723" text-anchor="middle" font-size="8" fill="#0f172a">Permanen / Zero-Loss</text>
+</svg>"""
+
+with open('docs/diagrams/flowchart_bab2_gambar_2_3.svg', 'w', encoding='utf-8') as f:
+    f.write(svg_gambar_2_3)
+
+print("Gambar 2.3 SVG generated successfully!")
